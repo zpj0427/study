@@ -1,0 +1,6 @@
+## ignore this file type
+/target
+/src/test
+.idea
+.porject
+.settings
