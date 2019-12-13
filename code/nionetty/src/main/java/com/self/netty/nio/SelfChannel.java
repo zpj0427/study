@@ -174,7 +174,6 @@ public class SelfChannel {
 		outputStream.close();
 		inputStream.close();
 		System.out.println("执行完成...");
-
 	}
 
 }

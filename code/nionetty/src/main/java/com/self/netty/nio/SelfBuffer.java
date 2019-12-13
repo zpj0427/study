@@ -1,8 +1,8 @@
 package com.self.netty.nio;
 
-import java.nio.ByteBuffer;
-
 import org.junit.Test;
+
+import java.nio.ByteBuffer;
 
 /**
  * Buffer缓冲区: 在Java NIO中负责进行数据存储, 本质就是一个数组
@@ -29,17 +29,17 @@ public class SelfBuffer {
 	@Test
 	public void simpleBuffer() {
 		// 初始化
-		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		ByteBuffer buffer = ByteBuffer.allocate(5);
 		showDetails("allocate()", buffer);
 		// 写数据到Buffer中
-		buffer.put("1234567892436787543245".getBytes());
+		buffer.put("12".getBytes());
 		showDetails("put()", buffer);
 		// 进行读写状态转换, 准备读数据
 		buffer.flip();
 		showDetails("flip()", buffer);
 		// 读取三个字符数据
 		byte[] bytes = new byte[1024];
-		buffer.get(bytes, 0, 3);
+		buffer.get(bytes, 0, 1);
 		System.out.println("读取到数据 : " + new String(bytes));
 		showDetails("get()", buffer);
 		// 进行读取为标记,

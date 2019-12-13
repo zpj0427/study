@@ -151,14 +151,14 @@ public class BIOClient {
 
 #### 3.1.4.1，常用Buffer类型
 
-* ByteBuffer：字节数据
-* ShortBuffer：短整型数据
-* IntBuffer：整型数据
-* LongBuffer：长整型数据
-* CharBuffer：字符数据
-* FloatBuffer：短小数数据
-* DoubleBuffer：长小数数据
-* MappedByteBuffer：内存映射数据
+* `ByteBuffer`：字节数据
+* `ShortBuffer`：短整型数据
+* `IntBuffer`：整型数据
+* `LongBuffer`：长整型数据
+* `CharBuffer`：字符数据
+* `FloatBuffer`：短小数数据
+* `DoubleBuffer`：长小数数据
+* `MappedByteBuffer`：内存映射数据
 
 #### 3.1.4.2，API及属性
 
@@ -211,7 +211,7 @@ public abstract boolean isDirect();
 // 转换缓冲区为数组
 public abstract Object array();
 /******************* ByteBuffer 其他类似 *******************/
-// 初始化缓冲区
+// 初始化缓冲
 public static ByteBuffer allocate(int capacity);
 // 初始化为直接缓冲区
 public static ByteBuffer allocateDirect(int capacity);
@@ -226,3 +226,190 @@ public abstract ByteBuffer put(int index, byte b);
 ```
 
 #### 3.1.4.2，Buffer属性值变更，通过一段流程
+
+**Buffer缓冲区支持读和写操作，通过`capacity` `limit` `position` `mark`字段的数值转换进行读写操作切换，涉及的数值状态变更如下：**
+
+* 初始化：`capacity = 5`, `limit = 5`, `position = 0`, `mark = -1`
+
+  *`capacity`和`limit`初始化为缓冲区长度*
+
+  *`position`初始化为0值*
+
+  *`mark`初始化为-1，并且如果不存在`mark`操作，会一直是-1*
+
+```java
+// 初始化容量为5，该长度后续稳定
+ByteBuffer buffer = ByteBuffer.allocate(5);
+ByteBuffer buffer = ByteBuffer.allocateDirect(5);
+```
+
+![1576243536858](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576243536858.png)
+
+* 写数据：`capacity = 5`, `limit = 5`, `position = 2`, `mark = -1`
+
+  *写数据后，`mark`, `limit`, `mark`不变，`position`推进长度位*
+
+```java
+// 写入两个长度位数据
+buffer.put("ab".getBytes());
+```
+
+![1576244011830](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576244011830.png)
+
+* 写读转换：`capacity = 5`, `limit = position = 2`, `position = 0`, `mark = -1`
+
+  *写读转换后，将数组中的有效数据返回通过`limit`和`position`包起来，并通过`position`前移进行读取，直到读到`limit`位置，标识整个数组读取完成*
+
+```java
+// 缓冲区从写到读转换时，需要调用该方法进行读写位重置
+// 将 limit 设置为 position 值，表示最大可读索引
+// 将 position 置为0值，表示从0索引开始读
+buffer.flip();
+```
+
+![1576244295873](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576244295873.png)
+
+* 取数据：`capacity = 5`, `limit = 2`, `position = 1`, `mark = -1`
+
+  *取数据就是对`position`位置进行后移，并不断取数据直到`limit`*
+
+```java
+/* 这一部分获取数据后 position 后移 */
+// 取下一条数据
+buffer.get();
+// 取范围数据，演示取一条
+byte[] bytes = new byte[1];
+buffer.get(bytes, 0, 1);
+buffer.get(bytes);
+/* 这一部分获取数据后 position 不变 */
+// 取指定索引数据
+buffer.get(0);
+
+```
+
+![1576244737312](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576244737312.png)
+
+* 设置标记位：`capacity = 5`, `limit = 2`, `position = 1`, `mark = position = 1`
+
+  *设置标记位就是对`position`位置进行标记，值存储在`mark`属性中，后续读取`position`前移，但`mark`值维持不变*
+
+```java
+buffer.mark();
+```
+
+![1576245021937](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576245021937.png)
+
+* 继续取数据：`capacity = 5`, `limit = 2`, `position = 2`, `mark = 1`
+
+  *如上所说，`position`继续前移，像演示这样，取了后`limit`值与`position`值已经相等，说明已经读取完成，如果再次强行读取，会报`BufferUnderflowException`异常*
+
+![1576245171287](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576245171287.png)
+
+* 标记位重置：`capacity = 5`, `limit = 2`, `position = mark = 1`, `mark = -1`
+
+  *重置标记位与`mark()`方法配合使用，将设置的标记位重置为初始状态。配合使用可以实现对`Buffer`数组中部分区间的重复读取*
+
+```java
+buffer.reset();
+```
+
+![1576245362562](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576245362562.png)
+
+* 操作位重置：`capacity = 5`, `limit = 2`, `position = 0`, `mark = -1`
+
+  *操作位重置，就是对`position`置0值，`limit`位置不变，且数据不清楚*
+
+```java
+buffer.rewind();
+```
+
+![1576245513860](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576245513860.png)
+
+* 数据清空：`capacity = 5`, `limit = 5`, `position = 0`, `mark = -1`
+
+  *四个基本属性回到初始化状态，数据清空也只是对基本属性值初始化，并不会对数据进行清空*
+
+```java
+buffer.clear();
+```
+
+![1576245608145](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576245608145.png)
+
+### 3.1.5，Channel通道
+
+#### 3.1.5.1，通道与流的区别
+
+* 通道可以同时进行读写，而流只能进行读`inputStream`或者写`outputStream`
+* 通道可以进行异步读写数据
+* 通道可以从缓存读数据，也可以写数据到缓存中
+
+#### 3.1.5.2，常用Channel类型
+
+* `FileChannel`：本地文件读取通道
+* `ServerSocketChannel`：TCP网络服务端通道
+* `SocketChannel`：TCP网络通道
+* `DatagramChannel`：UDP网络通道
+
+#### 3.1.5.3，FileChannel进行文件读写
+
+* 非直接缓冲区进行文件读写
+
+```java
+/**
+ * 利用通道完成文件复制_非直接缓冲区
+ */
+@Test
+public void fileCopy() throws Exception {
+    // 初始化流
+    FileInputStream inputStream = new FileInputStream("F:\\1.jpg");
+    FileOutputStream outputStream = new FileOutputStream("F:\\2.jpg");
+    // 从流中获取通道
+    FileChannel inChannel = inputStream.getChannel();
+    FileChannel outChannel = outputStream.getChannel();
+    // 初始化化缓冲区
+    ByteBuffer buffer = ByteBuffer.allocate(1024);
+    // 通过通道, 从流中读数据到缓冲区
+    while (inChannel.read(buffer) != -1) {
+        // 切换为写状态
+        buffer.flip();
+        // 将缓冲区中的数据写出去
+        outChannel.write(buffer);
+        // 初始化状态, 进行重新读取
+        buffer.clear();
+    }
+    // 关资源
+    outputStream.flush();
+    inChannel.close();
+    outChannel.close();
+    outputStream.close();
+    inputStream.close();
+    System.out.println("执行完成...");
+}
+```
+
+* 直接缓冲区进行文件读写
+
+```java
+/**
+ * 利用通道完成文件复制_直接缓冲区
+ */
+@Test
+public void directFileCopy() throws Exception {
+    // 获取读通道
+    FileChannel inChannel = FileChannel.open(Paths.get("F:\\1.jpg"), StandardOpenOption.READ);
+    // 获取写通道
+    FileChannel outChannel = FileChannel.open(Paths.get("F:\\2.jpg"), StandardOpenOption.WRITE,
+                                              StandardOpenOption.READ, StandardOpenOption.CREATE_NEW);
+    // 获取内存映射对应的缓冲区
+    // MappedByteBuffer 存储在物理内存中
+    MappedByteBuffer inMappedByteBuffer = inChannel.map(MapMode.READ_ONLY, 0, inChannel.size());
+    MappedByteBuffer outMappedByteBuffer = outChannel.map(MapMode.READ_WRITE, 0, inChannel.size());
+    // 直接通过缓冲区进行读写
+    byte[] bytes = new byte[inMappedByteBuffer.limit()];
+    inMappedByteBuffer.get(bytes);
+    outMappedByteBuffer.put(bytes);
+    inChannel.close();
+    outChannel.close();
+}
+```
+
