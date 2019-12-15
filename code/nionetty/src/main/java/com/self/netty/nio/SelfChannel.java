@@ -97,6 +97,9 @@ public class SelfChannel {
 		// 打开通道
 		FileChannel fileChannel = randomAccessFile.getChannel();
 		// 获取内存映射缓冲区
+		// 参数1：MapMode.READ_WRITE，文件操作类型，此处为读写
+		// 参数2：0，可以直接修改的起始位置，此处表示从文件头开始修改
+		// 参数3: 1024，可以修改的文件长度，此处表示可以修改1024个字节，超过限定长度修改，会报异常 IndexOutOfBoundException
 		MappedByteBuffer mappedByteBuffer = fileChannel.map(MapMode.READ_WRITE, 0, 1024);
 		mappedByteBuffer.clear();
 		// 对缓冲区操作, 会直接同步到文件

@@ -2,6 +2,7 @@ package com.self.netty.nio;
 
 import org.junit.Test;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 /**
@@ -74,6 +75,33 @@ public class SelfBuffer {
 		System.out.println(operate + " : capacity = " + buffer.capacity());
 		System.out.println(operate + " : position = " + buffer.position());
 		System.out.println(operate + " : limit = " + buffer.limit());
+	}
+
+	@Test
+	public void readOnly() {
+		// 初始化缓冲区
+		ByteBuffer buffer = ByteBuffer.allocate(5);
+		// 存储数据到缓冲区
+		buffer.put("a".getBytes());
+		// 设置缓冲区为只读
+		buffer = buffer.asReadOnlyBuffer();
+		// 进行读写转换
+		buffer.flip();
+		// 读取数据, 读取数据正常
+		System.out.println(new String(new byte[] {buffer.get()}));
+		// 写数据, 因为已经设置只读, 写数据报ReadOnlyBufferException异常
+		buffer.put("123".getBytes());
+	}
+
+	@Test
+	public void cast() {
+		// 初始化缓冲区
+		ByteBuffer buffer = ByteBuffer.allocate(5);
+		// 存储一个 short 数据
+		buffer.putShort((short) 1);
+		buffer.flip();
+		// 通过 long 类型获取, 会报BufferUnderflowException异常
+		System.out.println(buffer.getLong());
 	}
 
 }

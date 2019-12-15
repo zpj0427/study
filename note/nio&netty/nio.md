@@ -158,7 +158,7 @@ public class BIOClient {
 * `CharBuffer`：字符数据
 * `FloatBuffer`：短小数数据
 * `DoubleBuffer`：长小数数据
-* `MappedByteBuffer`：内存映射数据
+* `MappedByteBuffer`：内存映射数据，可让文件直接在内存中修改，操作系统不需要拷贝一次，即零拷贝
 
 #### 3.1.4.2，API及属性
 
@@ -350,7 +350,59 @@ buffer.clear();
 * `SocketChannel`：TCP网络通道
 * `DatagramChannel`：UDP网络通道
 
-#### 3.1.5.3，FileChannel进行文件读写
+#### 3.1.5.3，API及属性
+
+```java
+// 将缓冲区数据写出去
+public abstract int write(ByteBuffer src) throws IOException;
+// 读取数据到缓冲区中
+public abstract int read(ByteBuffer dst) throws IOException;
+
+/************FileChannel****************/
+// 初始化文件通道
+public static FileChannel open(Path path, OpenOption... options);
+// 获取内存映射缓冲区
+public abstract MappedByteBuffer map(MapMode mode, long position, long size) throws IOException;
+// 从源通道中读取数据
+public abstract long transferFrom(ReadableByteChannel src, long position, long count) throws IOException;
+// 写数据到目标通道去
+public abstract long transferTo(long position, long count, WritableByteChannel target) throws IOException;
+// 文件操作_只读类型
+public static final MapMode READ_ONLY = new MapMode("READ_ONLY");
+// 文件操作_读写类型
+public static final MapMode READ_WRITE = new MapMode("READ_WRITE");
+/************ServerSocketChannel****************/
+// 初始化通道,根据操作系统类型初始化
+public static ServerSocketChannel open() throws IOException;
+// 绑定地址信息
+public final ServerSocketChannel bind(SocketAddress local) throws IOException;
+// 设置是否异步
+public final SelectableChannel configureBlocking(boolean block);
+// 获取连接的客户端信息
+public abstract SocketChannel accept() throws IOException;
+// 获取服务端ServerSocket
+public abstract ServerSocket socket();
+// 注册选择器
+public final SelectionKey register(Selector sel, int ops) throws ClosedChannelException;
+/************SocketChannel****************/
+// 初始化
+public static SocketChannel open() throws IOException;
+public static SocketChannel open(SocketAddress remote) throws IOException;
+// 绑定地址
+public abstract SocketChannel bind(SocketAddress local) throws IOException;
+// 设置异步
+public final SelectableChannel configureBlocking(boolean block) throws IOException;
+// 终止输入,不关闭连接
+public abstract SocketChannel shutdownInput() throws IOException;
+// 终止输出,不关闭连接
+public abstract SocketChannel shutdownOutput() throws IOException;
+// 获取客户端Socket
+public abstract Socket socket();
+// 注册选择器
+public final SelectionKey register(Selector sel, int ops) throws ClosedChannelException;
+```
+
+#### 3.1.5.4，FileChannel进行文件读写
 
 * 非直接缓冲区进行文件读写
 
@@ -387,11 +439,55 @@ public void fileCopy() throws Exception {
 }
 ```
 
-* 直接缓冲区进行文件读写
+* 直接利用通道进行文件读写
+
+```java
+/**
+ * 利用通道直接进行数据传输
+ */
+@Test
+public void channelFileCopy() throws Exception {
+    // 获取读通道
+    FileChannel inChannel = FileChannel.open(Paths.get("F:\\1.jpg"), StandardOpenOption.READ);
+    // 获取写通道
+    FileChannel outChannel = FileChannel.open(Paths.get("F:\\2.jpg"), StandardOpenOption.WRITE,
+StandardOpenOption.READ, StandardOpenOption.CREATE_NEW);
+    // 直接进行通道传输
+    //		outChannel.transferFrom(inChannel, 0, inChannel.size());
+    inChannel.transferTo(0, inChannel.size(), outChannel);
+    inChannel.close();
+    outChannel.close();
+}
+```
+
+* 内存映射缓冲区进行文件编辑
+
+```java
+public void txtFileOperate() throws Exception {
+    // 创建文件并授权
+    RandomAccessFile randomAccessFile = new RandomAccessFile("F:\\test.txt", "rw");
+    // 打开通道
+    FileChannel fileChannel = randomAccessFile.getChannel();
+    // 获取内存映射缓冲区
+    // 参数1：MapMode.READ_WRITE，文件操作类型，此处为读写
+    // 参数2：0，可以直接修改的起始位置，此处表示从文件头开始修改
+    // 参数3: 1024，可以修改的文件长度，此处表示可以修改1024个字节，超过限定长度修改，会报异常 IndexOutOfBoundException
+    MappedByteBuffer mappedByteBuffer = fileChannel.map(MapMode.READ_WRITE, 0, 1024);
+    mappedByteBuffer.clear();
+    // 对缓冲区操作, 会直接同步到文件
+    mappedByteBuffer.put(0, (byte) 97);
+    mappedByteBuffer.put(1023, (byte) 122);
+    randomAccessFile.close();
+    fileChannel.close();
+}
+```
+
+* 内存映射缓冲区进行文件读写
 
 ```java
 /**
  * 利用通道完成文件复制_直接缓冲区
+ * 通过内存映射缓冲区完成
  */
 @Test
 public void directFileCopy() throws Exception {
@@ -410,6 +506,618 @@ public void directFileCopy() throws Exception {
     outMappedByteBuffer.put(bytes);
     inChannel.close();
     outChannel.close();
+}
+```
+
+*  分散`Scattering`和聚集`Gatering`：`FileChannel`演示
+
+```java
+@Test
+public void scatterAndAggregated() throws Exception {
+    /* 分散读取 */
+    // 创建文件并授权
+    RandomAccessFile randomAccessFile = new RandomAccessFile("F:\\test.txt", "rw");
+    // 获取通道
+    FileChannel inChannel = randomAccessFile.getChannel();
+    // 构造缓冲区, 构造分散缓冲区
+    ByteBuffer bufferFirst = ByteBuffer.allocate(128);
+    ByteBuffer bufferSecond = ByteBuffer.allocate(1024);
+    ByteBuffer[] lstBuffers = { bufferFirst, bufferSecond };
+    // 进行分散读取
+    inChannel.read(lstBuffers);
+    // 解析数据
+    for (ByteBuffer buffer : lstBuffers) {
+        // 从读状态转为写状态, 并输出
+        buffer.flip();
+        System.out.println(
+            "初始化长度: " + buffer.capacity() + ", 结果数据: " + new String(buffer.array(), 0, buffer.limit()));
+    }
+    /*******************************************************************/
+    /* 聚集写入 */
+    RandomAccessFile accessFile = new RandomAccessFile("F://2.txt", "rw");
+    FileChannel outChannel = accessFile.getChannel();
+    outChannel.write(lstBuffers);
+    // 关闭资源
+    inChannel.close();
+    outChannel.close();
+    randomAccessFile.close();
+    accessFile.close();
+}
+```
+
+* 分散`Scattering`和聚集`Gatering`
+
+```java
+@Test
+public void scatterAndAggregated() throws Exception {
+    /* 分散读取 */
+    // 创建文件并授权
+    RandomAccessFile randomAccessFile = new RandomAccessFile("F:\\test.txt", "rw");
+    // 获取通道
+    FileChannel inChannel = randomAccessFile.getChannel();
+    // 构造缓冲区, 构造分散缓冲区
+    ByteBuffer bufferFirst = ByteBuffer.allocate(128);
+    ByteBuffer bufferSecond = ByteBuffer.allocate(1024);
+    ByteBuffer[] lstBuffers = { bufferFirst, bufferSecond };
+    // 进行分散读取
+    inChannel.read(lstBuffers);
+    // 解析数据
+    for (ByteBuffer buffer : lstBuffers) {
+        // 从读状态转为写状态, 并输出
+        buffer.flip();
+        System.out.println(
+            "初始化长度: " + buffer.capacity() + ", 结果数据: " + new String(buffer.array(), 0, buffer.limit()));
+    }
+    /*******************************************************************/
+    /* 聚集写入 */
+    RandomAccessFile accessFile = new RandomAccessFile("F://2.txt", "rw");
+    FileChannel outChannel = accessFile.getChannel();
+    outChannel.write(lstBuffers);
+    // 关闭资源
+    inChannel.close();
+    outChannel.close();
+    randomAccessFile.close();
+    accessFile.close();
+}
+```
+
+### 3.1.6，Buffer和Channel的注意事项和细节梳理
+
+* `ByteBuffer`支持类型化的`put()`和`get()`，`put()`放入的是什么数据，`get()`就应该使用相应的数据类型接收，否则可能会有`BufferUnderFlowException`；**`short`，`int`，`long`**在内存中长度分配不一致，如果存储多个`short`后，用`long`接收，则注定长度越界
+
+```java
+@Test
+public void cast() {
+    // 初始化缓冲区
+    ByteBuffer buffer = ByteBuffer.allocate(5);
+    // 存储一个 short 数据
+    buffer.putShort((short) 1);
+    buffer.flip();
+    // 通过 long 类型获取, 会报BufferUnderflowException异常
+    System.out.println(buffer.getLong());
+}
+```
+
+* 可以将一个普通的`Buffer`转换为只读`Buffer`，比如`ByteBuffer -> HeapByteBufferR`，只读`Buffer`的写操作会抛出`ReadOnlyBufferException`异常
+
+```java
+@Test
+public void readOnly() {
+    // 初始化缓冲区
+    ByteBuffer buffer = ByteBuffer.allocate(5);
+    // 存储数据到缓冲区
+    buffer.put("a".getBytes());
+    // 设置缓冲区为只读
+    buffer = buffer.asReadOnlyBuffer();
+    // 进行读写转换
+    buffer.flip();
+    // 读取数据, 读取数据正常
+    System.out.println(new String(new byte[] {buffer.get()}));
+    // 写数据, 因为已经设置只读, 写数据报ReadOnlyBufferException异常
+    buffer.put("123".getBytes());
+}
+```
+
+* NIO提供了`MappedByteBuffer`内存映射缓冲区，可以让文件直接在内存中进行修改，并同步到磁盘文件中
+
+* NIO支持`Buffer`缓冲区的分散`Scattering`和聚集`Gatering`操作，通过多个`Buffer`完成一个操作
+
+### 3.1.7，Selector选择器
+
+#### 3.1.7.1，Selector基本介绍
+
+* NIO是非阻塞式IO，可以用一个线程，处理多个客户端连接，就是使用到`Selector`选择器
+* `Selector`能够检测多个注册的通道上是否有时间发生（多个`Channel`可以以事件的方式注册到同一个`Selector`上），如果有时间发生，可以获取事件后针对每一个事件进行相应的处理。这就是使用一个单线程管理多个通道，处理多个连接和请求
+* 只有在连接或者通道真正有读写发生时，才进行读写，这就大大减少了系统开销，并且不必要为每一个连接都创建一个线程，不用去维护多个线程
+* 避免了多线程之前的上下文切换导致的开销
+
+#### 3.1.7.2，Selector API介绍
+
+```java
+/**********Selector API**********/
+// 初始化
+public abstract boolean isOpen();
+// 获取新建的事件数量，并添加到内部 SelectionKey 集合
+// 阻塞获取
+public abstract int select() throws IOException;
+// 阻塞一定时间获取
+public abstract int select(long timeout) throws IOException;
+// 非阻塞获取
+public abstract int selectNow() throws IOException;
+// 获取所有注册事件
+public abstract Set<SelectionKey> selectedKeys();
+/*************SelectionKey API********************/
+// 读事件状态码,即1
+public static final int OP_READ = 1 << 0;
+// 写事件状态码，即4
+public static final int OP_WRITE = 1 << 2;
+// 连接建立状态码，即8
+public static final int OP_CONNECT = 1 << 3;
+// 有新连接状态码，即16
+public static final int OP_ACCEPT = 1 << 4;
+// 获取注册通道
+public abstract SelectableChannel channel();
+// 获取注册的Selector对象
+public abstract Selector selector();
+// 获取通道绑定数据
+public final Object attachment();
+// 获取事件状态码
+public abstract int interestOps();
+// 修改事件状态码
+public abstract SelectionKey interestOps(int ops);
+// 是否新连接事件
+public final boolean isAcceptable();
+// 是否可读事件
+public final boolean isReadable();
+// 是否可写事件
+public final boolean isWritable();
+// 是否保持连接事件
+public final boolean isConnectable();
+```
+
+### 3.1.8，NIO执行流程分析
+
+#### 3.1.8.1，NIO执行流程概述
+
+* 初始化服务端通道和选择器，绑定启动端口，并注册通道（`ServerSocketChannel`）到选择器（`Selector`）上，等待客户端连接
+* 客户端连接时，会通过`ServerSocketChannel`获取到一个`SocketChannel`
+* `Selector`选择器会通过`select()`方法阻塞监听新建连接， 添加到内部`SelectionKey`集合中后，返回监听到的数量
+* 每一次通道注册到选择器后，会包装成一个`SelectionKey`返回，并会添加到内部`SelectionKey`集合中，与`Selector`关联
+* `Selector`选择器通过`selectionKeys()`方法获取所有注册的事件，可遍历进行处理
+* 通过每一个`SelectionKey`反向获取`channel()`注册的通道`Channel`，并进行后续业务处理
+
+#### 3.1.8.2，NIO执行代码块
+
+* 服务端
+
+```java
+package com.self.netty.nio.server;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.Iterator;
+
+/**
+ * 完整NIO服务端
+ * 
+ * @author Administrator
+ *
+ */
+public class NIOServer {
+
+	private Selector selector;
+
+	public void init() throws Exception {
+		// 初始化服务端通道, 并绑定端口
+		ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+		// 设置非阻塞
+		serverSocketChannel.configureBlocking(false);
+		serverSocketChannel.bind(new InetSocketAddress(8080));
+		// 初始化选择器
+		selector = Selector.open();
+		// 绑定通道到选择器上, 并初始化为可接收链接
+		serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+		System.out.println("初始化服务端成功, 监听端口: " + 8080);
+		// 开始进行处理
+		start();
+	}
+
+	private void start() throws Exception {
+		// 存在已经注册就绪的事件
+		while (selector.select() > 0) {
+			// 获取就绪的所有事件
+			Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
+			// 遍历事件进行处理
+			while (iterator.hasNext()) {
+				SelectionKey selectionKey = iterator.next();
+				// 处理数据
+				process(selectionKey);
+				iterator.remove();
+			}
+		}
+	}
+
+	private void process(SelectionKey selectionKey) throws IOException {
+		if (selectionKey.isAcceptable()) {
+			// 从服务链接中获取到客户端连接通道, 并注册为可读
+			ServerSocketChannel serverSocketChannel = (ServerSocketChannel) selectionKey.channel();
+			SocketChannel socketChannel = serverSocketChannel.accept();
+			socketChannel.configureBlocking(false);
+			socketChannel.register(selector, SelectionKey.OP_READ);
+			System.out.println("服务端接收到一个客户端链接请求, 并注册为读事件, 准备读取客户端数据数据...");
+		} else if (selectionKey.isReadable()) {
+			SocketChannel socketChannel = (SocketChannel) selectionKey.channel();
+			// 初始化缓冲区
+			ByteBuffer byteBuffer = ByteBuffer.allocate(128);
+			int read = socketChannel.read(byteBuffer);
+			byteBuffer.flip();
+			String content = new String(byteBuffer.array(), 0, read);
+			System.out.println("服务端接收到客户端消息, 消息内容为: " + content);
+			// 携带一个attach, 准备进行返回
+			SelectionKey key = socketChannel.register(selector, SelectionKey.OP_WRITE);
+			key.attach("服务端返回数据: " + content);
+		} else if (selectionKey.isWritable()) {
+			SocketChannel socketChannel = (SocketChannel) selectionKey.channel();
+			String content = (String) selectionKey.attachment();
+			System.out.println("服务端返回数据为: " + content);
+			selectionKey.attach(null);
+			if (null == content) {
+				socketChannel.register(selector, SelectionKey.OP_READ);
+				return;
+			}
+			// 初始化缓冲区
+			ByteBuffer byteBuffer = ByteBuffer.allocate(128);
+			// 写数据到客户端
+			byteBuffer.put(content.getBytes());
+			byteBuffer.flip();
+			socketChannel.write(byteBuffer);
+			byteBuffer.clear();
+			System.out.println("服务端响应客户端数据完成...");
+            // 从新注册为读，准备重新读取数据
+			socketChannel.register(selector, SelectionKey.OP_READ);
+		}
+	}
+
+	public static void main(String[] args) throws Exception {
+		new NIOServer().init();
+	}
+
+}
+
+```
+
+* 客户端
+
+```java
+package com.self.netty.nio.server;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
+import java.util.Iterator;
+import java.util.Scanner;
+
+public class NIOClientSync {
+
+	private Selector selector;
+
+	// 初始化客户端
+	private void init() throws Exception {
+		// 初始化客户端通道
+		SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress("127.0.0.1", 8080));
+		// 并设置为非阻塞
+		socketChannel.configureBlocking(false);
+		// 初始化选择器
+		selector = Selector.open();
+		// 注册通道到选择器上, 并初始化状态为可读和可写
+		socketChannel.register(selector, SelectionKey.OP_READ);
+		System.out.println("客户端初始化完成...");
+		// 异步读数据
+		read();
+		write(socketChannel);
+	}
+
+	private void write(SocketChannel socketChannel) throws IOException {
+		Scanner scanner = new Scanner(System.in);
+		ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+		while (scanner.hasNextLine()) {
+			String msg = scanner.nextLine();
+			if (null == msg) {
+				continue;
+			}
+			if ("EXIT".equalsIgnoreCase(msg)) {
+				break;
+			}
+			byteBuffer.clear();
+			byteBuffer.put(msg.getBytes());
+			byteBuffer.flip();
+			socketChannel.write(byteBuffer);
+		}
+		scanner.close();
+	}
+
+	public void read() {
+		new Thread(() -> {
+			try {
+				while (selector.select() > 0) {
+					Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
+					while (iterator.hasNext()) {
+						SelectionKey selectionKey = iterator.next();
+						process(selectionKey);
+						iterator.remove();
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}).start();
+	}
+
+	private void process(SelectionKey selectionKey) throws Exception {
+		if (selectionKey.isReadable()) {
+			System.out.println("客户端接收服务端响应数据");
+			SocketChannel socketChannel = (SocketChannel) selectionKey.channel();
+			ByteBuffer buffer = ByteBuffer.allocate(256);
+			int read = socketChannel.read(buffer);
+			buffer.flip();
+			System.out.println("服务端响应数据: " + new String(buffer.array(), 0, read));
+		}
+	}
+
+	public static void main(String[] args) throws Exception {
+		new NIOClientSync().init();
+	}
+
+}
+```
+
+## 3.2，NIO实现群聊系统
+
+### 3.2.1，系统要求
+
+* 编写一个NIO群聊系统，实现服务端和客户端之间的数据简单通讯（非阻塞）
+* 实现多人群聊
+* 服务端：可以监测用户上线，离线并实现消息转发功能
+* 客户端：通过Channel可以无阻塞发送消息给其他所有用户，同时可以接受其他用户发送的消息（由服务器转发得到）
+* 目的：进一步理解NIO非阻塞网络编程机制
+
+### 3.2.2，代码实现
+
+* **服务端代码**
+
+```java
+package com.self.netty.nio.chat;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.*;
+import java.util.Iterator;
+
+/**
+ * 群聊服务端
+ * 1, 接收客户端连接
+ * 2, 对客户端上线和下线进行检测
+ * 3, 客户端发送消息后, 转发显示到其他客户端
+ *
+ * @author pj_zhang
+ * @create 2019-12-15 21:59
+ **/
+public class GroupChatServer {
+
+    /**
+     * 选择器
+     */
+    private Selector selector;
+
+    /**
+     * 服务端通道
+     */
+    private ServerSocketChannel serverSocketChannel;
+
+    /**
+     * 服务端监听端口
+     */
+    private final int PORT = 8080;
+
+    public GroupChatServer() throws Exception {
+        // 初始化非阻塞服务端, 并绑定端口
+        serverSocketChannel = ServerSocketChannel.open();
+        serverSocketChannel.configureBlocking(false);
+        serverSocketChannel.bind(new InetSocketAddress(PORT));
+        // 初始化选择器
+        selector = Selector.open();
+        // 注册通道到选择器上, 并初始化为监听
+        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+        System.out.println("服务端启动成功, 监听端口: " + PORT);
+    }
+
+    public void start() throws Exception {
+        while (selector.select() > 0) {
+            Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
+            while (iterator.hasNext()) {
+                SelectionKey selectionKey = iterator.next();
+                // 处理事件
+                process(selectionKey);
+                iterator.remove();
+            }
+        }
+    }
+
+    private void process(SelectionKey selectionKey) throws Exception {
+        // 初始化链接
+        if (selectionKey.isAcceptable()) {
+            ServerSocketChannel serverSocketChannel = (ServerSocketChannel) selectionKey.channel();
+            // 获取到客户端连接
+            SocketChannel socketChannel = serverSocketChannel.accept();
+            socketChannel.configureBlocking(false);
+            // 注册到选择器, 并注册为可读
+            socketChannel.register(selector, SelectionKey.OP_READ);
+            // 服务端提示上线
+            String message = socketChannel.getRemoteAddress() + " 上线了...";
+            System.out.println(message);
+            publishMessage(message, socketChannel);
+        } else if (selectionKey.isReadable()) {
+            SocketChannel socketChannel = null;
+            try {
+                // 读取当前客户端发送消息
+                socketChannel = (SocketChannel) selectionKey.channel();
+                ByteBuffer buffer = ByteBuffer.allocate(1024);
+                int readCount = socketChannel.read(buffer);
+                String showMessage = socketChannel.getRemoteAddress() + " 说: " + new String(buffer.array(), 0, readCount);
+                System.out.println(showMessage);
+                // 向其他客户端广播消息
+                publishMessage(showMessage, socketChannel);
+            } catch (IOException e) {
+                if (null != socketChannel) {
+                    // 读取消息失败, 说明客户端已经下线, 做下线处理
+                    System.out.println(socketChannel.getRemoteAddress() + " 下线了...");
+                    // 取消注册
+                    selectionKey.cancel();
+                    // 关闭通道
+                    socketChannel.close();
+                } else {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void publishMessage(String showMessage, SocketChannel socketChannel) throws IOException {
+        System.out.println("服务端接收到消息, 现在进行转发...");
+        // 初始化需要发送的消息为ByteBuffer
+        ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+        byteBuffer.put(showMessage.getBytes());
+        // 遍历每一个注册的客户端进行消息发送
+        for (SelectionKey selectionKey : selector.keys()) {
+            Channel channel = selectionKey.channel();
+            // 跳过自身
+            if (channel instanceof SocketChannel && channel != socketChannel) {
+                SocketChannel targetChannel = (SocketChannel) channel;
+                // 消息发送前进行读写转换, 保证每一次都能发出有效数据
+                // 如果出现多个客户端只有一个接收到, 其他没有接受到, 但是服务单正常广播了
+                // 优先查看ByteBuffer问题
+                byteBuffer.flip();
+                targetChannel.write(byteBuffer);
+                System.out.println("发送消息成功, Address: " + targetChannel.getRemoteAddress());
+            }
+        }
+        System.out.println("服务端转发消息成功...");
+    }
+
+    public static void main(String[] args) throws Exception {
+        new GroupChatServer().start();
+    }
+
+}
+```
+
+* **客户端代码**
+
+```java
+package com.self.netty.nio.chat;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
+import java.util.Iterator;
+import java.util.Scanner;
+
+/**
+ * NIO群聊系统_客户端
+ * 1, 连接服务端
+ * 2, 发送消息到服务端
+ * 3, 接口服务端转发的消息
+ *
+ * @author pj_zhang
+ * @create 2019-12-15 22:28
+ **/
+public class GroupChatClient {
+
+    // 服务端IP
+    private final String HOST = "127.0.0.1";
+
+    // 服务端端口
+    private final int PORT = 8080;
+
+    private SocketChannel socketChannel;
+
+    private Selector selector;
+
+    public GroupChatClient() throws IOException {
+        // 初始化客户端SocketChannel
+        socketChannel = SocketChannel.open(new InetSocketAddress(HOST, PORT));
+        socketChannel.configureBlocking(false);
+        // 初始化选择器
+        selector = Selector.open();
+        // 绑定事件, 绑定为读事件
+        socketChannel.register(selector, SelectionKey.OP_READ);
+        System.out.println("客户端已经准备完成, NickName: " + socketChannel.getLocalAddress());
+    }
+
+    public void start() throws IOException {
+        // 接收服务端消息, 此处开线程接收, 保证读写不冲突,不会造成互相影响
+        // 先开读, 再去写, 防止写造成的读执行不到
+        receiveMessage();
+        // 发送消息到服务端
+        sendMessage();
+    }
+
+    private void receiveMessage() throws IOException {
+        // 启动一个线程进行服务端数据接收
+        new Thread(() -> {
+            try {
+                // selector.select() 会阻塞, 直到有连接进入
+                while (selector.select() > 0) {
+                    Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
+                    for (;iterator.hasNext();) {
+                        SelectionKey selectionKey = iterator.next();
+                        if (selectionKey.isReadable()) {
+                            // 接收服务端消息并处理
+                            SocketChannel readChannel = (SocketChannel) selectionKey.channel();
+                            readChannel.configureBlocking(false);
+                            ByteBuffer buffer = ByteBuffer.allocate(1024);
+                            int readCount = readChannel.read(buffer);
+                            buffer.flip();
+                            System.out.println("接收服务端消息: " + new String(buffer.array(), 0, readCount));
+                        }
+                    }
+                    iterator.remove();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            System.out.println("客户端接收消息完成");
+        }).start();
+    }
+
+    private void sendMessage() throws IOException {
+        // 从控制台输入消息
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("等待客户端输入消息: ");
+        // 发送到服务端
+        while (scanner.hasNextLine()) {
+            String message = scanner.nextLine();
+            socketChannel.write(ByteBuffer.wrap(message.getBytes()));
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        new GroupChatClient().start();
+    }
+
 }
 ```
 
