@@ -365,7 +365,7 @@ public static FileChannel open(Path path, OpenOption... options);
 public abstract MappedByteBuffer map(MapMode mode, long position, long size) throws IOException;
 // 从源通道中读取数据
 public abstract long transferFrom(ReadableByteChannel src, long position, long count) throws IOException;
-// 写数据到目标通道去
+// 写数据到目标通道去，windows系统下一次最多传输8M，再多需要分段传输
 public abstract long transferTo(long position, long count, WritableByteChannel target) throws IOException;
 // 文件操作_只读类型
 public static final MapMode READ_ONLY = new MapMode("READ_ONLY");
@@ -1120,4 +1120,14 @@ public class GroupChatClient {
 
 }
 ```
+
+## 3.2，零拷贝
+
+
+
+## 3.3，Java AIO
+
+
+
+# 4，Netty
 

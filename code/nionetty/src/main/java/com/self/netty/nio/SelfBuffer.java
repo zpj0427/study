@@ -1,9 +1,8 @@
 package com.self.netty.nio;
 
-import org.junit.Test;
-
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
+
+import org.junit.Test;
 
 /**
  * Buffer缓冲区: 在Java NIO中负责进行数据存储, 本质就是一个数组
