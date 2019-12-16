@@ -1127,7 +1127,157 @@ public class GroupChatClient {
 
 ## 3.3，Java AIO
 
+### 3.3.1，服务端
 
+```java
+package com.gupao.io.aio;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousChannelGroup;
+import java.nio.channels.AsynchronousServerSocketChannel;
+import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.CompletionHandler;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+/*** AIO 服务端 */
+public class AIOServer {
+    private final int port;
+
+    public static void main(String args[]) {
+        int port = 8000;
+        new AIOServer(port);
+    }
+
+    public AIOServer(int port) {
+        this.port = port;
+        listen();
+    }
+
+    private void listen() {
+        try {
+            ExecutorService executorService = Executors.newCachedThreadPool();
+            // 工作线程, 用来进行回调, 事件响应时候进行回调
+            AsynchronousChannelGroup threadGroup = AsynchronousChannelGroup.withCachedThreadPool(executorService, 1);
+            final AsynchronousServerSocketChannel server = AsynchronousServerSocketChannel.open(threadGroup);
+            server.bind(new InetSocketAddress(port));
+            System.out.println("服务已启动，监听端口" + port);
+            // 准备接收数据
+            server.accept(null, new CompletionHandler<AsynchronousSocketChannel, Object>() {
+                final ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
+                // 实现 Completed 方法, 进行回调
+                public void completed(AsynchronousSocketChannel result, Object attachment) {
+                    System.out.println("IO 操作成功，开始获取数据");
+                    try {
+                        buffer.clear();
+                        result.read(buffer).get();
+                        buffer.flip();
+                        result.write(buffer);
+                        buffer.flip();
+                    } catch (Exception e) {
+                        System.out.println(e.toString());
+                    } finally {
+                        try {
+                            result.close();
+                            server.accept(null, this);
+                        } catch (Exception e) {
+                            System.out.println(e.toString());
+                        }
+                    }
+                    System.out.println("操作完成");
+                }
+
+                @Override
+                public void failed(Throwable exc, Object attachment) {
+                    System.out.println("IO 操作是失败: " + exc);
+                }
+            });
+            try {
+                Thread.sleep(Integer.MAX_VALUE);
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+### 3.3.2，客户端
+
+```java
+package com.gupao.io.aio;
+
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.CompletionHandler;
+
+/**
+ * @author pj_zhang
+ * @create 2019-11-12 22:43
+ **/
+public class AIOClient {
+
+    private final AsynchronousSocketChannel client;
+
+    public AIOClient() throws Exception {
+        client = AsynchronousSocketChannel.open();
+    }
+
+    public void connect(String host, int port) throws Exception {
+        client.connect(new InetSocketAddress(host, port), null, new CompletionHandler<Void, Void>() {
+            @Override
+            public void completed(Void result, Void attachment) {
+                try {
+                    client.write(ByteBuffer.wrap("这是一条测试数据".getBytes())).get();
+                    System.out.println("已发送至服务器");
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+
+            @Override
+            public void failed(Throwable exc, Void attachment) {
+                exc.printStackTrace();
+            }
+        });
+        final ByteBuffer bb = ByteBuffer.allocate(1024);
+        client.read(bb, null, new CompletionHandler<Integer, Object>() {
+            @Override
+            public void completed(Integer result, Object attachment) {
+                System.out.println("IO 操作完成" + result);
+                System.out.println("获取反馈结果" + new String(bb.array()));
+            }
+
+            @Override
+            public void failed(Throwable exc, Object attachment) {
+                exc.printStackTrace();
+            }
+        });
+        try {
+            Thread.sleep(Integer.MAX_VALUE);
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public static void main(String args[]) throws Exception {
+        new AIOClient().connect("localhost", 8000);
+    }
+
+}
+```
 
 # 4，Netty
+
+## 4.1，原生NIO存在的问题
+
+* NIO的类库和API繁杂，使用麻烦。需要熟练的掌握`Selector`，`Channel`，`Buffer`等
+* 需要熟悉Java多线程，因为NIO编程涉及到Reactor模型，必须对多线程和网络编程非常熟悉，才能写出高质量的NIO代码
+* 开发工作量和难度非常大：比如客户端断连重连，网络闪断，半包读写，失败缓存，网络拥堵和异常流的处理等
+* NIO固有的BUG，比如Epoll Bug。会造成`Selector`空轮询，最终导致CPU爆表
 
