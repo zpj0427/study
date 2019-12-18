@@ -1273,7 +1273,7 @@ public class AIOClient {
 ```
 
 # 4，[Netty](https://netty.io/)
-## 4.1，Netty基本入门
+## 4.1，Netty概述
 
 ### 4.1.1，原生NIO存在的问题
 
@@ -1412,4 +1412,31 @@ public class AIOClient {
 * 复用性好，`Reactor`模型本身与具体事件处理逻辑无关，具有很高的复用性
 
 ### 4.2.2，Netty模型
+
+#### 4.2.2.1，原理图
+
+![1576680578769](E:\gitrepository\study\note\image\nio\1576680578769.png)
+
+#### 4.2.2.2，方案说明
+
+1. Netty抽象出了两组线程池，`BossGroup`专门负责接收客户端连接，`WorkerGroup`专门负责网络的读写
+2. `BossGroup`和`WorkerGroup`类型都是`NioEventLoopGroup`
+3. `NioEventLoopGroup`相当于一个事件循环组，组中包含多个事件循环，每一个事件循环是`NioEventLoop`
+4. `NioEventLoop`表示一个不断循环的任务执行线程，每一个`NioEventLoop`都有一个`Selector`，用于监听绑定在其上的`Socket`网络通讯
+5. `NioEventLoopGroup`可以有多个内置线程，即包含多个`NioEventLoop`
+6. 每一个Boss的`NioEventLoop`循环执行步骤有如下三步：
+
+* 轮询`accept`事件
+* 处理`accept`事件，与Client建立连接并生成`NioSocketChannel`，并将其注册到Worker某一`NioEventLoop`的`selector`上
+* 继续循环处理任务队列的任务，即`runAllTasks`
+
+7. 每一个Worker的`NioEventLoop`循环执行步骤有如下三步：
+
+* 轮询`read`，`write`事件
+* 处理IO事件，即`read`，`write`事件，在对应的`NioSocketChannel`处理
+* 继续处理任务队列的任务，即`runAllTasks`
+
+8. 每个Worker的`NioEventLoop`在处理任务时，会使用`Pipeline`(管道)，`Pipeline`中包含了`Channel`，即使用管道可以获取到对应的通道，管道中维护了很多的处理器
+
+### 4.2.3，NIO快速入门
 
