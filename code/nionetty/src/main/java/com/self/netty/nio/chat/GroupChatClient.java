@@ -2,7 +2,6 @@ package com.self.netty.nio.chat;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -85,8 +84,12 @@ public class GroupChatClient {
         // 发送到服务端
         while (scanner.hasNextLine()) {
             String message = scanner.nextLine();
+			if ("EXIT".equalsIgnoreCase(message)) {
+				break;
+			}
             socketChannel.write(ByteBuffer.wrap(message.getBytes()));
         }
+		scanner.close();
     }
 
     public static void main(String[] args) throws IOException {
