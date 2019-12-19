@@ -1438,5 +1438,278 @@ public class AIOClient {
 
 8. 每个Worker的`NioEventLoop`在处理任务时，会使用`Pipeline`(管道)，`Pipeline`中包含了`Channel`，即使用管道可以获取到对应的通道，管道中维护了很多的处理器
 
-### 4.2.3，NIO快速入门
+### 4.2.3，NIO快速入门_TCP服务
+
+#### 4.2.3.1，服务端代码
+
+* `NettyServer`
+
+```java
+package com.self.netty.netty.demo;
+
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+
+/**
+ * NETTY_服务端代码
+ * 
+ * @author pj_zhang
+ * @date 2019年12月19日 上午9:36:18
+ */
+public class NettyServer {
+
+	public static void main(String[] args) throws Exception {
+		// Group子线程数不填默认为 (CPU核数 * 2)
+		// 初始化 Boss Group
+		NioEventLoopGroup bossGroup = new NioEventLoopGroup();
+		// 初始化 Worker Group
+		NioEventLoopGroup workerGroup = new NioEventLoopGroup();
+		try {
+			// 初始化并配置 Netty 服务
+			ServerBootstrap serverBootstrap = new ServerBootstrap();
+			// 设置线程组, 包括Boss线程组和Worker线程组
+			serverBootstrap.group(bossGroup, workerGroup)
+				// 设置Boss线程处理通道
+				.channel(NioServerSocketChannel.class)
+				// 设置Boss线程处理参数
+				.option(ChannelOption.SO_BACKLOG, 128)
+				// 设置Worker线程处理参数
+				.childOption(ChannelOption.SO_KEEPALIVE, true)
+				// 设置Worker线程处理器
+				.childHandler(new ChannelInitializer<SocketChannel>() {
+					@Override
+					protected void initChannel(SocketChannel socketChannel) throws Exception {
+						// 获取pipeline进行业务处理
+						// 管道主要进行数据处理
+						socketChannel.pipeline().addLast(new NettyServerHandler());
+					}
+				});
+			// 启动Netty服务, 并绑定端口
+			ChannelFuture channelFuture = serverBootstrap.bind(8080).sync();
+			System.out.println("NETTY SERVER START SUCCESS...");
+			// 对关闭通道进行监听
+			channelFuture.channel().closeFuture().sync();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			workerGroup.shutdownGracefully();
+			bossGroup.shutdownGracefully();
+		}
+	}
+
+}
+```
+
+* `NettyServerHandler`
+
+```java
+package com.self.netty.netty.demo;
+
+import java.nio.charset.Charset;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+
+/**
+ * NETTY_服务器对应Handler代码 定义Handler, 需要继承Netty定义好的适配器
+ * 
+ * @author pj_zhang
+ * @date 2019年12月19日 上午10:05:56
+ */
+public class NettyServerHandler extends ChannelInboundHandlerAdapter {
+
+	/**
+	 * 读取客户端发送的数据 ChannelHandlerContext: 上下文对象, 含有管道,通道,地址 msg: 客户端发送的消息, 默认为Object
+	 */
+	@Override
+	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+		System.out.println("ChannelHandlerContext: " + ctx);
+		System.out.println("client address: " + ctx.channel().remoteAddress());
+		// 将msg转换为ByteBuf
+		ByteBuf buf = (ByteBuf) msg;
+		System.out.println("msg: " + buf.toString(Charset.forName("UTF-8")));
+	}
+
+	/**
+	 * 数据读取处理完成后, 返回响应结果到客户端
+	 */
+	@Override
+	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+		// 将数据写入缓冲区
+		ctx.writeAndFlush(Unpooled.copiedBuffer("has received message...", Charset.forName("UTF-8")));
+	}
+
+	/**
+	 * 异常处理
+	 */
+	@Override
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+		// 关闭通道
+		ctx.channel().close();
+		// 打印异常
+		cause.printStackTrace();
+	}
+
+}
+```
+
+#### 4.2.3.2，客户端代码
+
+* `NettyClient`
+
+```java
+package com.self.netty.netty.demo;
+
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+
+/**
+ * Netty客户端
+ * 
+ * @author pj_zhang
+ * @date 2019年12月19日 上午10:58:42
+ */
+public class NettyClient {
+
+	public static void main(String[] args) {
+		// 创建线程组
+		NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup();
+		try {
+			// 创建客户端核心处理类
+			Bootstrap bootstrap = new Bootstrap();
+			// 绑定线程组
+			bootstrap.group(eventLoopGroup)
+					// 绑定客户端通道实现类
+					.channel(NioSocketChannel.class)
+					// 绑定业务处理器
+					.handler(new ChannelInitializer<SocketChannel>() {
+						@Override
+						protected void initChannel(SocketChannel ch) throws Exception {
+							ch.pipeline().addLast(new NettyClientHandler());
+						}
+					});
+			// 启动服务端
+			ChannelFuture channelFuture = bootstrap.connect("127.0.0.1", 8080).sync();
+			System.out.println("CLIENT START SUCCESS...");
+			// 监听关闭通道
+			channelFuture.channel().closeFuture().sync();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			eventLoopGroup.shutdownGracefully();
+		}
+	}
+
+}
+```
+
+* `NettyClientHandler`
+
+```java
+package com.self.netty.netty.demo;
+
+import java.nio.charset.Charset;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+
+/**
+ * Netty客户端处理类
+ * 
+ * @author pj_zhang
+ * @date 2019年12月19日 上午11:13:50
+ */
+public class NettyClientHandler extends ChannelInboundHandlerAdapter {
+
+	/**
+	 * 通道就绪触发
+	 */
+	@Override
+	public void channelActive(ChannelHandlerContext ctx) throws Exception {
+		System.out.println("ChannelHandlerContext: " + ctx);
+		ctx.writeAndFlush(Unpooled.copiedBuffer("HELLO SERVER", Charset.forName("UTF-8")));
+	}
+
+	/**
+	 * 读取服务端返回的数据
+	 */
+	@Override
+	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+		System.out.println("ChannelHandlerContext: " + ctx);
+		System.out.println("Remote Address: " + ctx.channel().remoteAddress());
+		ByteBuf buf = (ByteBuf) msg;
+		System.out.println("reveive msg: " + buf.toString(Charset.forName("UTF-8")));
+	}
+
+	/**
+	 * 异常处理
+	 */
+	@Override
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+		cause.printStackTrace();
+		ctx.channel().close();
+	}
+
+}
+```
+
+### 4.2.4，任务队列
+
+#### 4.2.4.1，Task的典型使用场景
+
+* 用户程序自定义的普通任务：**注意发起的任务串行执行**
+
+```java
+@Override
+public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    // 对于业务执行较长的任务, 可以自定义任务队列进行处理
+    // 接收任务后直接发起任务队列, 即异步执行
+    // 之后channelRead()执行完成, 会继续执行channelReadComplete()
+    // 等业务代码真正执行完成后, 再次提示客户端
+
+    // 发起执行任务, 实际是将任务添加到 NioEventLoop 的 taskQueue 属性中,
+    // taskQueue 中的线程对象会顺序执行, 也就是说当前定义的两个异步任务, 会依次执行, 共6S执行完成
+    // 而不是并行执行3S完成
+    ctx.channel().eventLoop().execute(() -> {
+        try {
+            Thread.sleep(3 * 1000);
+            ctx.channel().writeAndFlush(Unpooled.copiedBuffer("channelRead_1...", Charset.forName("UTF-8")));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    });
+    ctx.channel().eventLoop().execute(() -> {
+        try {
+            Thread.sleep(3 * 1000);
+            ctx.channel().writeAndFlush(Unpooled.copiedBuffer("channelRead_2...", Charset.forName("UTF-8")));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    });
+    // 发起异步后, 主线程不会阻塞, 会直接执行
+    System.out.println("channelRead() 执行完成");
+}
+```
+
+* 用户自定义定时任务
+* 非当前`Reactor`线程调用`Channel`的各种方法
+
+### 4.2.5，Netty异步模型
+
+### 4.2.6，Netty快速入门_HTTP服务
+
+## 4.3，Netty核心组件
 
