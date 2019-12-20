@@ -39,7 +39,7 @@ public class NettyServer {
 					protected void initChannel(SocketChannel socketChannel) throws Exception {
 						// 获取pipeline进行业务处理
 						// 管道主要进行数据处理
-							socketChannel.pipeline().addLast(new NettyTaskHandler());
+							socketChannel.pipeline().addLast(new NettyScheduleTaskHandler());
 					}
 				});
 			// 启动Netty服务, 并绑定端口

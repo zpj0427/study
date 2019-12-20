@@ -1421,22 +1421,24 @@ public class AIOClient {
 
 1. Netty抽象出了两组线程池，`BossGroup`专门负责接收客户端连接，`WorkerGroup`专门负责网络的读写
 2. `BossGroup`和`WorkerGroup`类型都是`NioEventLoopGroup`
-3. `NioEventLoopGroup`相当于一个事件循环组，组中包含多个事件循环，每一个事件循环是`NioEventLoop`
-4. `NioEventLoop`表示一个不断循环的任务执行线程，每一个`NioEventLoop`都有一个`Selector`，用于监听绑定在其上的`Socket`网络通讯
-5. `NioEventLoopGroup`可以有多个内置线程，即包含多个`NioEventLoop`
-6. 每一个Boss的`NioEventLoop`循环执行步骤有如下三步：
+3. `NioEventLoopGroup`相当于一个事件循环线程组，组中包含多个事件循环线程，每一个事件循环线程是`NioEventLoop`
+4. `NioEventLoop`表示一个不断循环的任务执行线程，每一个`NioEventLoop`都有一个`Selector`，用于监听绑定在其上的`Socket`网络通，可以同时监听多个`NioChannel`；同时包含一个`taskQueue`，用于进行异步队列发起
+5. `NioEventLoop`内部采用串行化执行，从消息的读取->解码->处理->编码->发送，使用由`NioEventLoop`线程负责。**包括异步任务后，多个异步任务间同样串行执行，后续有代码演示**
+6. 每个`NioChannel`只会绑定在唯一的`NioEventLoop`上，同时绑定一个自己专属的`ChannelPipeline`
+7. `ChannelPipeline`中包含多个`Handler`，通过`AbstractChannelHandlerContext`双向链表包装存储
+8. 每一个Boss的`NioEventLoop`循环执行步骤有如下三步：
 
 * 轮询`accept`事件
 * 处理`accept`事件，与Client建立连接并生成`NioSocketChannel`，并将其注册到Worker某一`NioEventLoop`的`selector`上
 * 继续循环处理任务队列的任务，即`runAllTasks`
 
-7. 每一个Worker的`NioEventLoop`循环执行步骤有如下三步：
+9. 每一个Worker的`NioEventLoop`循环执行步骤有如下三步：
 
 * 轮询`read`，`write`事件
 * 处理IO事件，即`read`，`write`事件，在对应的`NioSocketChannel`处理
 * 继续处理任务队列的任务，即`runAllTasks`
 
-8. 每个Worker的`NioEventLoop`在处理任务时，会使用`Pipeline`(管道)，`Pipeline`中包含了`Channel`，即使用管道可以获取到对应的通道，管道中维护了很多的处理器
+10. 每个Worker的`NioEventLoop`在处理任务时，会使用`Pipeline`(管道)，`Pipeline`中包含了`Channel`，即使用管道可以获取到对应的通道，管道中维护了很多的处理器
 
 ### 4.2.3，NIO快速入门_TCP服务
 
@@ -1705,7 +1707,80 @@ public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception 
 ```
 
 * 用户自定义定时任务
+
+```java
+package com.self.netty.netty.demo;
+
+import java.nio.charset.Charset;
+import java.util.concurrent.TimeUnit;
+
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+
+/**
+ * NETTY_定时任务队列处理
+ * 
+ * @author pj_zhang
+ * @date 2019年12月19日 上午10:05:56
+ */
+public class NettyScheduleTaskHandler extends ChannelInboundHandlerAdapter {
+
+	/**
+	 * 读取客户端发送的数据 ChannelHandlerContext: 上下文对象, 含有管道,通道,地址 msg: 客户端发送的消息, 默认为Object
+	 */
+	@Override
+	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+		ctx.channel().eventLoop().execute(() -> {
+			try {
+				Thread.sleep(3 * 1000);
+				ctx.channel().writeAndFlush(Unpooled.copiedBuffer("channelRead_1...", Charset.forName("UTF-8")));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
+		// 倒计时执行, 与execute()任务串行执行,
+		ctx.channel().eventLoop().schedule(() -> {
+			try {
+				Thread.sleep(3 * 1000);
+				ctx.channel()
+						.writeAndFlush(Unpooled.copiedBuffer("channelRead_SCHEDULED...", Charset.forName("UTF-8")));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}, 3, TimeUnit.SECONDS);
+		// 发起异步后, 主线程不会阻塞, 会直接执行
+		System.out.println("channelRead() 执行完成");
+	}
+
+	/**
+	 * 数据读取处理完成后, 返回响应结果到客户端
+	 */
+	@Override
+	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+		// 打印接收完成数据
+		ctx.writeAndFlush(Unpooled.copiedBuffer("channelReadComplete...", Charset.forName("UTF-8")));
+	}
+
+	/**
+	 * 异常处理
+	 */
+	@Override
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+		// 关闭通道
+		ctx.channel().close();
+		// 打印异常
+		cause.printStackTrace();
+	}
+
+}
+```
+
 * 非当前`Reactor`线程调用`Channel`的各种方法
+
+```java
+类似于聊天系统，需要下发当前客户消息到其他客户
+```
 
 ### 4.2.5，Netty异步模型
 
