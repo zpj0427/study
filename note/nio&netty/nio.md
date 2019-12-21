@@ -1423,7 +1423,7 @@ public class AIOClient {
 2. `BossGroup`和`WorkerGroup`类型都是`NioEventLoopGroup`
 3. `NioEventLoopGroup`相当于一个事件循环线程组，组中包含多个事件循环线程，每一个事件循环线程是`NioEventLoop`
 4. `NioEventLoop`表示一个不断循环的任务执行线程，每一个`NioEventLoop`都有一个`Selector`，用于监听绑定在其上的`Socket`网络通，可以同时监听多个`NioChannel`；同时包含一个`taskQueue`，用于进行异步队列发起
-5. `NioEventLoop`内部采用串行化执行，从消息的读取->解码->处理->编码->发送，使用由`NioEventLoop`线程负责。**包括异步任务后，多个异步任务间同样串行执行，后续有代码演示**
+5. `NioEventLoop`内部采用串行化执行，从消息的读取->解码->处理->编码->发送，都由`NioEventLoop`线程负责。**包括异步任务后，多个异步任务间同样串行执行，后续有代码演示**
 6. 每个`NioChannel`只会绑定在唯一的`NioEventLoop`上，同时绑定一个自己专属的`ChannelPipeline`
 7. `ChannelPipeline`中包含多个`Handler`，通过`AbstractChannelHandlerContext`双向链表包装存储
 8. 每一个Boss的`NioEventLoop`循环执行步骤有如下三步：
@@ -1672,7 +1672,11 @@ public class NettyClientHandler extends ChannelInboundHandlerAdapter {
 
 #### 4.2.4.1，Task的典型使用场景
 
-* 用户程序自定义的普通任务：**注意发起的任务串行执行**
+* 用户自定义普通任务
+* 用户自定义定时任务
+* 非当前`Reactor`线程调用`Channel`的各种方法：其他连接变更通知，*类似于上线通知*
+
+#### 4.2.4.2，用户程序自定义的普通任务：**注意发起的任务串行执行**
 
 ```java
 @Override
@@ -1706,7 +1710,7 @@ public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception 
 }
 ```
 
-* 用户自定义定时任务
+#### 4.2.4.3，用户自定义定时任务
 
 ```java
 package com.self.netty.netty.demo;
@@ -1776,15 +1780,293 @@ public class NettyScheduleTaskHandler extends ChannelInboundHandlerAdapter {
 }
 ```
 
-* 非当前`Reactor`线程调用`Channel`的各种方法
+#### 4.2.4.4，非当前`Reactor`线程调用`Channel`的各种方法
+
+* `NettyPublishServer`
 
 ```java
-类似于聊天系统，需要下发当前客户消息到其他客户
+package com.self.netty.netty.demo;
+
+import java.nio.charset.Charset;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.socket.SocketChannel;
+
+/**
+ * NETTY_服务器对应Handler代码 定义Handler, 需要继承Netty定义好的适配器
+ * 
+ * @author pj_zhang
+ * @date 2019年12月19日 上午10:05:56
+ */
+public class NettyServerHandler extends ChannelInboundHandlerAdapter {
+
+    /**
+	 * 读取客户端发送的数据 ChannelHandlerContext: 上下文对象, 含有管道,通道,地址 msg: 客户端发送的消息, 默认为Object
+	 */
+	@Override
+	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+		System.out.println("ChannelHandlerContext: " + ctx);
+		System.out.println("client address: " + ctx.channel().remoteAddress());
+		// 将msg转换为ByteBuf
+		ByteBuf buf = (ByteBuf) msg;
+		System.out.println("msg: " + buf.toString(Charset.forName("UTF-8")));
+	}
+
+	/**
+	 * 数据读取处理完成后, 返回响应结果到客户端
+	 */
+	@Override
+	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+		// 将数据写入缓冲区
+		ctx.writeAndFlush(Unpooled.copiedBuffer("has received message...", Charset.forName("UTF-8")));
+	}
+
+	/**
+	 * 异常处理
+	 */
+	@Override
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+		// 关闭通道
+		ctx.channel().close();
+		// 打印异常
+		cause.printStackTrace();
+	}
+
+}
+```
+
+* `NettyPublishServerHandler`
+
+```java
+package com.self.netty.netty.demo;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.socket.SocketChannel;
+
+import java.nio.charset.Charset;
+
+/**
+ * NETTY_服务器对应Handler代码 定义Handler, 需要继承Netty定义好的适配器
+ * 
+ * @author pj_zhang
+ * @date 2019年12月19日 上午10:05:56
+ */
+public class NettyPublishServerHandler extends ChannelInboundHandlerAdapter {
+
+	private NettyPublishServer nettyPublishServer;
+
+    public NettyPublishServerHandler(NettyPublishServer nettyPublishServer) {
+    	this.nettyPublishServer = nettyPublishServer;
+    }
+
+    /**
+	 * 读取客户端发送的数据 ChannelHandlerContext: 上下文对象, 含有管道,通道,地址 msg: 客户端发送的消息, 默认为Object
+	 */
+	@Override
+	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+		System.out.println("ChannelHandlerContext: " + ctx);
+		System.out.println("client address: " + ctx.channel().remoteAddress());
+		// 将msg转换为ByteBuf
+		ByteBuf buf = (ByteBuf) msg;
+		System.out.println("msg: " + buf.toString(Charset.forName("UTF-8")));
+		System.out.println("curr client connect: " + nettyPublishServer.getLstSocketChannel().size());
+		// 给每一个连接发送变更消息
+		for (SocketChannel socketChannel : nettyPublishServer.getLstSocketChannel()) {
+			if (socketChannel == ctx.channel()) {
+				continue;
+			}
+			System.out.println("server send message to : " + socketChannel.remoteAddress());
+			socketChannel.writeAndFlush(Unpooled.copiedBuffer((" server receive message from " + ctx.channel().remoteAddress() + " and publish it").getBytes("UTF-8")));
+		}
+	}
+
+	/**
+	 * 数据读取处理完成后, 返回响应结果到客户端
+	 */
+	@Override
+	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+		// 将数据写入缓冲区
+		ctx.writeAndFlush(Unpooled.copiedBuffer("has received message...", Charset.forName("UTF-8")));
+	}
+
+	/**
+	 * 异常处理
+	 */
+	@Override
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+		// 关闭通道
+		ctx.channel().close();
+		// 打印异常
+		cause.printStackTrace();
+	}
+
+}
 ```
 
 ### 4.2.5，Netty异步模型
 
+#### 4.2.5.1，基本介绍
+
+* 异步调用发出后，不会立即返回结果。当实际处理这个调用的组件在处理到一定阶段后，通过状态，通知和回调来通知调用者
+* Netty中的IO为异步的，包括`bind`，`connect`，`write`等操作都会返回一个`ChannelFuture`
+* 调用者不能立即获得执行结果，而是通过Future-Listener机制，主动获取或者通过通知获取消息
+* Netty的异步模型就是建立的`future`和`callback`之上的
+
+#### 4.2.5.1，Future-Listener机制
+
+* Netty的异步返回接口`ChannelFuture`继承自顶层接口`java.util.concurrent.Futrue`，异步结果获取核心理念基本一致
+
+* 调用者可以通过对`ChannelFuture`设置监听来进行后续操作，常用操作方法如下：
+
+```java
+// 监听核心方法，添加监听器，参数需要传递一个实现类
+ChannelFuture addListener(GenericFutureListener<? extends Future<? super Void>> var1);
+// 是否操作完成
+boolean isDone();
+// 是否操作成功
+boolean isSuccess();
+// 操作是否取消
+boolean isCancellable();
+// 获取操作异常信息
+Throwable cause();
+```
+
+* **监听举例说明**
+
+```java
+// 启动Netty服务, 并绑定端口
+ChannelFuture cf = serverBootstrap.bind(8080).sync();
+System.out.println("NETTY SERVER START SUCCESS...");
+// 添加监听
+cf.addListener((ChannelFutureListener) channelFuture -> {
+    // 状态为成功
+    if (channelFuture.isSuccess()) {
+        System.out.println("启动成功...");
+    } else {
+        System.out.println("启动失败...");
+    }
+});
+```
+
 ### 4.2.6，Netty快速入门_HTTP服务
+
+* `Server`
+
+ ```java
+package com.self.netty.netty.demo;
+
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.http.HttpServerCodec;
+
+/**
+ * Netty快速入门_HTTP服务_服务端
+ * @author pj_zhang
+ * @create 2019-12-21 18:32
+ **/
+public class NettyHttpServer {
+
+    public static void main(String[] args) {
+        NioEventLoopGroup bossGroup = new NioEventLoopGroup();
+        NioEventLoopGroup workerGroup = new NioEventLoopGroup();
+        try {
+            ServerBootstrap serverBootstrap = new ServerBootstrap();
+            serverBootstrap.group(bossGroup, workerGroup)
+                    .channel(NioServerSocketChannel.class)
+                    .option(ChannelOption.SO_BACKLOG, 128)
+                    .childOption(ChannelOption.SO_KEEPALIVE, true)
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        protected void initChannel(SocketChannel socketChannel) throws Exception {
+                            ChannelPipeline pipeline = socketChannel.pipeline();
+                            // Netty 提供的处理HTTP的编解码器
+                            pipeline.addLast(new HttpServerCodec());
+                            pipeline.addLast(new NettyHttpServerHandler());
+                        }
+                    });
+            ChannelFuture channelFuture = serverBootstrap.bind(8080).sync();
+            System.out.println("SERVER START COMPLETE...");
+            channelFuture.channel().closeFuture().sync();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            bossGroup.shutdownGracefully();
+            workerGroup.shutdownGracefully();
+        }
+    }
+
+}
+ ```
+
+* `Handler`
+
+```java
+package com.self.netty.netty.demo;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.http.*;
+
+import java.nio.charset.Charset;
+
+/**
+ * @author pj_zhang
+ * @create 2019-12-21 21:46
+ **/
+public class NettyHttpServerHandler extends SimpleChannelInboundHandler<HttpObject> {
+
+    /**
+     * 读取客户端数据
+     * @param channelHandlerContext 客户端连接上下文
+     * @param msg 客户端传递信息, 与类定义泛型想对应
+     * @throws Exception
+     */
+    @Override
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, HttpObject msg) throws Exception {
+        // 判断 HttpObject 是否是 HttpRequest请求
+        if (msg instanceof HttpRequest) {
+            HttpRequest httpRequest = (HttpRequest) msg;
+            System.out.println("当前类: " + this.getClass());
+            // 每一次请求, 哈希不一致, 说明Handler不共享
+            System.out.println("当前对象哈希: " + this.hashCode());
+            System.out.println("请求路径: " + httpRequest.uri());
+            // 路径过滤
+            if ("/favicon.ico".equalsIgnoreCase(httpRequest.uri())) {
+                return;
+            }
+            System.out.println("MSG 类型: " + msg.getClass());
+            System.out.println("客户端远程路径: " + channelHandlerContext.channel().remoteAddress());
+
+            // 构造客户端响应
+            ByteBuf byteBuf = Unpooled.copiedBuffer("THIS IS SERVER...", Charset.forName("UTF-8"));
+            HttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_0, HttpResponseStatus.OK, byteBuf);
+            // 返回类型
+            response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/json");
+            // 返回长度
+            response.headers().set(HttpHeaderNames.CONTENT_LENGTH, byteBuf.readableBytes());
+
+            // 返回response
+            channelHandlerContext.writeAndFlush(response);
+        }
+    }
+
+}
+```
 
 ## 4.3，Netty核心组件
 
