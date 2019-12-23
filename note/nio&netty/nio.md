@@ -2070,3 +2070,229 @@ public class NettyHttpServerHandler extends SimpleChannelInboundHandler<HttpObje
 
 ## 4.3，Netty核心组件
 
+### 4.3.1，BootStrap & ServerBootStrap
+
+#### 4.3.1.1，基本概念
+
+* `Bootstrap`意思是引导，一个Netty程序通常由一个`Bootstrap`开始，用于配置整个Netty程序，串联各个组件，其中`Bootstrap`是客户端的启动引导类，`ServerBootstrap`是服务端的启动引导类
+
+#### 4.3.1.2，常用API
+
+```java
+/********公共部分**********/
+// 绑定 Channel 通道
+public B channel(Class<? extends C> channelClass);
+// 绑定 Handler 处理器
+public B handler(ChannelHandler handler);
+// 添加主线程组配置
+public <T> B option(ChannelOption<T> option, T value);
+/*********ServerBootStrap部分***********/
+// 设置主线程组件和工作线程组件
+public ServerBootstrap group(EventLoopGroup parentGroup, EventLoopGroup childGroup);
+// 添加工作线程组配置
+public <T> ServerBootstrap childOption(ChannelOption<T> childOption, T value);
+// 添加工作线程组处理器
+public ServerBootstrap childHandler(ChannelHandler childHandler);
+// 绑定端口并启动
+public ChannelFuture bind(int inetPort);
+/*********BootStrap部分***********/
+// 连接服务端
+public ChannelFuture connect(String inetHost, int inetPort);
+```
+
+### 4.3.2，Future & ChannelFutrue
+
+#### 4.3.2.1，基本概念
+
+* Netty中的IO操作都是异步的，不能立刻知道消息处理情况。但是可以通过`Future`来注册监听，在操作执行到一定阶段后自动触发注册的监听事件进行回调。
+
+#### 4.3.2.2，常用API
+
+```java
+// 添加监听事件
+Future<V> addListener(GenericFutureListener<? extends Future<? super V>> listener);
+// 获取所属通道
+Channel channel();
+// 等待异步操作执行完毕
+ChannelFuture sync() throws InterruptedException;
+// 是否操作完成
+boolean isDone();
+// 是否操作成功
+boolean isSuccess();
+// 操作是否取消
+boolean isCancellable();
+// 获取操作异常信息
+Throwable cause();
+```
+
+### 4.3.3，Channel
+
+#### 4.3.3.1，基本概念
+
+* `Channel`是Netty网络通信的组件，用于执行网络IO操作
+* 通过`Channel`可以获得当前网络连接状态及配置参数
+* `Channel`提供了异步的网络IO操作，可以配置`Future`进行事件回调监听
+* 不同协议，不同阻塞类型的连接都有不同的`Channel`与之对应，如下：
+
+#### 4.3.3.2，基本类型
+
+* `NioSocketChannel`：基于TCP协议的客户端连接
+* `NioServerSocketChannel`：基于TCO协议的服务端连接
+* `NioDatagramChannel`：基于UDP协议的连接
+* `NioSctpChannel`：基于SCTP协议的客户端连接
+* `NioSctpServerChannel`：基于SCTP协议的服务端连接
+
+#### 4.3.3.3，常用API
+
+```java
+// 获取当前 Channel 所属的 EventLoop
+EventLoop eventLoop();
+// 获取当前 Channel 下的 Pipeline
+ChannelPipeline pipeline();
+```
+
+### 4.3.4，ChannelHandler
+
+#### 4.3.4.1，基本概念
+
+* `ChannelHandler`是一个顶层接口，定义IO处理或者拦截事件，并将其添加到`ChannelPipeline`中进行顺序处理
+* `ChannelHandler`本身并没有提供太多方法，在子接口和实现类中定义了一系列操作方法，用户继承实现
+
+#### 4.3.4.2，主体类图
+
+![1577072063081](E:\gitrepository\study\note\image\nio\1577072063081.png)
+
+#### 4.3.4.3，常用API：基于ChannelInboundHandler
+
+```java
+// 通道注册事件
+void channelRegistered(ChannelHandlerContext ctx) throws Exception;
+// 通道就绪事件
+void channelActive(ChannelHandlerContext ctx) throws Exception;
+// 通道读事件
+void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception;
+// 通道读取完成事件
+void channelReadComplete(ChannelHandlerContext ctx) throws Exception;
+// 异常回调事件
+void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception;
+```
+
+### 4.3.4，Pipeline & ChannelPipeline
+
+#### 4.3.4.1，基本概念
+
+* `ChannelPipeline`可以理解为`ChannelHandler`的一个集合，负责处理和拦截`ChannelInboundHandler`和`ChannelOutboundHandler`的事件和操作，`ChannelHandler`在`ChannelPipeline`被包装成为`DefaultChannelHandlerContext`并以双向链表的形式存在
+* 用户在添加处理器时，可以根据添加顺序自定义处理器执行顺序
+* 在Netty中，`Channel`通道和`ChannelPipeline`是一一对应的关系
+
+#### 4.3.4.2，常用API
+
+```java
+// 添加到链表头
+ChannelPipeline addFirst(String name, ChannelHandler handler);
+ChannelPipeline addFirst(ChannelHandler... handlers);
+// 添加到链表尾
+ChannelPipeline addLast(String name, ChannelHandler handler);
+ChannelPipeline addLast(ChannelHandler... handlers);
+// 获取对应的通道
+Channel channel();
+// 获取指定的处理器
+ChannelHandlerContext context(String name);
+ChannelHandlerContext context(Class<? extends ChannelHandler> handlerType);
+```
+
+### 4.3.5，ChannelHandlerContext
+
+#### 4.3.5.1，基本概念
+
+* 保存`Channel`相关的所有上下文信息，同时关联一个`ChannelHandler`对象
+
+#### 4.3.5.2，常用方法
+
+````java
+// 获取处理器
+ChannelHandler handler();
+// 获取通道
+Channel channel();
+// 获取管道
+ChannelPipeline pipeline();
+// 写数据,包装为ByteBuf写
+ChannelFuture writeAndFlush(Object msg);
+````
+
+### 4.3.6，ChannelOption
+
+* `Channel`相关参数，Netty在创建`Channel`实例后，一般都需要设置对应参数，即`ChannelOption`参数
+* `ChannelOption.SO_BACKLOG`：初始化服务器可连接队列大小
+* `ChannelOption.SO_KEEPALIVE`：是否一直保持连接活动状态
+
+### 4.3.7，EventLoopGroup & NioEventLoopGroup
+
+#### 4.3.7.1，基本概念
+
+* `EventLoopGroup`是一组`EventLoop`的抽象，Netty为了更好的利用多核CPU的资源，一般会有多个`EventLoop`同时工作，每个`EventLoop`内部都维护一个`Selector`对象进行轮询
+* `EventLoopGroup`提供`next()`方法，可以从组中根据一定的规则获取`EventLoop`执行任务，在Netty服务端编程中，一般指定Boss和Worker两个组进行客户端处理。Boss组负责处理客户端连接，Worker组负责客户端数据交互
+
+#### 4.3.7.2，常用API
+
+```java
+// 初始化；不指定长度默认为 CPU合数 * 2
+public NioEventLoopGroup(int nThreads);
+// 资源释放
+public Future<?> shutdownGracefully();
+```
+
+### 4.3.8，Unpooled
+
+#### 4.3.8.1，基本概念
+
+* `Unpooled`是Netty提供的一个专门用来操作缓冲区`ByteBuf`的工具类
+* **Netty的缓冲区`ByteBuf`与NIO的`ByteBuffer`实现方式完全不同**
+
+#### 4.3.8.2，ByteBuf状态变更
+
+* `ByteBuf`底层数据结构为数组，在初始化时需要指定数组长度
+* `ByteBuf`内部指定`writeIndex`和`readIndex`两个参数，用户缓冲区读写处理
+  * `0 ~ readIndex`：表示已经读过数据索引区间
+  * `readIndex ~ writeIndex`：表示可读数据索引区间
+  * `writeIndex ~ capacity`：表示可写数据索引区间
+* `ByteBuf`支持自动扩容，初始化长度指定，最大长度默认为`Integer.MAX_VALUE`，当写长度超过可写长度后，触发扩容
+  * 第一次扩容，如果`capacity`长度小于64，且写数据长度小于64，会默认扩容到64
+  * 如果写数据长度小于4M(一页)，直接扩容到原数据长度一倍，即左移一位
+  * 如果写数据长度大于4M，扩容长度为 `capacity + length`
+
+#### 4.3.8.2，常用API
+
+```java
+/***********Unpooled*************/
+// 初始化 ByteBuf
+public static ByteBuf buffer(int initialCapacity);
+// 包装数据为 ByteBuf
+public static ByteBuf copiedBuffer(byte[] array);
+public static ByteBuf wrappedBuffer(byte[] array);
+/***********ByteBuf*************/
+// 获取缓冲区长度
+public abstract int capacity();
+// 获取写索引
+public abstract int writerIndex();
+// 获取读索引
+public abstract int readerIndex();
+// 获取缓冲区可读长度
+public abstract int readableBytes();
+// 获取缓冲区可写长度
+public abstract int writableBytes();
+// 写数据
+public abstract ByteBuf writeByte(int value);
+// 读数据,后移读索引位置
+public abstract byte  readByte();
+// 读数据,不后移读索引位置
+public abstract byte  getByte(int index);
+// 清空缓冲区
+public abstract ByteBuf clear();
+```
+
+### 4.3.9，Netty应用实例_群聊系统
+
+#### 4.3.9.1，实例要求
+
+* 
