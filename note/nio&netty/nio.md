@@ -2165,6 +2165,8 @@ ChannelPipeline pipeline();
 #### 4.3.4.3，常用API：基于ChannelInboundHandler
 
 ```java
+// 连接建立
+public void handlerAdded(ChannelHandlerContext ctx) throws Exception;
 // 通道注册事件
 void channelRegistered(ChannelHandlerContext ctx) throws Exception;
 // 通道就绪事件
@@ -2295,4 +2297,404 @@ public abstract ByteBuf clear();
 
 #### 4.3.9.1，实例要求
 
-* 
+* 编写Netty群聊系统，实现多人群聊
+* 服务器端：可以实现用户上线，离线，并实现消息转发功能
+* 客户端：通过`Channel`可以发送消息给其他用户，并接受来自其他用户的消息
+
+#### 4.3.9.2，代码演示
+
+* 服务端主代码
+
+```java
+package com.self.netty.netty.groupchat;
+
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+
+/**
+ * Netty群聊系统_服务端
+ * 
+ * @author pj_zhang
+ * @date 2019年12月23日 下午4:44:23
+ */
+public class GroupChatServer {
+
+	public static void main(String[] args) {
+		EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+		EventLoopGroup workerGroup = new NioEventLoopGroup();
+		try {
+			ServerBootstrap serverBootstrap = new ServerBootstrap();
+			serverBootstrap.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
+					.option(ChannelOption.SO_BACKLOG, 128).childOption(ChannelOption.SO_KEEPALIVE, true)
+					.childHandler(new ChannelInitializer<SocketChannel>() {
+
+						@Override
+						protected void initChannel(SocketChannel ch) throws Exception {
+							ch.pipeline().addLast(new GroupChatServerHandler());
+						}
+					});
+			ChannelFuture channelFuture = serverBootstrap.bind(8080).sync();
+			System.out.println("Netty群聊系统, 服务端启动成功");
+			channelFuture.channel().closeFuture().sync();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			bossGroup.shutdownGracefully();
+			workerGroup.shutdownGracefully();
+		}
+	}
+
+}
+```
+
+* 服务端处理器
+
+```java
+package com.self.netty.netty.groupchat;
+
+import java.nio.charset.Charset;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.util.CharsetUtil;
+import io.netty.util.concurrent.GlobalEventExecutor;
+
+/**
+ * Netty群聊系统_服务端处理器
+ * 
+ * @author pj_zhang
+ * @date 2019年12月23日 下午4:49:18
+ */
+public class GroupChatServerHandler extends ChannelInboundHandlerAdapter {
+
+	// 定义Channel组, 管理所有的Channel
+	private final static ChannelGroup CHANNEL_GROUP = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+
+	/**
+	 * 表示连接建立, 一旦连接, 第一个被执行
+	 */
+	@Override
+	public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+		// 获取客户端通道
+		Channel channel = ctx.channel();
+		// 通知其他客户端用户上线
+		CHANNEL_GROUP
+				.writeAndFlush(Unpooled.copiedBuffer((channel.remoteAddress() + ": 加入群聊").getBytes(CharsetUtil.UTF_8)));
+		// 添加到群组中
+		CHANNEL_GROUP.add(ctx.channel());
+	}
+
+	/**
+	 * 断开连接
+	 */
+	@Override
+	public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+		// 获取客户端通道
+		Channel channel = ctx.channel();
+		// 通知其他客户端用户上线
+		CHANNEL_GROUP.writeAndFlush(
+				Unpooled.copiedBuffer((channel.remoteAddress() + ": 已经不在了...").getBytes(CharsetUtil.UTF_8)));
+	}
+
+	/**
+	 * 表示Channel出于活动状态
+	 */
+	@Override
+	public void channelActive(ChannelHandlerContext ctx) throws Exception {
+		System.out.println(ctx.channel().remoteAddress() + ": 上线");
+	}
+
+	/**
+	 * 表示Channel出于非活动状态
+	 */
+	@Override
+	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+		System.out.println(ctx.channel().remoteAddress() + ": 已经下线了~~~~");
+	}
+
+	@Override
+	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+		// 获取当前Channel
+		Channel channel = ctx.channel();
+		ByteBuf buf = (ByteBuf) msg;
+		String inputMessage = getMessage(buf);
+		// 遍历Channel组, 根据不同的情况, 传递不同的消息
+		CHANNEL_GROUP.forEach(ch -> {
+			// 通知到其他客户端
+			if (ch != channel) {
+				ch.writeAndFlush(Unpooled.copiedBuffer(
+						(channel.remoteAddress() + "说: " + inputMessage).getBytes(Charset.forName("UTF-8"))));
+			}
+		});
+		System.out.println(channel.remoteAddress() + "说: " + inputMessage);
+	}
+
+	/**
+	 * 获取数据成功
+	 */
+	@Override
+	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+		System.out.println("读取数据成功...");
+	}
+
+	@Override
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+		cause.printStackTrace();
+		ctx.close();
+	}
+
+	public String getMessage(ByteBuf byteBuf) {
+		byte[] bytes = new byte[byteBuf.readableBytes()];
+		byteBuf.readBytes(bytes);
+		return new String(bytes, CharsetUtil.UTF_8);
+	}
+
+}
+```
+
+* 客户端主代码
+
+```java
+package com.self.netty.netty.groupchat;
+
+import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.CharsetUtil;
+
+import java.util.Scanner;
+
+/**
+ * Netty群聊系统_客户端
+ * 
+ * @author pj_zhang
+ * @date 2019年12月23日 下午5:14:00
+ */
+public class GroupChatClient {
+
+	public static void main(String[] args) {
+		EventLoopGroup eventLoopGroup = new NioEventLoopGroup();
+		try {
+			Bootstrap bootstrap = new Bootstrap();
+			bootstrap.group(eventLoopGroup).channel(NioSocketChannel.class)
+					.handler(new ChannelInitializer<SocketChannel>() {
+						@Override
+						protected void initChannel(SocketChannel ch) throws Exception {
+							ch.pipeline().addLast(new GroupChatClientHandler());
+						}
+					});
+			ChannelFuture channelFuture = bootstrap.connect("127.0.0.1", 8080).sync();
+			// 获取Channel
+			Channel channel = channelFuture.channel();
+			// 通过 Channel 写数据
+			Scanner scanner = new Scanner(System.in);
+			while (scanner.hasNextLine()) {
+				String inputMessage = scanner.nextLine();
+				channel.writeAndFlush(Unpooled.copiedBuffer(inputMessage.getBytes(CharsetUtil.UTF_8)));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			eventLoopGroup.shutdownGracefully();
+		}
+	}
+
+}
+```
+
+* 客户端处理器
+
+```java
+package com.self.netty.netty.groupchat;
+
+import java.nio.charset.Charset;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.CharsetUtil;
+
+/**
+ * Netty群聊系统_客户端处理器
+ * 
+ * @author pj_zhang
+ * @date 2019年12月23日 下午5:16:52
+ */
+public class GroupChatClientHandler extends ChannelInboundHandlerAdapter {
+
+	/**
+	 * 初始化
+	 * 客户端如果把发送消息的循环写到此处，会产生占用，不会再接收到服务端消息，具体原因不解
+	 */
+//	@Override
+//	public void channelActive(ChannelHandlerContext ctx) throws Exception {
+//		System.out.println("当前客户连接: " + ctx.channel().remoteAddress());
+//		String inputMessage = ctx.channel().localAddress().toString();
+//		ctx.channel().writeAndFlush(Unpooled.copiedBuffer(inputMessage.getBytes(Charset.forName("UTF-8"))));
+//	}
+
+	/**
+	 * 读取数据
+	 */
+	@Override
+	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+		System.out.println("接收到读取的数据");
+		System.out.println("接收读取数据: " + getMessage((ByteBuf) msg));
+	}
+
+	public String getMessage(ByteBuf byteBuf) {
+		byte[] bytes = new byte[byteBuf.readableBytes()];
+		byteBuf.readBytes(bytes);
+		return new String(bytes, CharsetUtil.UTF_8);
+	}
+
+}
+```
+
+### 4.3.10，Netty应用实例_心跳检测
+
+#### 4.3.10.1，实例要求
+
+* 服务端三秒没有读时，提示读空闲
+* 服务端五秒没有写时，提示写空闲
+* 服务端七秒没有读写时，提示读写空闲
+
+#### 4.3.10.2，核心流程
+
+* 服务端添加心跳检测处理器`IdleStateHandler`，初始化数据时需要传递四个参数，分别如下：
+  * readerIdleTime：读限定时间未操作时触发
+  * writerIdleTime：写限定时间未操作时触发
+  * allIdleTime：读写限定时间未操作时触发
+  * TimeUnit：限定时间单位
+* 心跳检测处理器下一个处理器，需要定义心跳检测结果处理器，并重写`userEventTriggered()`方法，方法第二个参数为事件参数，如：`IdleStateEvent`，可以根据不同的事件类型进行处理
+
+#### 4.3.10.3，代码演示
+
+* 服务端主代码
+
+```java
+package com.self.netty.netty.heartbeat;
+
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.timeout.IdleStateHandler;
+
+import java.util.concurrent.TimeUnit;
+
+/**
+ * 心跳检测服务端
+ * @author pj_zhang
+ * @create 2019-12-23 21:21
+ **/
+public class HeartBeatServer {
+
+    public static void main(String[] args) {
+        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        try {
+            ServerBootstrap bootstrap = new ServerBootstrap();
+            bootstrap.group(bossGroup, workerGroup)
+                    .channel(NioServerSocketChannel.class)
+                    .handler(new LoggingHandler(LogLevel.INFO))
+                    .option(ChannelOption.SO_BACKLOG, 128)
+                    .childOption(ChannelOption.SO_KEEPALIVE, true)
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        protected void initChannel(SocketChannel socketChannel) throws Exception {
+                            // IdleStateHandler: 心跳检测处理器
+                            // readerIdleTime: 读限定时间未操作时触发
+                            // writerIdleTime: 写限定时间未操作时触发
+                            // allIdleTime: 读写限定时间未操作时触发
+                            // IdleStateHandler触发后, 会顺序执行下一个处理器, 进行回调方法处理
+                            socketChannel.pipeline().addLast(new IdleStateHandler(3,
+                                    5, 7, TimeUnit.SECONDS));
+                            socketChannel.pipeline().addLast(new HeartBeatServerHandler());
+                        }
+                    });
+            ChannelFuture channelFuture = bootstrap.bind(8080).sync();
+            channelFuture.channel().closeFuture().sync();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            bossGroup.shutdownGracefully();
+            workerGroup.shutdownGracefully();
+        }
+    }
+
+}
+```
+
+* 服务端处理类
+
+```java
+package com.self.netty.netty.heartbeat;
+
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.timeout.IdleStateEvent;
+
+/**
+ * 心跳检测机制
+ * @author pj_zhang
+ * @create 2019-12-23 21:28
+ **/
+public class HeartBeatServerHandler extends ChannelInboundHandlerAdapter {
+
+    /**
+     * 重写该方法, 进行心跳检测回调处理
+     * @param ctx 上下文内容
+     * @param evt 事件
+     * @throws Exception
+     */
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        if (evt instanceof IdleStateEvent) {
+            IdleStateEvent idleStateEvent = (IdleStateEvent) evt;
+            String eventType = null;
+            switch (idleStateEvent.state()) {
+                case READER_IDLE:
+                    eventType = "读空闲...";
+                    break;
+                case WRITER_IDLE:
+                    eventType = "写空闲...";
+                    break;
+                case ALL_IDLE:
+                    eventType = "读写空闲...";
+                    break;
+            }
+
+            System.out.println(ctx.channel().remoteAddress() + ": " + eventType);
+//            ctx.channel().close();
+        }
+    }
+}
+```
+
+### 4.3.11，Netty应用实例_WebSocket
+

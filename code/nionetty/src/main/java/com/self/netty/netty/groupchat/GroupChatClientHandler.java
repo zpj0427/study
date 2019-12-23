@@ -19,12 +19,12 @@ public class GroupChatClientHandler extends ChannelInboundHandlerAdapter {
 	/**
 	 * 初始化
 	 */
-	@Override
-	public void channelActive(ChannelHandlerContext ctx) throws Exception {
-		System.out.println("当前客户连接: " + ctx.channel().remoteAddress());
-		String inputMessage = ctx.channel().localAddress().toString();
-		ctx.channel().writeAndFlush(Unpooled.copiedBuffer(inputMessage.getBytes(Charset.forName("UTF-8"))));
-	}
+//	@Override
+//	public void channelActive(ChannelHandlerContext ctx) throws Exception {
+//		System.out.println("当前客户连接: " + ctx.channel().remoteAddress());
+//		String inputMessage = ctx.channel().localAddress().toString();
+//		ctx.channel().writeAndFlush(Unpooled.copiedBuffer(inputMessage.getBytes(Charset.forName("UTF-8"))));
+//	}
 
 	/**
 	 * 读取数据
