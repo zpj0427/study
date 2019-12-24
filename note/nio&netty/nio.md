@@ -2167,16 +2167,24 @@ ChannelPipeline pipeline();
 ```java
 // 连接建立
 public void handlerAdded(ChannelHandlerContext ctx) throws Exception;
+// 连接移除
+void handlerRemoved(ChannelHandlerContext ctx) throws Exception;
 // 通道注册事件
 void channelRegistered(ChannelHandlerContext ctx) throws Exception;
+// 通道登出事件
+void channelUnregistered(ChannelHandlerContext ctx) throws Exception;
 // 通道就绪事件
 void channelActive(ChannelHandlerContext ctx) throws Exception;
+// 通道断开事件
+void channelInactive(ChannelHandlerContext ctx) throws Exception;
 // 通道读事件
 void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception;
 // 通道读取完成事件
 void channelReadComplete(ChannelHandlerContext ctx) throws Exception;
 // 异常回调事件
 void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception;
+// 事件通知回调(类似心跳检测)
+void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception;
 ```
 
 ### 4.3.4，Pipeline & ChannelPipeline
@@ -2577,7 +2585,7 @@ public class GroupChatClientHandler extends ChannelInboundHandlerAdapter {
 * 服务端五秒没有写时，提示写空闲
 * 服务端七秒没有读写时，提示读写空闲
 
-#### 4.3.10.2，核心流程
+#### 4.3.10.2，核心内容
 
 * 服务端添加心跳检测处理器`IdleStateHandler`，初始化数据时需要传递四个参数，分别如下：
   * readerIdleTime：读限定时间未操作时触发
@@ -2697,4 +2705,142 @@ public class HeartBeatServerHandler extends ChannelInboundHandlerAdapter {
 ```
 
 ### 4.3.11，Netty应用实例_WebSocket
+
+#### 4.3.11.1，实例要求
+
+* HTTP协议是无状态的，浏览器和服务端之前请求一次后，下一次需要重新建立连接
+* 通过WebSocket可以改变HTTP协议多次请求的约束，实现长连接
+* 浏览器和服务端可以相互感知关闭（浏览器端感知未演示）
+
+#### 4.3.11.2，核心内容
+
+* Netty对WebSocket长连接的支撑同样也是添加一系列处理器实现
+* `HttpServerCodec`：WebSocket内部也是对HTTP请求的包装处理，所以需要HTTP的编码解码处理器
+* `ChunkedWriteHandler`：WebSocket是以块的形式进行写，添加响应处理器
+* `HttpObjectAggregator(4096)`：HTTP在传输过程中，如果数据量过大，会分段处理，该处理器根据一定的长度对HTTP请求聚合
+* `WebSocketServerProtocolHandler("/path")`：WebSocket服务端接收主体类，参数传递的路径是对前台路径映射，相当于路径白名单。**有测试过正则，没有调通**
+
+#### 4.3.11.3，代码演示
+
+* 服务端主代码
+
+```java
+package com.self.netty.netty.websocket;
+
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
+import io.netty.handler.stream.ChunkedWriteHandler;
+
+/**
+ * WebSocket服务端
+ * @author LiYanBin
+ * @create 2019-12-24 10:34
+ **/
+public class WebSocketServer {
+
+    public static void main(String[] args) {
+        NioEventLoopGroup bossGroup = new NioEventLoopGroup();
+        NioEventLoopGroup workerGroup = new NioEventLoopGroup();
+        try {
+            ServerBootstrap serverBootstrap = new ServerBootstrap();
+            serverBootstrap.group(bossGroup, workerGroup)
+                    .channel(NioServerSocketChannel.class)
+                    .option(ChannelOption.SO_BACKLOG, 128)
+                    .childOption(ChannelOption.SO_KEEPALIVE, true)
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        protected void initChannel(SocketChannel socketChannel) throws Exception {
+                            ChannelPipeline pipeline = socketChannel.pipeline();
+                            // WebSocket基于HTTP, 首先提供HTTP编解码
+                            pipeline.addLast(new HttpServerCodec());
+                            // WebSocket分块处理
+                            pipeline.addLast(new ChunkedWriteHandler());
+                            // 定义每一批量传递数据长度
+                            pipeline.addLast(new HttpObjectAggregator(4096));
+                            // 添加WebSocket核心处理, 并定义拦截路径
+                            pipeline.addLast(new WebSocketServerProtocolHandler("/hello"));
+                            // 自定义处理器
+                            pipeline.addLast(new WebSocketServerHandler());
+                        }
+                    });
+            ChannelFuture channelFuture = serverBootstrap.bind(8080).sync();
+            System.out.println("SERVER START COMPLETE...");
+            channelFuture.channel().closeFuture().sync();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            bossGroup.shutdownGracefully();
+            workerGroup.shutdownGracefully();
+        }
+    }
+
+}
+```
+
+* 服务端处理器
+
+```java
+package com.self.netty.netty.websocket;
+
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+
+/**
+ * WebSocket自定义处理器
+ * @author LiYanBin
+ * @create 2019-12-24 10:40
+ **/
+// TextWebSocketFrame：WebSocket包装的消息传递
+public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebSocketFrame> {
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, TextWebSocketFrame msg) throws Exception {
+        // 打印消息
+        System.out.println("接收到客户端消息: " + msg.text());
+        // 输出消息到客户端
+        ctx.writeAndFlush(new TextWebSocketFrame("服务端响应: " + msg.text()));
+    }
+
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        System.out.println("客户端连接, 长ID: " + ctx.channel().id().asLongText());
+        System.out.println("客户端连接, 端ID: " + ctx.channel().id().asShortText());
+    }
+
+    @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+        System.out.println("客户端退出, 长ID: " + ctx.channel().id().asLongText());
+        System.out.println("客户端退出, 端ID: " + ctx.channel().id().asShortText());
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        System.out.println("异常: " + cause.getMessage());
+    }
+}
+```
+
+#### 4.3.11.4，客户端连接
+
+* 应用在线模拟Socket工具模拟请求：http://www.bejson.com/httputil/websocket/
+
+![1577156532494](E:\gitrepository\study\note\image\nio\1577156532494.png)
+
+## 4.4，Netty编解码机制
+
+### 4.4.1，编解码的基本介绍
+
+### 4.4.2，Netty自身的编解码器
+
+### 4.4.3，Google Protobuf
 
