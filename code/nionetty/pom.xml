@@ -49,6 +49,12 @@
       <artifactId>fastjson</artifactId>
       <version>1.2.32</version>
     </dependency>
+    <!-- ProtoBuf坐标 -->
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+      <version>3.6.1</version>
+    </dependency>
   </dependencies>
 
   <build>

@@ -2840,7 +2840,253 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
 
 ### 4.4.1，编解码的基本介绍
 
+* 编写网络应用程序时，数据在网络中传输的都是二进制字节码。因此，在发送数据时候需要编码，在接收数据时候需要解码
+* codec(编解码器)由两部分组成：decoder(解码器)和encoder(编码器)。encoder负责把业务数据转换为字节码数据，decoder负责把字节码数据转换为业务数据
+
+![1577286682114](E:\gitrepository\study\note\image\nio\1577286682114.png)
+
 ### 4.4.2，Netty自身的编解码器
 
+* Netty自身提供了一套编解码器，如字符串编码器`StringEncoder`，Java对象编码器`ObjectEncoder`；字符串解码器`StringDecoder`，Java对象解码器`ObjectDecoder`等等
+* Netty自带的编解码技术底层仍然使用的是Java序列化技术，而Java序列化技术效率不高：
+  * 无法跨语言运行
+  * 序列化后体积太大，是二进制编码的五倍多
+  * 序列化整体性能太低
+* 因此，对于编解码器可以使用新的解决方法`Google ProtoBuf`
+
 ### 4.4.3，Google Protobuf
+
+#### 4.4.3.1，基本介绍
+
+* Google ProtoBuf是Google的开源项目，全程`Google Protocol Buffers`，是一种轻便高效的结构化数据存储格式，可以用于结构化数据串行化，或者说序列化。很适合用于数据存储或者RPC数据传输
+* Protobuf是以`message`的方式进行数据传递
+* 支持跨平台，跨语言。如C++、C#、Java，Python等
+* 使用Protobuf编译器能将类的定义文件`*.proto`转换为`*.java`文件，类迁移可以通过`*.proto`文件进行迁移
+
+![1577287199224](E:\gitrepository\study\note\image\nio\1577287199224.png)
+
+#### 4.4.3.2，快速入门_单对象传递
+
+* *.proto文件编写
+  * 文件内容：`Student.proto`
+
+  ```java
+  syntax = "proto3"; // 指定版本号3.X
+  option java_outer_classname = "StudentPOJO"; // 生成的外部类名, 即文件名
+  // protobuf使用message进行数据管理
+  // 会在StudentPOJO类文件里面生成一个Student内部类, 该内部类是真正工作的对象
+  message Student {
+      // 类属性序号从1开始
+      int32 id = 1; // int32对应java的int, id表示属性名, 1表示属性序号
+      string name = 2; // string对应java的String
+  }
+  ```
+
+  * 命令框生成Java文件
+
+  ```java
+  protoc.exe --java_out=. Student.proto
+  ```
+
+* 生成文件结构
+
+![1577287909766](E:\gitrepository\study\note\image\nio\1577287909766.png)
+
+* Netty服务端添加处理器
+
+```java
+.childHandler(new ChannelInitializer<SocketChannel>() {
+    @Override
+    protected void initChannel(SocketChannel socketChannel) throws Exception {
+        // 服务单添加 ProtoBuf 解码器
+        // 解码器需要指定解码对象
+        socketChannel.pipeline().addLast(new ProtobufDecoder(StudentPOJO.Student.getDefaultInstance()));
+        // 添加自定义处理器
+        socketChannel.pipeline().addLast(new NettyServerHandler());
+    }
+});
+```
+
+* Netty服务端接收数据
+
+```java
+@Override
+public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    StudentPOJO.Student student = (StudentPOJO.Student) msg;
+    System.out.println("服务端接收到消息: " + student.getId() + ", " + student.getName());
+}
+```
+
+* Netty客户端添加处理器
+
+```java
+.handler(new ChannelInitializer<SocketChannel>() {
+    @Override
+    protected void initChannel(SocketChannel ch) throws Exception {
+        // 服务端的 Protobuf 需要指定编码器
+        // 编码器不需要指定对象类型
+        ch.pipeline().addLast(new ProtobufEncoder());
+        ch.pipeline().addLast(new NettyClientHandler());
+    }
+});
+```
+
+* Netty客户端发送数据
+
+```java
+@Override
+public void channelActive(ChannelHandlerContext ctx) throws Exception {
+    // 生成 ProtoBuf 代码对象, 并写到服务端
+    StudentPOJO.Student student = StudentPOJO.Student.newBuilder().setId(1).setName("张三").build();
+    ctx.writeAndFlush(student);
+}
+```
+
+#### 4.4.3.3，快速入门_复合对象传递
+
+* *.proto文件编写：`Student.proto`
+
+```java
+syntax = "proto3"; // 指定版本号3.X
+option optimize_for = SPEED; // 加快解析
+option java_package = "com.self.netty.netty.protobuf.second"; // 指定生成包路径
+option java_outer_classname = "MyDataInfo"; // 外部类名, 即文件名
+
+// protobuf可以使用message管理其他的message
+message MyMessage {
+    // 定义一个枚举类型, 枚举类型序号从0开始
+    enum DataType {
+        StudentType = 0;
+        WorkerType = 1;
+    }
+
+    // 用DataType表示传的哪一个数据类型
+    DataType data_type = 1;
+    // 表示每次枚举类型只能出现一个
+    oneof dataBody {
+        Student student = 2;
+        Worker worker = 3;
+    }
+}
+
+
+// 定义第一个对象 Student
+message Student {
+    int32 id = 1;
+    string name = 2;
+}
+
+// 定义第二个对象 Worker
+message Worker {
+    string name = 1;
+    int32 age = 2;
+}
+```
+
+* 生成文件结构
+
+![1577289106430](E:\gitrepository\study\note\image\nio\1577289106430.png)
+
+* Netty服务端添加处理器
+
+```java
+.childHandler(new ChannelInitializer<SocketChannel>() {
+    @Override
+    protected void initChannel(SocketChannel socketChannel) throws Exception {
+        // 服务单添加 ProtoBuf 解码器
+        // 解码器需要指定解码对象
+        // 此处指定管理对象的对象
+        socketChannel.pipeline().addLast(new ProtobufDecoder(MyDataInfo.MyMessage.getDefaultInstance()));
+        // 添加自定义处理器
+        socketChannel.pipeline().addLast(new NettyServerHandler());
+    }
+});
+```
+
+* Netty服务单接收数据
+
+```java
+@Override
+public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    MyDataInfo.MyMessage myMessage = (MyDataInfo.MyMessage) msg;
+    // 获取传递过来的DataType, 判断填充的对象
+    MyDataInfo.MyMessage.DataType dataType = myMessage.getDataType();
+    // 填充对象为Student, 进行Student对象处理
+    if (dataType == MyDataInfo.MyMessage.DataType.StudentType) {
+        System.out.println("Student: " + myMessage.getStudent().getName());
+        // 传递对象为Worker, 进行Worker处理
+    } else if (dataType == MyDataInfo.MyMessage.DataType.WorkerType) {
+        System.out.println("Worker: " + myMessage.getWorker().getName());
+    }
+}
+```
+
+* Netty客户端添加处理器
+
+```java
+.handler(new ChannelInitializer<SocketChannel>() {
+    @Override
+    protected void initChannel(SocketChannel ch) throws Exception {
+        // 服务端的 Protobuf 需要指定编码器
+        // 编码器不需要指定对象类型
+        ch.pipeline().addLast(new ProtobufEncoder());
+        ch.pipeline().addLast(new NettyClientHandler());
+    }
+});
+```
+
+* Netty客户端发送数据
+
+```java
+@Override
+public void channelActive(ChannelHandlerContext ctx) throws Exception {
+    MyDataInfo.MyMessage myMessage = null;
+    int random = new Random().nextInt(2);
+    // 初始化Student
+    if (0 == random) {
+        myMessage = MyDataInfo.MyMessage.newBuilder()
+            // 此处传递Student对应的dataType
+            .setDataType(MyDataInfo.MyMessage.DataType.StudentType)
+            // 此处初始化Student
+            // Student初始化方式就是单对象初始化方式
+            .setStudent(MyDataInfo.Student.newBuilder().setId(1).setName("张三").build())
+            .build();
+        // 初始化Worker
+    } else {
+        myMessage = MyDataInfo.MyMessage.newBuilder()
+            // 此处传递Worker对应的dataType
+            .setDataType(MyDataInfo.MyMessage.DataType.WorkerType)
+            // 此处初始化Worker
+            .setWorker(MyDataInfo.Worker.newBuilder().setAge(1).setName("老李").build())
+            .build();
+    }
+    ctx.writeAndFlush(myMessage);
+}
+```
+
+### 4.4.4，编解码器和Handler调用机制
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## 4.5，Netty粘包和拆包
+
+## 4.6，Netty核心源码剖析
+
+## 4.7，Netty实现 Dubbo RPC
 
