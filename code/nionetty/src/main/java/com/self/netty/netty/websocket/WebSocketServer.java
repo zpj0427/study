@@ -40,7 +40,7 @@ public class WebSocketServer {
                             // 定义每一批量传递数据长度
                             pipeline.addLast(new HttpObjectAggregator(4096));
                             // 添加WebSocket核心处理, 并定义拦截路径
-                            pipeline.addLast(new WebSocketServerProtocolHandler("/hello/**"));
+                            pipeline.addLast(new WebSocketServerProtocolHandler("/hello"));
                             // 自定义处理器
                             pipeline.addLast(new WebSocketServerHandler());
                         }

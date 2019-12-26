@@ -2955,20 +2955,20 @@ option java_outer_classname = "MyDataInfo"; // 外部类名, 即文件名
 // protobuf可以使用message管理其他的message
 message MyMessage {
     // 定义一个枚举类型, 枚举类型序号从0开始
+    // 后续传递对象识别通过该枚举类型识别
     enum DataType {
         StudentType = 0;
         WorkerType = 1;
     }
-
+	// 下面表示 MyMessage 的属性, 从1开始
     // 用DataType表示传的哪一个数据类型
     DataType data_type = 1;
-    // 表示每次枚举类型只能出现一个
+    // oneof 表示每次枚举类型只能出现一个
     oneof dataBody {
         Student student = 2;
         Worker worker = 3;
     }
 }
-
 
 // 定义第一个对象 Student
 message Student {
