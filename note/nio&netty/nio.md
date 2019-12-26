@@ -3066,25 +3066,253 @@ public void channelActive(ChannelHandlerContext ctx) throws Exception {
 
 ### 4.4.4，编解码器和Handler调用机制
 
+#### 4.4.4.1，编解码器基本介绍
 
+![1577375058871](E:\gitrepository\study\note\image\nio\1577375058871.png)
 
+* Netty发送或者接收一个消息时，会发生一次数据转换，即数据到字节码间的转换
+* Netty提供了一系列使用的编解码器，都实现自`ChannelInboundHandler`和`ChannelOutboundHandler`。这这些类中，编解码方法已经被定义，数据传输中，会对应的对数据进行编解码操作，然后转发给管道`ChannelPipeline`中的下一个处理器进行处理，`ChannelInboundHandler`系列顺序转发，`ChannelOutboundHandler`系列倒序转发
+* 编码器对数据编码后，进行数据网络传输。在解码器对数据解码时，如果数据长度与解码固定长度不一致，*（比如解码按8个字节/批次解码，客户端传递24个字节）*，此时解码器会被调用 24 / 8 = 3次，相对应的，解码器后的处理器也会被执行三次，如果存在响应客户端，也同样会被响应三次
 
+![1577375628996](E:\gitrepository\study\note\image\nio\1577375628996.png)
 
+#### 4.4.4.2，Netty的Handler链调用
 
+##### 4.4.4.2.1，出站
 
+* 出站，即从`Channel`向`Socket`中写数据，也就是客户端向服务端发送数据，或者服务端向客户端响应数据；
+* 出站的`Handler`类，统一实现自上层接口`ChannelInboundHandler`，在出站处理业务流程中，Netty会对当前连接管道`ChannelPipeline`中的`Handler`集合所属`ChannelInboundHandler`部分，进行顺序执行
+* 执行流程：生成业务数据 -> 进行数据编码 -> 发送数据
 
+##### 4.4.4.2.2，入站
 
+* 入站，即从`Socket`向`Channel`中写数据，也就是服务端解析客户端发送的数据，或者客户端解析服务端响应的数据；
+* 入站的`Handler`类，统一实现自上层接口`ChannelOutboundHandler`，在入站处理逻辑中，是对`ChannelPipeline`中所属`ChannelOutboundHandler`的部分，进行倒序执行
+* 执行流程：接收数据 -> 进行数据解码 -> 执行业务流程
 
+##### 4.4.4.2.3，实例演示_自定义编解码器
 
+* 自定义字符串编码器
 
+```java
+package com.self.netty.netty.codechandler;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToByteEncoder;
 
+/**
+ * @author LiYanBin
+ * @create 2019-12-26 11:17
+ **/
+public class StringEncoderHandler extends MessageToByteEncoder<String> {
 
+    @Override
+    protected void encode(ChannelHandlerContext ctx, String msg, ByteBuf out) throws Exception {
+        System.out.println("编码数据..., msg: " + msg);
+        // 写数据到服务端
+        out.writeBytes(msg.getBytes());
+    }
+}
+```
 
+* 自定义字符串解码器
 
+```java
+package com.self.netty.netty.codechandler;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ByteToMessageDecoder;
+
+import java.util.List;
+
+/**
+ * @author LiYanBin
+ * @create 2019-12-26 11:10
+ **/
+public class StringDecoderHandler extends ByteToMessageDecoder {
+
+    /**
+     * 如果Socket传递过来的编码数据长度超过该解码类的读取长度
+     * 该解码类会被调用多次进行数据读取;
+     *
+     * 如果 List out 不为空, 数据内容也会被传递给下一个InboundHandler处理,
+     * 同样该Handler会被调用多次,
+     *
+     * 如, 解码器通过每1个字节读取的方式读取, 如果Socket中获取的数据长度超过0,会多次读取, 并多次传递, 多次响应
+     * 此处客户端传递字符串为123，解码器对每一个字节进行处理，则该解码器部分会被执行三次，每次都会转发到后续的处理器CodecHandlerServerHandler中
+     * 
+     * 则自定义业务处理器CodecHandlerServerHandler同样会被执行三次，并且响应三次数据到客户端，客户端也会接收三次数据
+     * 
+     * 可以直接读取所有数据，一次即可执行完，此处只为演示效果
+     * 
+     * @param ctx
+     * @param in
+     * @param out
+     * @throws Exception
+     */
+    @Override
+    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+        if (in.readableBytes() > 0) {
+            byte[] bytes = new byte[1];
+            in.readBytes(1).readBytes(bytes);
+            out.add(new String(bytes));
+        }
+        System.out.println("解码数据..." + out);
+    }
+}
+```
+
+* 服务端添加处理器
+
+```java
+.childHandler(new ChannelInitializer<SocketChannel>() {
+    @Override
+    protected void initChannel(SocketChannel ch) throws Exception {
+        ChannelPipeline pipeline = ch.pipeline();
+        // 添加自定义解码器
+        pipeline.addLast(new StringDecoderHandler());
+        // 添加自定义编码器, 用于给客户端返回消息
+        pipeline.addLast(new StringEncoderHandler());
+        // 添加处理器
+        pipeline.addLast(new CodecHandlerServerHandler());
+    }
+});
+```
+
+* 服务端自定义处理器
+
+```java
+package com.self.netty.netty.codechandler;
+
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+
+/**
+ * @author LiYanBin
+ * @create 2019-12-26 11:12
+ **/
+public class CodecHandlerServerHandler extends SimpleChannelInboundHandler<String> {
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
+        System.out.println("读取来自客户端: " + ctx.channel().remoteAddress() + "的数据: " + msg);
+        // 向客户端传输响应数据
+        ctx.writeAndFlush("456");
+    }
+}
+```
+
+* 客户端添加处理器
+
+```java
+.handler(new ChannelInitializer<SocketChannel>() {
+    @Override
+    protected void initChannel(SocketChannel ch) throws Exception {
+        ChannelPipeline pipeline = ch.pipeline();
+        // 添加自定义编码器
+        pipeline.addLast(new StringEncoderHandler());
+        // 添加解码器
+        pipeline.addLast(new StringDecoderHandler());
+        // 添加自定义处理器
+        pipeline.addLast(new CodecHandlerClientHandler());
+    }
+});
+```
+
+* 客户端自定义处理器
+
+```java
+package com.self.netty.netty.codechandler;
+
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+
+/**
+ * @author LiYanBin
+ * @create 2019-12-26 11:16
+ **/
+public class CodecHandlerClientHandler extends ChannelInboundHandlerAdapter {
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        System.out.println("客户端发送数据");
+        // 写出一个Long数据
+        ctx.writeAndFlush("123");
+    }
+
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        String response = (String) msg;
+        System.out.println("客户端响应数据: " + response);
+    }
+}
+```
+
+##### 4.4.4.2.4，结论分析
+
+* 无论编码器还是解码器，接收到的消息类型必须与待处理的消息类型一致，否则处理器不会被执行；该部分在父类的`write()`中进行了分支控制
+* 在解码器进行数据解码时，需要对缓冲区中的数据进行完整性校验，否则接收到的数据可能与期望中的不一致
+
+#### 4.4.4.3，其他编解码器
+
+##### 4.4.4.3.1，解码器
+
+* `ReplayingDecoder`：自定义解码器继承自该类后，不必再使用`readableBytes()`方法进行数据存在性判断，内部会自动进行处理
+  * 并不是所有的`ByteBuf`都支持还解码器，如果存在不能被编辑的`ByteBuf`，被抛出`UnsupportedOperationException`异常
+* `LineBasedFrameDecoder`：该解码器使用行尾控制符`\n`或者`\r\n`解析数据
+* `DelimiterBasedFrameDecoder`：使用自定义的特殊字符作为消息分隔符
+* `HttpObjetDecoder`：HTTP数据的解码器
+* `LengthFieldBasedFrameDecoder`：通过固定长度标识整包信息，可自动处理粘包和半包信息
+
+##### 4.4.4.3.2，编码器
+
+* `ZlibEncoder`：数据压缩编码器
+* ...编码器只是对现有数据进行转换，相对没有解码器的特殊规则更多点
+
+#### 4.4.4.4，Log4J整合到Netty
+
+* 引入POM依赖
+
+```xml
+<!-- 日志整合 -->
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>1.2.17</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.7.25</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>1.7.25</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>1.7.25</version>
+      <scope>test</scope>
+    </dependency>
+```
+
+* Log4J.properties简单编辑
+
+```properties
+log4j.rootLogger=DEBUG, stdout
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=[%P] %C{1} - %m%n
+```
 
 ## 4.5，Netty粘包和拆包
+
+
 
 ## 4.6，Netty核心源码剖析
 

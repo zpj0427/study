@@ -27,9 +27,9 @@ public class CodecHandlerServer {
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline pipeline = ch.pipeline();
                             // 添加自定义解码器
-                            pipeline.addLast(new LongDecoderHandler());
+                            pipeline.addLast(new StringDecoderHandler());
                             // 添加自定义编码器, 用于给客户端返回消息
-                            pipeline.addLast(new LongEncoderHandler());
+                            pipeline.addLast(new StringEncoderHandler());
                             // 添加处理器
                             pipeline.addLast(new CodecHandlerServerHandler());
                         }

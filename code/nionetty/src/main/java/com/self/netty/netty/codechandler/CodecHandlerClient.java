@@ -1,7 +1,6 @@
 package com.self.netty.netty.codechandler;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -27,9 +26,9 @@ public class CodecHandlerClient {
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline pipeline = ch.pipeline();
                             // 添加自定义编码器
-                            pipeline.addLast(new LongEncoderHandler());
+                            pipeline.addLast(new StringEncoderHandler());
                             // 添加解码器
-                            pipeline.addLast(new LongDecoderHandler());
+                            pipeline.addLast(new StringDecoderHandler());
                             // 添加自定义处理器
                             pipeline.addLast(new CodecHandlerClientHandler());
                         }
