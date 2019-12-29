@@ -8,6 +8,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.logging.LoggingHandler;
 
 /**
  * NETTY_服务端代码
@@ -20,7 +21,7 @@ public class NettyServer {
 	public static void main(String[] args) throws Exception {
 		// Group子线程数不填默认为 (CPU核数 * 2)
 		// 初始化 Boss Group
-		NioEventLoopGroup bossGroup = new NioEventLoopGroup();
+		NioEventLoopGroup bossGroup = new NioEventLoopGroup(1);
 		// 初始化 Worker Group
 		NioEventLoopGroup workerGroup = new NioEventLoopGroup();
 		try {
@@ -32,6 +33,8 @@ public class NettyServer {
 				.channel(NioServerSocketChannel.class)
 				// 设置Boss线程处理参数
 				.option(ChannelOption.SO_BACKLOG, 128)
+				// boss线程处理类
+				.handler(new LoggingHandler())
 				// 设置Worker线程处理参数
 				.childOption(ChannelOption.SO_KEEPALIVE, true)
 				// 设置Worker线程处理器
@@ -40,11 +43,11 @@ public class NettyServer {
 					protected void initChannel(SocketChannel socketChannel) throws Exception {
 						// 获取pipeline进行业务处理
 						// 管道主要进行数据处理
-						socketChannel.pipeline().addLast(new NettyServerHandler());
+						socketChannel.pipeline().addLast(new NettyScheduleTaskHandler());
 					}
 				});
 			// 启动Netty服务, 并绑定端口
-			ChannelFuture cf = serverBootstrap.bind(8080).sync();
+			ChannelFuture cf = serverBootstrap.bind(8080);
 			System.out.println("NETTY SERVER START SUCCESS...");
 			// 添加监听
 			cf.addListener((ChannelFutureListener) channelFuture -> {

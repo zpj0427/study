@@ -20,23 +20,9 @@ public class NettyScheduleTaskHandler extends ChannelInboundHandlerAdapter {
 	 */
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-		ctx.channel().eventLoop().execute(() -> {
-			try {
-				Thread.sleep(3 * 1000);
-				ctx.channel().writeAndFlush(Unpooled.copiedBuffer("channelRead_1...", Charset.forName("UTF-8")));
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		});
 		// 倒计时执行, 与execute()任务串行执行,
 		ctx.channel().eventLoop().schedule(() -> {
-			try {
-				Thread.sleep(3 * 1000);
-				ctx.channel()
-						.writeAndFlush(Unpooled.copiedBuffer("channelRead_SCHEDULED...", Charset.forName("UTF-8")));
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			System.out.println("定时任务执行...");
 		}, 3, TimeUnit.SECONDS);
 		// 发起异步后, 主线程不会阻塞, 会直接执行
 		System.out.println("channelRead() 执行完成");

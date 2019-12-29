@@ -3312,9 +3312,482 @@ log4j.appender.stdout.layout.ConversionPattern=[%P] %C{1} - %m%n
 
 ## 4.5，Netty粘包和拆包
 
+### 4.5.1，粘包和拆包基本介绍
 
+* TCP协议是面向连接，面向流的，提供高可靠性服务。收发两端都有一一对应的`Socket`，因此，发送端为了将多个发给接收端的包，更有效的发给接收端，使用优化方法（Nagle算法），将多次间隔较少且数据量较小的数据，合并成一个多大的数据包，然后进行封包。这样虽然提高了效率，但是接收端无法分别出完整的数据包，因此面向流的通信是无消息保护边界的
+* 由于TCP无消息保护边界，需要在接收端处理消息边界问题，也就是所谓的粘包，拆包问题
+* TCP粘包，拆包问题图解
+
+![1577513525341](E:\gitrepository\study\note\image\nio\1577513525341.png)
+
+* 如上图，假设客户端分别发送两个数据D1和D2给服务端，由于存在打包发送，服务端一次读取到的数据是不一定的，故存在下列四种情况
+  * 服务端分两次读取到两个独立的数据包，分别为D1和D2，没有粘包和拆包，也是最理想的情况
+  * 服务端一次接受到了两个数据包，D1和D2粘在一起，称之为***TCP粘包***
+  * 服务端分两次读取到数据包，第一次读取到完整的D1数据和部分D2数据，第二次读取到部分D2数据，称之为***TCP拆包***
+  * 服务端分两次读取到数据包，第一次读取到部分D1数据，第二次读取到部分D1数据和完整的D2数据
+
+### 4.5.2，粘包拆包实例演示
+
+* 服务端启动类
+
+```java
+package com.self.netty.netty.dispackage.show;
+
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+
+/**
+ * TCP拆包粘包问题展示_服务端启动类
+ * @author pj_zhang
+ * @create 2019-12-28 12:39
+ **/
+public class DispackageServer {
+
+    public static void main(String[] args) {
+        EventLoopGroup bossEventLoopGroup = new NioEventLoopGroup(1);
+        EventLoopGroup workerEventLoopGroup = new NioEventLoopGroup();
+        try {
+            // 初始化启动类
+            ServerBootstrap bootstrap = new ServerBootstrap();
+            bootstrap.group(bossEventLoopGroup, workerEventLoopGroup)
+                    .channel(NioServerSocketChannel.class)
+                    .option(ChannelOption.SO_BACKLOG, 128)
+                    .childOption(ChannelOption.SO_KEEPALIVE, true)
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        protected void initChannel(SocketChannel socketChannel) throws Exception {
+                            ChannelPipeline channelPipeline = socketChannel.pipeline();
+                            channelPipeline.addLast(new DispackageServerHandler());
+                        }
+                    });
+            // 启动
+            ChannelFuture channelFuture = bootstrap.bind(8080).sync();
+            System.out.println("服务端启动成功...");
+            channelFuture.channel().closeFuture().sync();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            bossEventLoopGroup.shutdownGracefully();
+            workerEventLoopGroup.shutdownGracefully();
+        }
+    }
+
+}
+```
+
+* 服务端处理器
+
+```java
+package com.self.netty.netty.dispackage.show;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.CharsetUtil;
+
+/**
+ * @author pj_zhang
+ * @create 2019-12-28 12:43
+ **/
+public class DispackageServerHandler extends SimpleChannelInboundHandler<ByteBuf> {
+
+    private int count = 0;
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf) throws Exception {
+        // 接收客户端数据
+        // 此处接收到的客户端信息可能是已经被打包过的客户端信息
+        // 所以客户端循环发送了10次, 服务端可能会在少于10的次数内读完
+        // 在某几次的读取中, 会读取到客户端多次发送的数据
+        byte[] bytes = new byte[byteBuf.readableBytes()];
+        byteBuf.readBytes(bytes);
+        System.out.println(new String(bytes, CharsetUtil.UTF_8));
+        System.out.println("接收次数: " + (++count));
+
+        // 发送数据到客户端
+        ByteBuf responseByteBuf = Unpooled.copiedBuffer("server response: " + count + "\r\n", CharsetUtil.UTF_8);
+        channelHandlerContext.writeAndFlush(responseByteBuf);
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        cause.printStackTrace();
+        ctx.close();
+    }
+}
+```
+
+* 客户端启动类
+
+```java
+package com.self.netty.netty.dispackage.show;
+
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+
+/**
+ * TCP粘包拆包演示_客户端
+ * @author pj_zhang
+ * @create 2019-12-28 12:46
+ **/
+public class DispackageClient {
+
+    public static void main(String[] args) {
+        EventLoopGroup eventExecutors = new NioEventLoopGroup();
+        try {
+            Bootstrap bootstrap = new Bootstrap();
+            bootstrap.group(eventExecutors)
+                    .channel(NioSocketChannel.class)
+                    .handler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        protected void initChannel(SocketChannel socketChannel) throws Exception {
+                            ChannelPipeline pipeline = socketChannel.pipeline();
+                            pipeline.addLast(new DispackageClientHandler());
+                        }
+                    });
+            ChannelFuture channelFuture = bootstrap.connect("127.0.0.1", 8080).sync();
+            channelFuture.channel().closeFuture().sync();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            eventExecutors.shutdownGracefully();
+        }
+    }
+
+}
+```
+
+* 客户端处理器
+
+```java
+package com.self.netty.netty.dispackage.show;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.CharsetUtil;
+
+/**
+ * @author pj_zhang
+ * @create 2019-12-28 12:48
+ **/
+public class DispackageClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        // 发送数据到服务端
+        // 循环发送10次数据到服务端
+        for (int i = 0; i < 10; i++) {
+            ByteBuf byteBuf = Unpooled.copiedBuffer("send Message: " + i + "\r\n", CharsetUtil.UTF_8);
+            ctx.writeAndFlush(byteBuf);
+        }
+    }
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf) throws Exception {
+        // 接收服务端返回的数据
+        byte[] bytes = new byte[byteBuf.readableBytes()];
+        byteBuf.readBytes(bytes);
+        System.out.println(new String(bytes, CharsetUtil.UTF_8));
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        cause.printStackTrace();
+        ctx.close();
+    }
+}
+```
+
+### 4.5.3，拆包拆包解决方案
+
+#### 4.5.3.1，解决思路
+
+* 使用自定义协议 + 编解码器解决
+* 解决粘包拆包问题，就是解决服务端每次读取数据长度问题，该问题解决，就不会存在多读或者少读数据的问题，也就能避免拆包和粘包问题
+
+#### 4.5.3.2，具体实例
+
+* 客户端发送5个对象，并且每次只发送一个数据
+* 服务端每次接受一个对象，分5次进行解码展示，并每一次读取回复客户端响应
+
+![1577514221270](E:\gitrepository\study\note\image\nio\1577514221270.png)
+
+#### 4.5.3.3，实例代码
+
+* 自定义POJO对象
+
+```java
+package com.self.netty.netty.dispackage.deal;
+
+import lombok.Data;
+
+/**
+ * @author pj_zhang
+ * @create 2019-12-28 13:44
+ **/
+@Data
+public class MyProtocol {
+
+    /**
+     * 消息长度
+     */
+    private int length;
+
+    /**
+     * 消息内容
+     */
+    private String content;
+    
+}
+```
+
+* 自定义编码器
+
+```java
+package com.self.netty.netty.dispackage.deal;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToByteEncoder;
+import io.netty.util.CharsetUtil;
+
+/**
+ * @author pj_zhang
+ * @create 2019-12-28 13:46
+ **/
+public class ProtocolEncoder extends MessageToByteEncoder<MyProtocol> {
+
+    @Override
+    protected void encode(ChannelHandlerContext channelHandlerContext, MyProtocol myProtocol, ByteBuf byteBuf) throws Exception {
+        // 封装byteBuf数据
+        byteBuf.writeInt(myProtocol.getLength());
+        byteBuf.writeCharSequence(myProtocol.getContent(), CharsetUtil.UTF_8);
+        channelHandlerContext.writeAndFlush(byteBuf);
+    }
+
+}
+```
+
+* 自定义解码器
+
+```java
+package com.self.netty.netty.dispackage.deal;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.util.CharsetUtil;
+
+import java.util.List;
+
+/**
+ * @author pj_zhang
+ * @create 2019-12-28 13:43
+ **/
+public class ProtocolDecoder extends ByteToMessageDecoder {
+
+    @Override
+    protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) throws Exception {
+
+        // 读取长度
+        int length = byteBuf.readInt();
+        // 读取内容
+        String content = (String) byteBuf.readCharSequence(length, CharsetUtil.UTF_8);
+        // 封装数据
+        MyProtocol myProtocol = new MyProtocol();
+        myProtocol.setLength(length);
+        myProtocol.setContent(content);
+        list.add(myProtocol);
+    }
+
+}
+```
+
+* 服务端添加处理器
+
+```java
+.childHandler(new ChannelInitializer<SocketChannel>() {
+    @Override
+    protected void initChannel(SocketChannel socketChannel) throws Exception {
+        ChannelPipeline channelPipeline = socketChannel.pipeline();
+        // 添加解码器
+        channelPipeline.addLast(new ProtocolDecoder());
+        // 添加编码器, 用于返回数据
+        channelPipeline.addLast(new ProtocolEncoder());
+        // 添加自定义处理器
+        channelPipeline.addLast(new DispackageServerHandler());
+    }
+});
+```
+
+* 服务端自定义处理器修改
+
+```java
+package com.self.netty.netty.dispackage.deal;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.CharsetUtil;
+
+/**
+ * @author pj_zhang
+ * @create 2019-12-28 12:43
+ **/
+public class DispackageServerHandler extends SimpleChannelInboundHandler<MyProtocol> {
+
+    private int count = 0;
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, MyProtocol myProtocol) throws Exception {
+        // 接收客户端数据
+        System.out.println("接收次数: " + (++count));
+        System.out.println("长度: " + myProtocol.getLength());
+        System.out.println("内容: " + myProtocol.getContent());
+        // 响应数据回去
+        MyProtocol responseProtocol = new MyProtocol();
+        String responseMessage = "receive message";
+        responseProtocol.setLength(responseMessage.length());
+        responseProtocol.setContent(responseMessage);
+        channelHandlerContext.writeAndFlush(responseProtocol);
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        cause.printStackTrace();
+        ctx.close();
+    }
+}
+```
+
+* 客户端添加处理器
+
+```java
+.handler(new ChannelInitializer<SocketChannel>() {
+    @Override
+    protected void initChannel(SocketChannel socketChannel) throws Exception {
+        ChannelPipeline pipeline = socketChannel.pipeline();
+        // 添加编码器
+        pipeline.addLast(new ProtocolEncoder());
+        // 添加解码器
+        pipeline.addLast(new ProtocolDecoder());
+        // 添加自定义处理器
+        pipeline.addLast(new DispackageClientHandler());
+    }
+});
+```
+
+* 客户端自定义处理器修改
+
+```java
+package com.self.netty.netty.dispackage.deal;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.CharsetUtil;
+
+/**
+ * @author pj_zhang
+ * @create 2019-12-28 12:48
+ **/
+public class DispackageClientHandler extends SimpleChannelInboundHandler<MyProtocol> {
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        // 发送数据到服务端
+        for (int i = 0; i < 5; i++) {
+            MyProtocol myProtocol = new MyProtocol();
+            String sendMessage = "send Message: " + i + " \t\n";
+            myProtocol.setLength(sendMessage.length());
+            myProtocol.setContent(sendMessage);
+            ctx.writeAndFlush(myProtocol);
+        }
+    }
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, MyProtocol myProtocol) throws Exception {
+        // 接收数据
+        System.out.println(myProtocol.getContent());
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        cause.printStackTrace();
+        ctx.close();
+    }
+}
+```
 
 ## 4.6，Netty核心源码剖析
+
+### 4.6.1，启动过程源码剖析
+
+* `NioEventLoopGroup`初始化
+
+* `NioEventLoop`初始化 -> 异步执行队列初始化
+
+* `ServerBootStrap`初始化
+
+* ``ServerBootStrap.bind()`端口绑定
+  * `initAndRegister`：初始化数据并注册通道
+  * `doBind0`：绑定端口并启动
+* `io.netty.channel.AbstractChannel.AbstractUnsafe#bind`绑定成功后添加回调任务`AbstractChannel.this.pipeline.fireChannelActive()`，执行到`io.netty.channel.nio.AbstractNioChannel#doBeginRead`并初始化事件状态
+
+### 4.6.2，接收请求过程剖析
+
+* `Selector`轮询位置 -> `io.netty.channel.nio.NioEventLoop#run`
+* 接收客户端连接 -> `io.netty.channel.nio.AbstractNioMessageChannel.NioMessageUnsafe#read`
+* 获取连接并包装为`NioSocketChannel` -> `io.netty.channel.nio.AbstractNioMessageChannel#doReadMessages`
+* `fireChannelRead()` -> 执行处理器的`channelRead()`方法，此时处理器对应的`NioServerSocketChannel`的处理器，默认应该有`Head`，`LoggingHandler`，`ServerBootStrapAcceptor`，`Tail`四个处理器
+* 此处重点关注`ServerBootStrapAcceptor`，`channelRead()`方法中，注册连接到`workerGroup`
+* `workerGroup`中多道`NioEventLoop`，通过`next()`方法进行轮询分配
+* 连接完成后，读数据 -> `io.netty.channel.nio.AbstractNioByteChannel.NioByteUnsafe#read` -> `io.netty.channel.DefaultChannelPipeline#fireChannelRead`
+* `io.netty.channel.AbstractChannelHandlerContext#invokeChannelRead(java.lang.Object)`部分直接获取到自定义处理器，完成数据读业务处理
+* 读数据后， 继续准备读 -> `io.netty.channel.nio.AbstractNioByteChannel.NioByteUnsafe#read` -> `io.netty.channel.DefaultChannelPipeline#fireChannelReadComplete`
+* 一路调用直到`io.netty.channel.nio.AbstractNioChannel#doBeginRead`，修改注册的`SelectionKey`状态
+
+### 4.6.3，ChannelPipeline、ChannelHandler、ChannelHandlerContext源码分析
+
+* 三者关系
+  * `ChannelHandler`是Netty中处理器，在三者中是最底层部分
+  * `ChannelHandlerContext`是对`ChannelHandler`的包装，`ChannelHandlerContext`底层是双向链表，`ChannelHandler`作为链表上的每一个节点存在，本质上可以理解为一个数据结构
+  * `ChannelPipeline`包含`ChannelHandlerContext`，并通过一系列API对`ChannelHandlerContext`进行操作
+
+* ChannelPipeline
+  * 主要通过一系列API操作`ChannelHandlerContext`双向链表上的Handler
+
+* ChannelHandler
+  * 分离出`ChannelInboundHandler`和`ChannelOutboundHandler`，自定义Handler实现这两个接口区分出站和入站
+
+* ChannelHandlerContext
+* `ChannelPipeline`调度`ChannelHandler`
+  * `fire**`开头的方法，表示入站事件
+
+### 4.6.4，Netty心跳源码分析
+
+* `ChannelPipeline`添加`IdleStateHandler`，默认会执行其`initialize(..)`方法
+* `IdleStateHandler`内部定义了三个超时处理内部类：`ReaderIdleTimeoutTask`（读超时），`WriterIdleTimeoutTask`（写超时），`AllIdleTimeoutTask`（读写超时）
+* 初始化时，会分别生成三个定时任务到`NioEventLoop`中，`NioEventLoop`对应的定时任务列表`scheduledTaskQueue`中会增加三个任务
+* 每一次触发超时任务后，会执行内部类中的`run()`方法，`run()`内部会再次注册该任务到定时任务队列，以实现重复处理，再进行超时方法处理，即`userEventTriggered()`方法
+
+### 4.6.5，EventLoop源码分析
+
+* 
 
 ## 4.7，Netty实现 Dubbo RPC
 
