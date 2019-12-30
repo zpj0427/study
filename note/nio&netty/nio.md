@@ -3885,6 +3885,7 @@ private void write(Object msg, boolean flush, ChannelPromise promise) {
   ```java
   // 初始化成员变量
   static EventExecutorGroup eventExecutors = new DefaultEventExecutorGroup(16);
+  
   // ChannelPipeline添加Handler时，指定异步组
   socketChannel.pipeline().addLast(eventExecutors, new NettyServerHandler());
   ```

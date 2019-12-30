@@ -47,9 +47,9 @@ public class NettyServer {
 					protected void initChannel(SocketChannel socketChannel) throws Exception {
 						// 获取pipeline进行业务处理
 						// 管道主要进行数据处理
-						// socketChannel.pipeline().addLast(new NettyServerHandler());
+						socketChannel.pipeline().addLast(new NettyServerHandler());
 						// 带异步线程
-						socketChannel.pipeline().addLast(eventExecutors, new NettyServerHandler());
+						// socketChannel.pipeline().addLast(eventExecutors, new NettyServerHandler());
 					}
 				});
 			// 启动Netty服务, 并绑定端口
