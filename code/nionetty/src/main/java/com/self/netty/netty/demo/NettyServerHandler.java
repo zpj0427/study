@@ -33,6 +33,7 @@ public class NettyServerHandler extends ChannelInboundHandlerAdapter {
 	 */
 	@Override
 	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+		System.out.println(Thread.currentThread().getName());
 		// 将数据写入缓冲区
 		ctx.writeAndFlush(Unpooled.copiedBuffer("has received message...", Charset.forName("UTF-8")));
 	}

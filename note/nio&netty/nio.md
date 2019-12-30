@@ -3787,7 +3787,107 @@ public class DispackageClientHandler extends SimpleChannelInboundHandler<MyProto
 
 ### 4.6.5，EventLoop源码分析
 
-* 
+* `NioEventLoop`初始化，通过`NioEventLoopGroup`初始化带起，并关联初始化队列容器
+* `NioEventLoop.execute()`是核心方法，内部启动`NioEventLoop`线程，轮询处理任务：
+  * `select()`：轮询获取注册任务
+  * `processSelectedKeys()`：根据不同注册事件执行任务
+  * `runAllTasks()`：执行所有队列任务
+
+### 4.6.6，异步任务源码分析
+
+* Netty自带`execute()`异步处理，只是对客户端异步，客户端可以即时接收到响应信息；但是对服务端同步，服务端发起异步任务到任务队列，并且返回信息到客户端后，当前线程会继续循环执行任务队列中的任务，为同步执行
+
+* 异步任务：Handler中添加线程池`DefaultEventExecutorGroup`
+
+  * `DefaultEventExecutorGroup`初始化时需要指定线程数，并根据指定数量内置对应数量的`DefaultEventExecutor`执行器进行异步线程执行
+  * 通过`DefaultEventExecutorGroup`发起异步线程后，会通过选择器从已经初始化的执行器数据组中获取一个执行器进行执行
+  * 如果发起任务时，所有执行器都在等待状态，则在阻塞队列中等待空闲
+
+  ```java
+  static EventExecutorGroup eventExecutors = new DefaultEventExecutorGroup(16);
+  
+  /**
+  	 * 读取客户端发送的数据 ChannelHandlerContext: 上下文对象, 含有管道,通道,地址 msg: 客户端发送的消息, 默认为Object
+  	 */
+  @Override
+  public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+      // 对于业务执行较长的任务, 可以自定义任务队列进行处理
+      // 接收任务后直接发起任务队列, 即异步执行
+      // 之后channelRead()执行完成, 会继续执行channelReadComplete()
+      // 等业务代码真正执行完成后, 再次提示客户端
+      System.out.println("主线程: " + Thread.currentThread().getName());
+      // 发起执行任务, 实际是将任务添加到 NioEventLoop 的 taskQueue 属性中,
+      // taskQueue 中的线程对象会顺序执行, 也就是说当前定义的两个异步任务, 会依次执行, 共6S执行完成
+      // 而不是并行执行3S完成
+      ctx.channel().eventLoop().execute(() -> {
+          try {
+              Thread.sleep(3 * 1000);
+              // 此处主线程与异步线程其实是同一个线程
+              // execute会添加该线程任务到任务队列
+              // 主线程执行完逻辑后, 会继续执行任务队列中任务
+              // 执行任务队列时,直接调用run()方法, 不会重新启动线程
+              System.out.println("异步线程: " + Thread.currentThread().getName());
+              ctx.channel().writeAndFlush(Unpooled.copiedBuffer("channelRead_1...", Charset.forName("UTF-8")));
+          } catch (Exception e) {
+              e.printStackTrace();
+          }
+      });
+  
+      for (int i = 0; i < 40; i++) {
+          eventExecutors.execute(() -> {
+              try {
+                  Thread.sleep(3 * 1000);
+                  System.out.println("Event Executor Group: " + Thread.currentThread().getName());
+              } catch (Exception e) {
+                  e.printStackTrace();
+              }
+          });
+      }
+      // 发起异步后, 主线程不会阻塞, 会直接执行
+      System.out.println("channelRead() 执行完成");
+  }
+  ```
+
+* `writeAndFlush()`对于异步前后的执行流程分析
+
+```java
+private void write(Object msg, boolean flush, ChannelPromise promise) {
+    AbstractChannelHandlerContext next = findContextOutbound();
+    final Object m = pipeline.touch(msg, next);
+    EventExecutor executor = next.executor();
+    // 同步执行, 线程相同, 走当前if块
+    if (executor.inEventLoop()) {
+        if (flush) {
+            next.invokeWriteAndFlush(m, promise);
+        } else {
+            next.invokeWrite(m, promise);
+        }
+    // 异步执行, 线程不同, 走else模块, 
+    // 添加到任务队列, 等待主流程继续执行
+    } else {
+        AbstractWriteTask task;
+        if (flush) {
+            task = WriteAndFlushTask.newInstance(next, m, promise);
+        }  else {
+            task = WriteTask.newInstance(next, m, promise);
+        }
+        safeExecute(executor, task, promise, m);
+    }
+}
+```
+
+* 异步任务：Context中添加线程池`DefaultEventExecutorGroup`
+
+  * 构造方式与Handler基本一致，不过在添加异步任务时，是通过`ChannelPipeline`对`DefaultEventExecutorGroup`和`Handler`进行包装处理
+  * `ChannelPipeline`在对`DefaultEventExecutorGroup`和`Handler`进行包装为`ChannelHandlerContext`时，同时指定`execute`为`DefaultEventExcutor`
+  * 在后续执行时，因为`inEventLoop()`判断为false，会添加到任务队列执行，而该任务的执行载体就是`DefaultEventExecutor`
+
+  ```java
+  // 初始化成员变量
+  static EventExecutorGroup eventExecutors = new DefaultEventExecutorGroup(16);
+  // ChannelPipeline添加Handler时，指定异步组
+  socketChannel.pipeline().addLast(eventExecutors, new NettyServerHandler());
+  ```
 
 ## 4.7，Netty实现 Dubbo RPC
 

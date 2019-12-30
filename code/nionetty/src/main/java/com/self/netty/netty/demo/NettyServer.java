@@ -9,6 +9,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.util.concurrent.DefaultEventExecutorGroup;
+import io.netty.util.concurrent.EventExecutorGroup;
 
 /**
  * NETTY_服务端代码
@@ -17,6 +19,8 @@ import io.netty.handler.logging.LoggingHandler;
  * @date 2019年12月19日 上午9:36:18
  */
 public class NettyServer {
+
+	static EventExecutorGroup eventExecutors = new DefaultEventExecutorGroup(16);
 
 	public static void main(String[] args) throws Exception {
 		// Group子线程数不填默认为 (CPU核数 * 2)
@@ -43,7 +47,9 @@ public class NettyServer {
 					protected void initChannel(SocketChannel socketChannel) throws Exception {
 						// 获取pipeline进行业务处理
 						// 管道主要进行数据处理
-						socketChannel.pipeline().addLast(new NettyScheduleTaskHandler());
+						// socketChannel.pipeline().addLast(new NettyServerHandler());
+						// 带异步线程
+						socketChannel.pipeline().addLast(eventExecutors, new NettyServerHandler());
 					}
 				});
 			// 启动Netty服务, 并绑定端口
