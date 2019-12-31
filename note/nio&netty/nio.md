@@ -1779,7 +1779,7 @@ public class AIOClient {
           if(this.pollWrapper == null) {
               throw new ClosedSelectorException();
           } else {
-              // 对SelectionKeyImpl[] channelArray数组进行扩容, 默认长度为8
+              // 对SelectionKeyImpl[] channelArray数组进行二倍扩容, 默认长度为8
               this.growIfNeeded();
               // 填充到数据的下一个索引位置
               this.channelArray[this.totalChannels] = var1;
