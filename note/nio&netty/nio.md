@@ -1121,13 +1121,13 @@ public class GroupChatClient {
 }
 ```
 
-## 3.2，零拷贝
+## 3.3，零拷贝
 
 
 
-## 3.3，Java AIO
+## 3.4，Java AIO
 
-### 3.3.1，服务端
+### 3.4.1，服务端
 
 ```java
 package com.gupao.io.aio;
@@ -1206,7 +1206,7 @@ public class AIOServer {
 }
 ```
 
-### 3.3.2，客户端
+### 3.4.2，客户端
 
 ```java
 package com.gupao.io.aio;
@@ -1272,7 +1272,566 @@ public class AIOClient {
 }
 ```
 
+## 3.5，NIO源码分析
+
+### 3.5.1，初始化源码
+
+#### 3.5.1.1，ServerSocketChannel初始化
+
+* `ServerSocketChannel serverSocketChannel = ServerSocketChannel.open()`
+
+  * `ServerSocketChannel.open()`
+
+  ```JAVA
+  public static ServerSocketChannel open() throws IOException {
+      // 先获取一个Provider
+      // 再通过Provider打开Channel
+      return SelectorProvider.provider().openServerSocketChannel();
+  }
+  ```
+
+  * `Selector.provider()`
+
+  ```java
+  /**********Provider 根据平台创建, (Windows/Linux)************/
+  public static SelectorProvider provider() {
+      synchronized (lock) {
+          if (provider != null)
+              return provider;
+          return AccessController.doPrivileged(
+              new PrivilegedAction<SelectorProvider>() {
+                  public SelectorProvider run() {
+                      if (loadProviderFromProperty())
+                          return provider;
+                      if (loadProviderAsService())
+                          return provider;
+                      provider = sun.nio.ch.DefaultSelectorProvider.create();
+                      return provider;
+                  }
+              });
+      }
+  }
+  /******创建一个Windows平台的Provider*******/
+  public static SelectorProvider create() {
+      return new WindowsSelectorProvider();
+  }
+  ```
+
+  * `WindowsSelectorProvider`继承自`SelectorProviderImpl`，`openServerSocketChannel()`为父类方法
+
+  ```java
+  /****SelectorProviderImpl***/
+  public ServerSocketChannel openServerSocketChannel() throws IOException {
+      // 所以实际构建的实例为ServerSocketChannelImpl
+      return new ServerSocketChannelImpl(this);
+  }
+  
+  /**ServerSocketChannelImpl***/
+  ServerSocketChannelImpl(SelectorProvider var1) throws IOException {
+      super(var1);
+      // 注意此处默认阻塞方式为true
+      this.fd = Net.serverSocket(true);
+      this.fdVal = IOUtil.fdVal(this.fd);
+      this.state = 0;
+  }
+  ```
+
+* `serverSocketChannel.configureBlocking(false)`：修改为非阻塞
+
+  * `AbstractSelectableChannel.configureBlocking`
+
+  ```java
+  public final SelectableChannel configureBlocking(boolean block) throws IOException {
+      synchronized (regLock) {
+          if (!isOpen())
+              throw new ClosedChannelException();
+          if (blocking == block)
+              return this;
+          if (block && haveValidKeys())
+              throw new IllegalBlockingModeException();
+          // 该方法为抽象方法, 上一步初始化ServerSocketChannel实际类型为ServerSocketChannelImpl，直接去改方法处理
+          implConfigureBlocking(block);
+          blocking = block;
+      }
+      return this;
+  }
+  ```
+
+  * `ServerSocketChannelImpl.implConfigureBlocking`
+
+  ```java
+  protected void implConfigureBlocking(boolean var1) throws IOException {
+      // 通过native方法，修改fd的阻塞方式为设置方式
+      IOUtil.configureBlocking(this.fd, var1);
+  }
+  ```
+
+* `serverSocketChannel.socket().bind(new InetSocketAddress(8080))`
+
+  * `serverSocketChannel.socket()`：获取`Socket`
+
+  ```java
+  public ServerSocket socket() {
+      Object var1 = this.stateLock;
+      // 该对象通过单例获取
+      synchronized(this.stateLock) {
+          if(this.socket == null) {
+              // 使用ServerSocketAdaptor对象进行构建
+              this.socket = ServerSocketAdaptor.create(this);
+          }
+  
+          return this.socket;
+      }
+  }
+  ```
+
+  * `ServerSocketAdaptor.create(this)`
+
+  ```java
+  // 构造成员变量， 进行ServerSocketChannel
+  private final ServerSocketChannelImpl ssc;
+  
+  public static ServerSocket create(ServerSocketChannelImpl var0) {
+      try {
+          // 实际构造的Socket对象是ServerSocketAdaptor
+          // 同时传递Channel到Socket
+          // 实现互相获取
+          return new ServerSocketAdaptor(var0);
+      } catch (IOException var2) {
+          throw new Error(var2);
+      }
+  }
+  
+  private ServerSocketAdaptor(ServerSocketChannelImpl var1) throws IOException {
+      this.ssc = var1;
+  }
+  ```
+
+  * `Socket.bind(new InetSocketAddress(8080))`：绑定端口，从上一步可知，初始化的`Socket`类型为`ServerSocketAdapter`
+
+  ```java
+  public void bind(SocketAddress var1, int var2) throws IOException {
+      if(var1 == null) {
+          var1 = new InetSocketAddress(0);
+      }
+      try {
+          // Socket初始化时，传递Channel对象并赋值给ssc属性
+          // 所以ssc代表的是派生该Socket的Channel对象
+          // 此处转一圈后依旧调用Channel.bind()方法，与serverSocketChannel.bind()直接绑定效果一致
+          this.ssc.bind((SocketAddress)var1, var2);
+      } catch (Exception var4) {
+          Net.translateException(var4);
+      }
+  }
+  ```
+
+  * `Channel.bind()`：`Channel`初始化的实例为`ServerSocketChannelImpl`
+
+  ```java
+  public ServerSocketChannel bind(SocketAddress var1, int var2) throws IOException {
+      Object var3 = this.lock;
+      synchronized(this.lock) {
+          if(!this.isOpen()) {
+              throw new ClosedChannelException();
+          } else if(this.isBound()) {
+              throw new AlreadyBoundException();
+          } else {
+              InetSocketAddress var4 = var1 == null?new InetSocketAddress(0):Net.checkAddress(var1);
+              SecurityManager var5 = System.getSecurityManager();
+              if(var5 != null) {
+                  var5.checkListen(var4.getPort());
+              }
+  
+              NetHooks.beforeTcpBind(this.fd, var4.getAddress(), var4.getPort());
+              // 重点关注下面两个方法
+              // 把IP和端口全部绑定到fd中去
+              Net.bind(this.fd, var4.getAddress(), var4.getPort());
+              // 并进行监听
+              Net.listen(this.fd, var2 < 1?50:var2);
+              Object var6 = this.stateLock;
+              synchronized(this.stateLock) {
+                  this.localAddress = Net.localAddress(this.fd);
+              }
+  
+              return this;
+          }
+      }
+  }
+  ```
+
+#### 3.5.1.2，SocketChannel初始化
+
+* `SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress("127.0.0.1", 8080))`
+
+  ```java
+  public static SocketChannel open(SocketAddress remote) throws IOException {
+      // 获取SocketChannel实例对象
+      SocketChannel sc = open();
+      try {
+          // 连接当前客户端到服务器
+          sc.connect(remote);
+      } catch (Throwable x) {
+          try {
+              sc.close();
+          } catch (Throwable suppressed) {
+              x.addSuppressed(suppressed);
+          }
+          throw x;
+      }
+      assert sc.isConnected();
+      return sc;
+  }
+  ```
+  * `SocketChannel.open()`：最终获取`SocketChannelImpl`
+
+  ```java
+  // state状态
+  private static final int ST_UNINITIALIZED = -1; // 未初始化
+  private static final int ST_UNCONNECTED = 0; // 未连接
+  private static final int ST_PENDING = 1; // 连接中
+  private static final int ST_CONNECTED = 2; // 已连接
+  private static final int ST_KILLPENDING = 3; // 正在关闭
+  private static final int ST_KILLED = 4; // 关闭
+  
+  public static SocketChannel open() throws IOException {
+      // 获取WINDOWS的Provider，并打开SocketChannel
+      return SelectorProvider.provider().openSocketChannel();
+  }
+  
+  public SocketChannel openSocketChannel() throws IOException {
+      // 最终构建SocketChannelImpl对象
+      return new SocketChannelImpl(this);
+  }
+  
+  SocketChannelImpl(SelectorProvider var1) throws IOException {
+      // 传递Provider到父类
+      super(var1);
+      // 初始化为阻塞
+      this.fd = Net.socket(true);
+      this.fdVal = IOUtil.fdVal(this.fd);
+      // 此处注意状态变更
+      this.state = 0;
+  }
+  ```
+  * `Channel.connect()`：`Channel`为刚才初始化的`SocketChannelImpl`
+
+  ```java
+  // 该方法重点是进行连接， 连接完成后对state状态进行修改
+  public boolean connect(SocketAddress var1) throws IOException {
+      boolean var2 = false;
+      Object var3 = this.readLock;
+      synchronized(this.readLock) {
+          Object var4 = this.writeLock;
+          synchronized(this.writeLock) {
+              // 校验部分
+              this.ensureOpenAndUnconnected();
+              InetSocketAddress var5 = Net.checkAddress(var1);
+              SecurityManager var6 = System.getSecurityManager();
+              if(var6 != null) {
+                  var6.checkConnect(var5.getAddress().getHostAddress(), var5.getPort());
+              }
+              boolean var10000;
+              synchronized(this.blockingLock()) {
+                  int var8 = 0;
+                  Object var9;
+                  try {
+                      try {
+                          this.begin();
+                          var9 = this.stateLock;
+                          synchronized(this.stateLock) {
+                              if(!this.isOpen()) {
+                                  boolean var10 = false;
+                                  return var10;
+                              }
+                              if(this.localAddress == null) {
+                                  NetHooks.beforeTcpConnect(this.fd, var5.getAddress(), var5.getPort());
+                              }
+                              this.readerThread = NativeThread.current();
+                          }
+                          do {
+                              InetAddress var31 = var5.getAddress();
+                              if(var31.isAnyLocalAddress()) {
+                                  var31 = InetAddress.getLocalHost();
+                              }
+  							// 通过该步骤进行连接
+                              var8 = Net.connect(this.fd, var31, var5.getPort());
+                          } while(var8 == -3 && this.isOpen());
+                      } finally {
+                          this.readerCleanup();
+                          this.end(var8 > 0 || var8 == -2);
+  
+                          assert IOStatus.check(var8);
+  
+                      }
+                  } catch (IOException var27) {
+                      this.close();
+                      throw var27;
+                  }
+  
+                  var9 = this.stateLock;
+                  synchronized(this.stateLock) {
+                      this.remoteAddress = var5;
+                      // 连接结果小于0， 说明未成功， 对未成功继续进行半段
+                      if(var8 <= 0) {
+                          // 非阻塞模式下，可能还在连接中
+                          if(!this.isBlocking()) {
+                              this.state = 1;
+                          // 阻塞模式下，直接失败
+                          } else {
+                              assert false;
+                          }
+                      // 连接结果大于0，连接成功，修改state状态为对应状态
+                      } else {
+                          this.state = 2;
+                          if(this.isOpen()) {
+                              this.localAddress = Net.localAddress(this.fd);
+                          }
+  
+                          var10000 = true;
+                          return var10000;
+                      }
+                  }
+              }
+  
+              var10000 = false;
+              return var10000;
+          }
+      }
+  }
+  ```
+
+* `socketChannel.configureBlocking(false)`：***与`ServerSocketChannel`一致***
+
+#### 3.5.1.3，Selector初始化
+
+* `selector = Selector.open()`
+
+  ```java
+  public static Selector open() throws IOException {
+      // 初始化WINDOWS系统的Provider, 初始化轮询器
+      return SelectorProvider.provider().openSelector();
+  }
+  ```
+
+* `WindowsSelectorProvider.openSelector()`
+
+  ```java
+  public AbstractSelector openSelector() throws IOException {
+      // 注意此处的轮询器, 是平台相关, WINDOWS下, 初始化为WindowsSelectorImpl
+      return new WindowsSelectorImpl(this);
+  }
+  
+  WindowsSelectorImpl(SelectorProvider var1) throws IOException {
+      // 父类持有Provider
+      super(var1);
+      this.wakeupSourceFd = ((SelChImpl)this.wakeupPipe.source()).getFDVal();
+      SinkChannelImpl var2 = (SinkChannelImpl)this.wakeupPipe.sink();
+      var2.sc.socket().setTcpNoDelay(true);
+      this.wakeupSinkFd = var2.getFDVal();
+      this.pollWrapper.addWakeupSocket(this.wakeupSourceFd, 0);
+  }
+  ```
+
+#### 3.5.1.4，ByteBuffer初始化
+
+* `ByteBuffer`之前已经有过分析，主要是通过四个基本属性进行缓冲区数据读写和标记，此处主要关注直接缓冲区和间接缓冲区的初始化方式
+
+* 间接缓冲区
+
+  ```JAVA
+  public static ByteBuffer allocate(int capacity) {
+      if (capacity < 0)
+          throw new IllegalArgumentException();
+      // 间接缓冲区, 初始化为类型为HeapByteBuffer
+      return new HeapByteBuffer(capacity, capacity);
+  }
+  
+  HeapByteBuffer(int cap, int lim) {
+  	// 参数顺序依次为: mark，position，limit，capacity，底层数据，offset偏移量
+      super(-1, 0, lim, cap, new byte[cap], 0);
+  }
+  ```
+
+* 直接缓冲区
+
+  ```java
+  public static ByteBuffer allocateDirect(int capacity) {
+      // 直接缓冲区初始化实例为 DirectByteBuffer
+      // 直接缓冲区直接从内存中申请空间, 直接进行数据操作
+      return new DirectByteBuffer(capacity);
+  }
+  ```
+
+* 其他`ByteBuffer`读写无非是对四个属性位置进行移动，并从底层数组中获取数据，注意NIO的`ByteBuffer`不会扩容
+
+### 3.5.2，注册源码
+
+* 注册，就是将当前`Channel`注册到`Selector`上，是NIO源码的核心部分
+
+* `serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT)`：注册事件
+
+  ```java
+  public final SelectionKey register(Selector sel, int ops, Object att) throws ClosedChannelException {
+      // 用注册锁保证同步
+      synchronized (regLock) {
+          if (!isOpen())
+              throw new ClosedChannelException();
+          if ((ops & ~validOps()) != 0)
+              throw new IllegalArgumentException();
+          if (blocking)
+              throw new IllegalBlockingModeException();
+          // 从当前Channel自身的注册列表中获取数据
+          SelectionKey k = findKey(sel);
+          // 获取到数据后，只对SelectionKey状态进行变更
+          if (k != null) {
+              k.interestOps(ops);
+              k.attach(att);
+          }
+          // key为空，说明该任务为新任务，加锁后注册
+          if (k == null) {
+              synchronized (keyLock) {
+                  if (!isOpen())
+                      throw new ClosedChannelException();
+                  k = ((AbstractSelector)sel).register(this, ops, att);
+                  // 注册完成后，将新注册的SelectionKey添加的Channel的注册列表中
+                  addKey(k);
+              }
+          }
+          return k;
+      }
+  }
+  ```
+
+* `AbstractSelectableChannel.findKey()`：从`Channel`的`SelectionKey[]`数组中获取存在数据
+
+  ```java
+  private SelectionKey findKey(Selector sel) {
+      synchronized (keyLock) {
+          if (keys == null)
+              return null;
+          for (int i = 0; i < keys.length; i++)
+              // 一个Channel跟一个Selector是强绑定的,可以通过Selector匹配获取注册的Key
+              // Channel和Selector之间是多对多的关系
+              if ((keys[i] != null) && (keys[i].selector() == sel))
+                  return keys[i];
+          return null;
+      }
+  }
+  ```
+
+* `((AbstractSelector)sel).register(this, ops, att)`：通道未注册到选择器，进行注册
+
+  ```java
+  protected final SelectionKey register(AbstractSelectableChannel var1, int var2, Object var3) {
+      if(!(var1 instanceof SelChImpl)) {
+          throw new IllegalSelectorException();
+      } else {
+          // 初始化一个选择器处理对象，封装通道和选择器
+          // 生成的对象真是实例为SelectionKeyImpl
+          SelectionKeyImpl var4 = new SelectionKeyImpl((SelChImpl)var1, this);
+          var4.attach(var3);
+          Set var5 = this.publicKeys;
+          // 对注册的SelectionKey列表进行同步处理
+          synchronized(this.publicKeys) {
+              // 初始化完成后，进行最终注册
+              this.implRegister(var4);
+          }
+  		// 初始化完成后，修改状态
+          var4.interestOps(var2);
+          return var4;
+      }
+  }
+  
+  SelectionKeyImpl(SelChImpl var1, SelectorImpl var2) {
+      this.channel = var1;
+      this.selector = var2;
+  }
+  ```
+
+* `WindowsSelectorImpl.implRegister`：注册
+
+  ```java
+  // 注册前先看下父类初始化部分
+  protected Set<SelectionKey> selectedKeys = new HashSet();
+  protected HashSet<SelectionKey> keys = new HashSet();
+  private Set<SelectionKey> publicKeys;
+  private Set<SelectionKey> publicSelectedKeys;
+  
+  // 从构造器中可以看到: 
+  // publicKeys 和 keys
+  // publicSelectedKeys 和 selectedKeys 已经两两关联
+  protected SelectorImpl(SelectorProvider var1) {
+      super(var1);
+      if(Util.atBugLevel("1.4")) {
+          this.publicKeys = this.keys;
+          this.publicSelectedKeys = this.selectedKeys;
+      } else {
+          this.publicKeys = Collections.unmodifiableSet(this.keys);
+          this.publicSelectedKeys = Util.ungrowableSet(this.selectedKeys);
+      }
+  
+  }
+  
+  // 注册
+  protected void implRegister(SelectionKeyImpl var1) {
+      Object var2 = this.closeLock;
+      synchronized(this.closeLock) {
+          if(this.pollWrapper == null) {
+              throw new ClosedSelectorException();
+          } else {
+              // 对SelectionKeyImpl[] channelArray数组进行扩容, 默认长度为8
+              this.growIfNeeded();
+              // 填充到数据的下一个索引位置
+              this.channelArray[this.totalChannels] = var1;
+              // 设置SelectionKey的索引值
+              var1.setIndex(this.totalChannels);
+              this.fdMap.put(var1);
+              // 添加到选择器的注册列表中
+              this.keys.add(var1);
+              this.pollWrapper.addEntry(this.totalChannels, var1);
+              ++this.totalChannels;
+          }
+      }
+  }
+  ```
+
+* `AbstractSelectableChannel.addKey()`：注册完成，添加到通道的`SelectionKey[]`数组中
+
+  ```java
+  private void addKey(SelectionKey k) {
+      assert Thread.holdsLock(keyLock);
+      int i = 0;
+      // 首先数据已经初始化且未满， 正常填充
+      if ((keys != null) && (keyCount < keys.length)) {
+          for (i = 0; i < keys.length; i++)
+              if (keys[i] == null)
+                  break;
+      // 数组未初始化，直接初始化，并制定默认长度3
+      } else if (keys == null) {
+          keys =  new SelectionKey[3];
+      // 数组已经初始化，且数据已满，
+      // 进行二倍扩容和原始数据迁移
+      } else {
+          // Grow key array
+          int n = keys.length * 2;
+          SelectionKey[] ks =  new SelectionKey[n];
+          for (i = 0; i < keys.length; i++)
+              ks[i] = keys[i];
+          keys = ks;
+          i = keyCount;
+      }
+      // 获取到可以填充的下标，进行数据填充
+      keys[i] = k;
+      keyCount++;
+  }
+  ```
+
+### 3.5.3，选择器源码
+
+### 3.5.4，数据交互源码
+
 # 4，[Netty](https://netty.io/)
+
 ## 4.1，Netty概述
 
 ### 4.1.1，原生NIO存在的问题
