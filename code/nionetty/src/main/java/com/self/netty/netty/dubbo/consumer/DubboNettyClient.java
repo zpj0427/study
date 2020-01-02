@@ -62,7 +62,7 @@ public class DubboNettyClient {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        // 两个小时的排错提示, 此处不关流, 因为上面没有阻塞
+        // 两个小时的排错提示, 此处不关流, 因为上面没有阻塞`
         // 现在时间: 2019年12月31日01:34:14
         // 给本人的蠢流一个记号...
     }

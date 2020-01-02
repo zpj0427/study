@@ -1330,6 +1330,7 @@ public class AIOClient {
   ServerSocketChannelImpl(SelectorProvider var1) throws IOException {
       super(var1);
       // 注意此处默认阻塞方式为true
+      // 此处初始化文件描述符:FileDescriptor,用来表示公开的套接字
       this.fd = Net.serverSocket(true);
       this.fdVal = IOUtil.fdVal(this.fd);
       this.state = 0;
@@ -1347,6 +1348,7 @@ public class AIOClient {
               throw new ClosedChannelException();
           if (blocking == block)
               return this;
+          // 初始化阻塞并且存在有效的注册事件,不允许设置, 直接异常处理
           if (block && haveValidKeys())
               throw new IllegalBlockingModeException();
           // 该方法为抽象方法, 上一步初始化ServerSocketChannel实际类型为ServerSocketChannelImpl，直接去改方法处理
@@ -1357,11 +1359,29 @@ public class AIOClient {
   }
   ```
 
+  * `AbstractSelectableChannel.haveValidKeys()`：校验当前通道中是否存在注册事件
+
+  ```java
+  private boolean haveValidKeys() {
+      synchronized (keyLock) {
+          // 不存在任务,直接返回false
+          if (keyCount == 0)
+              return false;
+          // 存在注册事件,并且注册事件未失效,返回true,
+          for (int i = 0; i < keys.length; i++) {
+              if ((keys[i] != null) && keys[i].isValid())
+                  return true;
+          }
+          return false;
+      }
+  }
+  ```
+
   * `ServerSocketChannelImpl.implConfigureBlocking`
 
   ```java
   protected void implConfigureBlocking(boolean var1) throws IOException {
-      // 通过native方法，修改fd的阻塞方式为设置方式
+      // 通过native方法，修改文件描述符fd的阻塞方式为设置方式
       IOUtil.configureBlocking(this.fd, var1);
   }
   ```
@@ -1430,18 +1450,22 @@ public class AIOClient {
   ```java
   public ServerSocketChannel bind(SocketAddress var1, int var2) throws IOException {
       Object var3 = this.lock;
+      // 串行化执行,进行加锁
       synchronized(this.lock) {
-          if(!this.isOpen()) {
+          if(!this.isOpen()) { // 通道不是打开状态,异常处理
               throw new ClosedChannelException();
-          } else if(this.isBound()) {
+          } else if(this.isBound()) { // 已经绑定过,不允许多次绑定
               throw new AlreadyBoundException();
           } else {
+              // 此处对初始化的地址进行判断,
+              // 如果没有初始化,直接初始化0端口,表示随机端口
+              // 如果已经初始化,则对IP地址进行判断
               InetSocketAddress var4 = var1 == null?new InetSocketAddress(0):Net.checkAddress(var1);
+              // 通过安全管理器对端口监听进行校验,不是很懂
               SecurityManager var5 = System.getSecurityManager();
               if(var5 != null) {
                   var5.checkListen(var4.getPort());
               }
-  
               NetHooks.beforeTcpBind(this.fd, var4.getAddress(), var4.getPort());
               // 重点关注下面两个方法
               // 把IP和端口全部绑定到fd中去
@@ -1450,11 +1474,26 @@ public class AIOClient {
               Net.listen(this.fd, var2 < 1?50:var2);
               Object var6 = this.stateLock;
               synchronized(this.stateLock) {
+                  // 启动完成后,初始化localAddress, 再次启动会直接报错
+                  // 主要是从FD中拿到绑定的IP和端口存储到InetSocketAddress中
                   this.localAddress = Net.localAddress(this.fd);
               }
   
               return this;
           }
+      }
+  }
+  ```
+  
+  * `Channel.isBound()`：绑定情况判断
+  
+  ```java
+  public boolean isBound() {
+      Object var1 = this.stateLock;
+      synchronized(this.stateLock) {
+          // localAddress为InetSocketAddress,不为null说明已经初始化
+          // 此处表示IP:端口绑定不允许多次绑定
+          return this.localAddress != null;
       }
   }
   ```
@@ -1506,7 +1545,7 @@ public class AIOClient {
   SocketChannelImpl(SelectorProvider var1) throws IOException {
       // 传递Provider到父类
       super(var1);
-      // 初始化为阻塞
+      // 初始化文件描述符为阻塞
       this.fd = Net.socket(true);
       this.fdVal = IOUtil.fdVal(this.fd);
       // 此处注意状态变更
@@ -1523,9 +1562,11 @@ public class AIOClient {
       synchronized(this.readLock) {
           Object var4 = this.writeLock;
           synchronized(this.writeLock) {
-              // 校验部分
+              // 对连接状态进行判断,如果已经关闭,正在连接中或者已连接,进行异常处理
               this.ensureOpenAndUnconnected();
+              // 对连接的IP地址进行判断
               InetSocketAddress var5 = Net.checkAddress(var1);
+              // 安全管理器校验连接,与ServerSocketChannel基本呼应吧感觉
               SecurityManager var6 = System.getSecurityManager();
               if(var6 != null) {
                   var6.checkConnect(var5.getAddress().getHostAddress(), var5.getPort());
@@ -1543,6 +1584,7 @@ public class AIOClient {
                                   boolean var10 = false;
                                   return var10;
                               }
+                              // 通过localAdress保存连接IP和地址, 方便后续获取
                               if(this.localAddress == null) {
                                   NetHooks.beforeTcpConnect(this.fd, var5.getAddress(), var5.getPort());
                               }
@@ -1553,9 +1595,9 @@ public class AIOClient {
                               if(var31.isAnyLocalAddress()) {
                                   var31 = InetAddress.getLocalHost();
                               }
-  							// 通过该步骤进行连接
+  							// 进行连接
                               var8 = Net.connect(this.fd, var31, var5.getPort());
-                          } while(var8 == -3 && this.isOpen());
+                          } while(var8 == -3 && this.isOpen()); // 连接失败,循环重试
                       } finally {
                           this.readerCleanup();
                           this.end(var8 > 0 || var8 == -2);
@@ -1567,7 +1609,7 @@ public class AIOClient {
                       this.close();
                       throw var27;
                   }
-  
+  				// 修改state状态
                   var9 = this.stateLock;
                   synchronized(this.stateLock) {
                       this.remoteAddress = var5;
@@ -1602,7 +1644,122 @@ public class AIOClient {
 
 * `socketChannel.configureBlocking(false)`：***与`ServerSocketChannel`一致***
 
-#### 3.5.1.3，Selector初始化
+#### 3.5.1.3，Pipe初始化
+
+* `Pipe.open()`：初始化管道
+
+  ```java
+  public static Pipe open() throws IOException {
+      // 继续通过Provider打开一个管道
+      return SelectorProvider.provider().openPipe();
+  }
+  
+  // 内部通过子类进行初始化
+  public Pipe openPipe() throws IOException {
+      return new PipeImpl(this);
+  }
+  
+  // 此处初始化一个内部类,并交由native执行
+  // 根据猜测,native方法执行后,会调用Initializer.run方法
+  PipeImpl(SelectorProvider var1) throws IOException {
+      try {
+          AccessController.doPrivileged(new PipeImpl.Initializer(var1));
+      } catch (PrivilegedActionException var3) {
+          throw (IOException)var3.getCause();
+      }
+  }
+  ```
+
+* `Initializer.run()`
+
+  ```JAVA
+  public Void run() throws IOException {
+      // 该方法会继续调用其内部类LoopbackConnector的run()方法
+      PipeImpl.Initializer.LoopbackConnector var1 = new PipeImpl.Initializer.LoopbackConnector();
+      // 该方法内部会初始化的Pipe管道的读写对象
+      var1.run();
+      // 初始化完成后,对异常进行分类处理
+      if(this.ioe instanceof ClosedByInterruptException) {
+          ...
+      }
+  
+      if(this.ioe != null) {
+          throw new IOException("Unable to establish loopback connection", this.ioe);
+      } else {
+          return null;
+      }
+  }
+  ```
+
+* `LoopbackConnector.run()`：初始化
+
+  ```java
+  public void run() {
+      // 定义服务端Channel
+      ServerSocketChannel var1 = null;
+      // 定义两个客户端Channel, 分别进行读写
+      SocketChannel var2 = null;
+      SocketChannel var3 = null;
+  
+      try {
+          // 初始化两个ByteBuffer缓冲区,支持读写
+          ByteBuffer var4 = ByteBuffer.allocate(16);
+          ByteBuffer var5 = ByteBuffer.allocate(16);
+          InetAddress var6 = InetAddress.getByName("127.0.0.1");
+  
+          assert var6.isLoopbackAddress();
+  		// 对服务端创建的IP和端口进行存储
+          InetSocketAddress var7 = null;
+  		// 自旋处理, 直接成功初始化出读写对象
+          while(true) 
+              // 初始化ServerSocketChannel,用户提供服务
+              if(var1 == null || !var1.isOpen()) {
+                  var1 = ServerSocketChannel.open();
+                  var1.socket().bind(new InetSocketAddress(var6, 0));
+                  var7 = new InetSocketAddress(var6, var1.socket().getLocalPort());
+              }
+  			// 通过已经初始化的IP和端口打开一个写通道
+              var2 = SocketChannel.open(var7);
+          	// 此处表示随便写点东西
+              PipeImpl.RANDOM_NUMBER_GENERATOR.nextBytes(var4.array());
+  
+              do {
+                  // 将数据全部写出去
+                  var2.write(var4);
+              } while(var4.hasRemaining());
+  
+              var4.rewind();
+          	// 通过服务端获取一个读请求
+          	// 此处读取上一步写的数据
+              var3 = var1.accept();
+  
+              do {
+                  // 读取到写数据, 添加到另一个缓冲区
+                  var3.read(var5);
+              } while(var5.hasRemaining());
+  
+              var5.rewind();
+          	// 如果读写数据一致,说明管道通信正常,初始化管道的读对象和写对象
+              if(var5.equals(var4)) {
+                  // 读对象
+                  PipeImpl.this.source = new SourceChannelImpl(Initializer.this.sp, var2);
+                  // 写对象
+                  PipeImpl.this.sink = new SinkChannelImpl(Initializer.this.sp, var3);
+                  break;
+              }
+  
+              var3.close();
+              var2.close();
+          }
+      } catch (IOException var18) {
+          ...
+  		// IO异常后,初始化IOE
+          Initializer.this.ioe = var18;
+      } finally { ... }
+  }
+  ```
+
+#### 3.5.1.4，Selector初始化
 
 * `selector = Selector.open()`
 
@@ -1621,18 +1778,92 @@ public class AIOClient {
       return new WindowsSelectorImpl(this);
   }
   
+  /***** WindowsSelectorImpl初始化部分 *****/
+  // 初始化管道
+  private final Pipe wakeupPipe = Pipe.open();
+  // 初始化pollWrapper
+  private PollArrayWrapper pollWrapper = new PollArrayWrapper(8);
   WindowsSelectorImpl(SelectorProvider var1) throws IOException {
-      // 父类持有Provider
+      // 先初始化父类,即SelectorImpl
       super(var1);
+      // 保存SourceChannel的Socket句柄
       this.wakeupSourceFd = ((SelChImpl)this.wakeupPipe.source()).getFDVal();
+      // 保存SinkChannel的Socket句柄
       SinkChannelImpl var2 = (SinkChannelImpl)this.wakeupPipe.sink();
       var2.sc.socket().setTcpNoDelay(true);
       this.wakeupSinkFd = var2.getFDVal();
+      // pollWrapper: 用于存储Socket句柄FD和事件Events
+      // addWakeupSocket: 表示添加一个Socket事件
+      // 此处意思就是将Socket事件添加到内存空间中
       this.pollWrapper.addWakeupSocket(this.wakeupSourceFd, 0);
+  }
+  
+  // 父类初始化了五个keys集合
+  // 已选择集合,select()时添加到该集合并返回
+  protected Set<SelectionKey> selectedKeys = new HashSet();
+  // register()时添加到该集合, 表示所有注册过的事件
+  protected HashSet<SelectionKey> keys = new HashSet();
+  // 将该集合与keys关联
+  private Set<SelectionKey> publicKeys;
+  // 将该集合与selectedKeys关联
+  private Set<SelectionKey> publicSelectedKeys;
+  // 已经取消事件
+  private final Set<SelectionKey> cancelledKeys = new HashSet<SelectionKey>();
+  
+  protected SelectorImpl(SelectorProvider var1) {
+      // 传递到父类AbstractSelector持有Provider
+      super(var1);
+      // 关联key
+      if(Util.atBugLevel("1.4")) {
+          this.publicKeys = this.keys;
+          this.publicSelectedKeys = this.selectedKeys;
+      } else {
+          this.publicKeys = Collections.unmodifiableSet(this.keys);
+          this.publicSelectedKeys = Util.ungrowableSet(this.selectedKeys);
+      }
+  }
+  ```
+  
+* `PollArrayWrapper`初始化
+
+  ```java
+  // 内存空间操作对象
+  private AllocatedNativeObject pollArray;
+  // 表示内存空间地址
+  long pollArrayAddress;
+  
+  PollArrayWrapper(int var1) {
+      int var2 = var1 * SIZE_POLLFD;
+      // 初始化时通过unsafe申请到一块内存空间
+      this.pollArray = new AllocatedNativeObject(var2, true);
+      this.pollArrayAddress = this.pollArray.address();
+      // 初始化Socket句柄大小
+      this.size = var1;
   }
   ```
 
-#### 3.5.1.4，ByteBuffer初始化
+* `PollArrayWrapper.addWakeupSocket()`：添加一个事件
+
+  ```java
+  void addWakeupSocket(int var1, int var2) {
+      // 表示Socket句柄位置填充
+      this.putDescriptor(var2, var1);
+      // 表示Socket事件位置填充
+      this.putEventOps(var2, Net.POLLIN);
+  }
+  
+  void putDescriptor(int var1, int var2) {
+      // Socket句柄占用四个字节
+      this.pollArray.putInt(SIZE_POLLFD * var1 + 0, var2);
+  }
+  
+  void putEventOps(int var1, int var2) {
+      // Socket事件占用两个字节
+      this.pollArray.putShort(SIZE_POLLFD * var1 + 4, (short)var2);
+  }
+  ```
+
+#### 3.5.1.5，ByteBuffer初始化
 
 * `ByteBuffer`之前已经有过分析，主要是通过四个基本属性进行缓冲区数据读写和标记，此处主要关注直接缓冲区和间接缓冲区的初始化方式
 
@@ -1726,17 +1957,18 @@ public class AIOClient {
       if(!(var1 instanceof SelChImpl)) {
           throw new IllegalSelectorException();
       } else {
-          // 初始化一个选择器处理对象，封装通道和选择器
+          // 初始化一个注册器，封装通道和选择器
           // 生成的对象真是实例为SelectionKeyImpl
           SelectionKeyImpl var4 = new SelectionKeyImpl((SelChImpl)var1, this);
+          // 附加各位属性, 会透传到下一个事件
           var4.attach(var3);
           Set var5 = this.publicKeys;
           // 对注册的SelectionKey列表进行同步处理
           synchronized(this.publicKeys) {
-              // 初始化完成后，进行最终注册
+              // 初始化完成后，进行最终注册,添加Socket句柄
               this.implRegister(var4);
           }
-  		// 初始化完成后，修改状态
+  		// 添加事件类型, 即修改原事件状态
           var4.interestOps(var2);
           return var4;
       }
@@ -1751,27 +1983,6 @@ public class AIOClient {
 * `WindowsSelectorImpl.implRegister`：注册
 
   ```java
-  // 注册前先看下父类初始化部分
-  protected Set<SelectionKey> selectedKeys = new HashSet();
-  protected HashSet<SelectionKey> keys = new HashSet();
-  private Set<SelectionKey> publicKeys;
-  private Set<SelectionKey> publicSelectedKeys;
-  
-  // 从构造器中可以看到: 
-  // publicKeys 和 keys
-  // publicSelectedKeys 和 selectedKeys 已经两两关联
-  protected SelectorImpl(SelectorProvider var1) {
-      super(var1);
-      if(Util.atBugLevel("1.4")) {
-          this.publicKeys = this.keys;
-          this.publicSelectedKeys = this.selectedKeys;
-      } else {
-          this.publicKeys = Collections.unmodifiableSet(this.keys);
-          this.publicSelectedKeys = Util.ungrowableSet(this.selectedKeys);
-      }
-  
-  }
-  
   // 注册
   protected void implRegister(SelectionKeyImpl var1) {
       Object var2 = this.closeLock;
@@ -1780,21 +1991,25 @@ public class AIOClient {
               throw new ClosedSelectorException();
           } else {
               // 对SelectionKeyImpl[] channelArray数组进行二倍扩容, 默认长度为8
+              // 没增加1024个Channel,则增加一个线程处理
               this.growIfNeeded();
               // 填充到数据的下一个索引位置
               this.channelArray[this.totalChannels] = var1;
-              // 设置SelectionKey的索引值
+              // 设置SelectionKey的索引值, 添加事件时候会用到
               var1.setIndex(this.totalChannels);
               this.fdMap.put(var1);
               // 添加到选择器的注册列表中
               this.keys.add(var1);
+              // 添加Socket句柄到pollWrapper
+              // 注册此处传递的总数,也就代表当前注册对象索引
               this.pollWrapper.addEntry(this.totalChannels, var1);
+              // 表示已注册的Channel总数
               ++this.totalChannels;
           }
       }
   }
   ```
-
+  
 * `AbstractSelectableChannel.addKey()`：注册完成，添加到通道的`SelectionKey[]`数组中
 
   ```java
@@ -1826,9 +2041,458 @@ public class AIOClient {
   }
   ```
 
-### 3.5.3，选择器源码
+* `PollArrayWrapper.addEntry()`：添加注册对象的Socket句柄到内存对象中
 
-### 3.5.4，数据交互源码
+  ```java
+  void addEntry(int var1, SelectionKeyImpl var2) {
+      this.putDescriptor(var1, var2.channel.getFDVal());
+  }
+  
+  void putDescriptor(int var1, int var2) {
+      this.pollArray.putInt(SIZE_POLLFD * var1 + 0, var2);
+  }
+  ```
+
+* `SelectionKeyImpl.interestOps`：修改注册事件
+
+  ```java
+  public SelectionKey nioInterestOps(int var1) {
+      if((var1 & ~this.channel().validOps()) != 0) {
+          throw new IllegalArgumentException();
+      } else {
+          // 进行注册事件修改
+          // 注册事件修改，主要分析ServerSocketChannel和SocketChannel两部分
+          this.channel.translateAndSetInterestOps(var1, this);
+          this.interestOps = var1;
+          return this;
+      }
+  }
+  
+  // ServerSocketChannel
+  public void translateAndSetInterestOps(int var1, SelectionKeyImpl var2) {
+      int var3 = 0;
+      if((var1 & 16) != 0) { // 16 表示accept事件
+          var3 |= Net.POLLIN;
+      }
+  	// 对事件进行替换
+      var2.selector.putEventOps(var2, var3);
+  }
+  
+  // SocketChannel
+  public void translateAndSetInterestOps(int var1, SelectionKeyImpl var2) {
+      int var3 = 0;
+      if((var1 & 1) != 0) { // 读事件
+          var3 |= Net.POLLIN;
+      }
+  
+      if((var1 & 4) != 0) { // 写事件
+          var3 |= Net.POLLOUT;
+      }
+  
+      if((var1 & 8) != 0) { // 连接事件
+          var3 |= Net.POLLCONN;
+      }
+  	// 对事件类型进行替换
+      var2.selector.putEventOps(var2, var3);
+  }
+  ```
+
+* `WindowsSelectorImpl.putEventOps`：事件替换方法
+
+  ```java
+  public void putEventOps(SelectionKeyImpl var1, int var2) {
+      Object var3 = this.closeLock;
+      synchronized(this.closeLock) {
+          if(this.pollWrapper == null) {
+              throw new ClosedSelectorException();
+          } else {
+              // 从注册对象中获取注册事件的索引位置
+              int var4 = var1.getIndex();
+              if(var4 == -1) {
+                  throw new CancelledKeyException();
+              } else {
+                  // 通过内存对象直接操作地址空间，进行事件类型替换
+                  this.pollWrapper.putEventOps(var4, var2);
+              }
+          }
+      }
+  }
+  ```
+
+### 3.5.3，选择器源码：核心代码
+
+* `selector.select()`：调用直接走向`doSelect()`实现
+
+* `WindowsSelectorImpl.doSelect()`：通过选择器获取有效事件
+
+  ```java
+  protected int doSelect(long var1) throws IOException {
+      if(this.channelArray == null) {
+          throw new ClosedSelectorException();
+      } else {
+          this.timeout = var1;
+          // 处理掉注销的队列数据
+          this.processDeregisterQueue();
+          if(this.interruptTriggered) {
+              this.resetWakeupSocket();
+              return 0;
+          } else {
+              // 调整线程数量，少增多减
+              // 并将新增线程设置为预启动状态
+              this.adjustThreadsCount();
+              // 重置完成线程数， 数量为当前线程数量
+              this.finishLock.reset();
+              // 放开所有就绪线程，所有线程检测到一个就绪Socket句柄后返回
+              this.startLock.startThreads();
+  
+              try {
+                  this.begin();
+                  try {
+                      // 每一个线程监听（0~1023）* N区间的Socket句柄
+                      // 如果当前没有句柄，会在此处阻塞
+                      this.subSelector.poll();
+                  } catch (IOException var7) {
+                      this.finishLock.setException(var7);
+                  }
+  				// waitForHelperThreads()用于阻塞直到所有线程执行完毕
+                  // 在adjustThreadsCount中，每个线程执行完毕都会等待，所有线程执行完毕后会依次notify()
+                  if(this.threads.size() > 0) {
+                      this.finishLock.waitForHelperThreads();
+                  }
+              } finally {
+                  this.end();
+              }
+              this.finishLock.checkForException();
+              // 再次检查失效的注册事件
+              this.processDeregisterQueue();
+              // 更新selectKeys，并返回数量
+              int var3 = this.updateSelectedKeys();
+              this.resetWakeupSocket();
+              return var3;
+          }
+      }
+  }
+  ```
+
+* `processDeregisterQueue()`：失效事件取消代码
+
+  ```java
+  void processDeregisterQueue() throws IOException {
+      // 获取到实现列表
+      Set var1 = this.cancelledKeys();
+      synchronized(var1) {
+          if(!var1.isEmpty()) {
+              // 迭代失效列表，进行数据处理
+              Iterator var3 = var1.iterator();
+              while(var3.hasNext()) {
+                  SelectionKeyImpl var4 = (SelectionKeyImpl)var3.next();
+                  try {
+                      // 遍历到每一行数据进行处理
+                      this.implDereg(var4);
+                  } catch (SocketException var11) {
+                      throw new IOException("Error deregistering key", var11);
+                  } finally {
+                      // 数据处理完成后移除
+                      var3.remove();
+                  }
+              }
+          }
+      }
+  }
+  
+  // implDereg()
+  protected void implDereg(SelectionKeyImpl var1) throws IOException {
+      // 获取索引，也就是在内存空间中的位置
+      int var2 = var1.getIndex();
+      assert var2 >= 0;
+      Object var3 = this.closeLock;
+      synchronized(this.closeLock) {
+          // 失效的节点不是最后一个，就用最后一个几点进行补充，也就是把数组后面的元素补充要前面
+          // 不断充实数组，减少数组扩容次数
+          if(var2 != this.totalChannels - 1) {
+              SelectionKeyImpl var4 = this.channelArray[this.totalChannels - 1];
+              this.channelArray[var2] = var4;
+              var4.setIndex(var2);
+              // 对内存空间中进行位置替换
+              this.pollWrapper.replaceEntry(this.pollWrapper, this.totalChannels - 1, this.pollWrapper, var2);
+          }
+          // 重置当前索引为无意义索引
+          var1.setIndex(-1);
+      }
+  	// 把数组的最后一位置空，并且对总数和总线程数进行相关匹配处理
+      this.channelArray[this.totalChannels - 1] = null;
+      --this.totalChannels;
+      if(this.totalChannels != 1 && this.totalChannels % 1024 == 1) {
+          --this.totalChannels;
+          --this.threadsCount;
+      }
+  
+      // 分别从注册事件，句柄Map映射中移除数据
+      this.fdMap.remove(var1);
+      this.keys.remove(var1);
+      this.selectedKeys.remove(var1);
+      // 清理Channel中的注册标识
+      this.deregister(var1);
+      SelectableChannel var7 = var1.channel();
+      if(!var7.isOpen() && !var7.isRegistered()) {
+          ((SelChImpl)var7).kill();
+      }
+  }
+  
+  // AbstractSelectableChannel.removeKey
+  void removeKey(SelectionKey k) {                    // package-private
+      synchronized (keyLock) {
+          // 遍历Channel中的注册数据，将该元素位置置空，长度减一
+          for (int i = 0; i < keys.length; i++)
+              if (keys[i] == k) {
+                  keys[i] = null;
+                  keyCount--;
+              }
+          // 重置失效状态为失效
+          ((AbstractSelectionKey)k).invalidate();
+      }
+  }
+  ```
+
+* `adjustThreadsCount()`：准备事件获取线程
+
+  ```java
+  private void adjustThreadsCount() {
+      int var1;
+      // 线程数初始化为0，也就是如果不足1024注册的话，该部分不会执行
+      // 判断线程数，该线程数对应Channel初始化时为1024倍数时的递增
+      // 当线程数量不足时，初始化线程，并启动，（此处启动会阻塞）
+      if(this.threadsCount > this.threads.size()) {
+          for(var1 = this.threads.size(); var1 < this.threadsCount; ++var1) {
+              // 初始化线程，SelectThread后续分析
+              WindowsSelectorImpl.SelectThread var2 = new WindowsSelectorImpl.SelectThread(var1);
+              this.threads.add(var2);
+              var2.setDaemon(true);
+              // 启动
+              var2.start();
+          }
+      // 线程数量大于有效线程数量时候，将线程失效，唤醒后不会执行
+      } else if(this.threadsCount < this.threads.size()) {
+          for(var1 = this.threads.size() - 1; var1 >= this.threadsCount; --var1) {
+              ((WindowsSelectorImpl.SelectThread)this.threads.remove(var1)).makeZombie();
+          }
+      }
+  }
+  ```
+
+* 真正执行`Selector`的具体代码，与`WindowsSelectorImpl`的三个内部类有关
+
+* `StartLock`：
+
+  ```java
+  private final class StartLock {
+      // 执行select()方法的次数
+      private long runsCounter;
+      // 每一次启动，对runsCounter递增
+      // 并且启动所有阻塞的线程
+      private synchronized void startThreads() {
+          ++this.runsCounter;
+          this.notifyAll();
+      }
+  
+      // 在同一批次执行中,线程等待启动,第一次执行,值都为空
+      private synchronized boolean waitForStart(WindowsSelectorImpl.SelectThread var1) {
+          while(this.runsCounter == var1.lastRun) {
+              try {
+                  // 同一批次执行，线程统一为预执行状态，在次阻塞，等待唤醒
+                  WindowsSelectorImpl.this.startLock.wait();
+              } catch (InterruptedException var3) {
+                  Thread.currentThread().interrupt();
+              }
+          }
+          // 被唤醒后,再次根据线程是否失效状态判断是否继续执行下去
+          if(var1.isZombie()) {
+              return true;
+          } else {
+              // 执行完成后,因为批次相等,会继续阻塞
+              var1.lastRun = this.runsCounter;
+              return false;
+          }
+      }
+  }
+  ```
+
+* `FinishLock`
+
+  ```java
+  private final class FinishLock {
+      // 剩余多少线程还没有执行完本次select()统计
+      private int threadsToFinish;
+      IOException exception;
+  
+      private FinishLock() {
+          this.exception = null;
+      }
+  
+      // 每一次select()完成后,进行标记参数重置
+      private void reset() {
+          this.threadsToFinish = WindowsSelectorImpl.this.threads.size();
+      }
+  
+      private synchronized void threadFinished() {
+          // 如果要执行的线程数与总的线程数相等,
+          if(this.threadsToFinish == WindowsSelectorImpl.this.threads.size()) {
+              // 唤醒沉睡的工作线程，进行事件选择
+              WindowsSelectorImpl.this.wakeup();
+          }
+  		// 剩余线程数量递减
+          --this.threadsToFinish;
+          // 当剩余线程为0时,释放阻塞在该节点的锁
+          // 唤醒其他线程继续执行
+          if(this.threadsToFinish == 0) {
+              this.notify();
+          }
+      }
+  
+      private synchronized void waitForHelperThreads() {
+          if(this.threadsToFinish == WindowsSelectorImpl.this.threads.size()) {
+              WindowsSelectorImpl.this.wakeup();
+          }
+          // 如果其他线程没有执行完,阻塞当前线程
+          while(this.threadsToFinish != 0) {
+              try {
+                  WindowsSelectorImpl.this.finishLock.wait();
+              } catch (InterruptedException var2) {
+                  Thread.currentThread().interrupt();
+              }
+          }
+      }
+  }
+  ```
+
+* `SelectThread`
+
+  ```java
+  private final class SelectThread extends Thread {
+      private final int index;
+      // 真正执行select操作的执行器
+      final WindowsSelectorImpl.SubSelector subSelector;
+      private long lastRun;
+      private volatile boolean zombie;
+  
+      private SelectThread(int var2) {
+          this.lastRun = 0L;
+          this.index = var2;
+          this.subSelector = WindowsSelectorImpl.this.new SubSelector(var2);
+          this.lastRun = WindowsSelectorImpl.this.startLock.runsCounter;
+      }
+  
+      void makeZombie() {
+          this.zombie = true;
+      }
+  
+      boolean isZombie() {
+          return this.zombie;
+      }
+  
+      public void run() {
+          // waitForStart(this)：线程阻塞，等待唤醒，唤醒后过滤掉失效线程
+          // threadFinished()：唤醒工作线程进行事件选择
+          for(; !WindowsSelectorImpl.this.startLock.waitForStart(this); WindowsSelectorImpl.this.finishLock.threadFinished()) {
+              try {
+                  // 工作线程开始工作
+                  this.subSelector.poll(this.index);
+              } catch (IOException var2) {
+                  WindowsSelectorImpl.this.finishLock.setException(var2);
+              }
+          }
+      }
+  }
+  ```
+
+* `updateSelectedKeys()`：添加选择到的数据到集合中
+
+  ```java
+  private int updateSelectedKeys() {
+      ++this.updateCount;
+      byte var1 = 0;
+      int var4 = var1 + this.subSelector.processSelectedKeys(this.updateCount);
+  
+      WindowsSelectorImpl.SelectThread var3;
+      // 遍历每一个线程数据进行处理
+      for(Iterator var2 = this.threads.iterator(); var2.hasNext(); var4 += var3.subSelector.processSelectedKeys(this.updateCount)) {
+          var3 = (WindowsSelectorImpl.SelectThread)var2.next();
+      }
+  
+      return var4;
+  }
+  
+  // processSelectedKeys
+  // 此处分别对不同的事件类型进行处理
+  private int processSelectedKeys(long var1) {
+      byte var3 = 0;
+      int var4 = var3 + this.processFDSet(var1, this.readFds, Net.POLLIN, false);
+      var4 += this.processFDSet(var1, this.writeFds, Net.POLLCONN | Net.POLLOUT, false);
+      var4 += this.processFDSet(var1, this.exceptFds, Net.POLLIN | Net.POLLCONN | Net.POLLOUT, true);
+      return var4;
+  }
+  
+  // processFDSet
+  private int processFDSet(long var1, int[] var3, int var4, boolean var5) {
+      int var6 = 0;
+  
+      for(int var7 = 1; var7 <= var3[0]; ++var7) {
+          int var8 = var3[var7];
+          if(var8 == WindowsSelectorImpl.this.wakeupSourceFd) {
+              synchronized(WindowsSelectorImpl.this.interruptLock) {
+                  WindowsSelectorImpl.this.interruptTriggered = true;
+              }
+          } else {
+              WindowsSelectorImpl.MapEntry var9 = WindowsSelectorImpl.this.fdMap.get(var8);
+              if(var9 != null) {
+                  SelectionKeyImpl var10 = var9.ski;
+                  if(!var5 || !(var10.channel() instanceof SocketChannelImpl) || !WindowsSelectorImpl.this.discardUrgentData(var8)) {
+                      // 此处表示注册的事件在列表中已经存在,对事件类型进行变更
+                      if(WindowsSelectorImpl.this.selectedKeys.contains(var10)) {
+                          if(var9.clearedCount != var1) {
+                              if(var10.channel.translateAndSetReadyOps(var4, var10) && var9.updateCount != var1) {
+                                  var9.updateCount = var1;
+                                  ++var6;
+                              }
+                          } else if(var10.channel.translateAndUpdateReadyOps(var4, var10) && var9.updateCount != var1) {
+                              var9.updateCount = var1;
+                              ++var6;
+                          }
+  
+                          var9.clearedCount = var1;
+                      } else {
+                          // 如果不存在,则添加到集合中去
+                          if(var9.clearedCount != var1) {
+                              var10.channel.translateAndSetReadyOps(var4, var10);
+                              if((var10.nioReadyOps() & var10.nioInterestOps()) != 0) {
+                                  WindowsSelectorImpl.this.selectedKeys.add(var10);
+                                  var9.updateCount = var1;
+                                  ++var6;
+                              }
+                          } else {
+                              var10.channel.translateAndUpdateReadyOps(var4, var10);
+                              if((var10.nioReadyOps() & var10.nioInterestOps()) != 0) {
+                                  WindowsSelectorImpl.this.selectedKeys.add(var10);
+                                  var9.updateCount = var1;
+                                  ++var6;
+                              }
+                          }
+  
+                          var9.clearedCount = var1;
+                      }
+                  }
+              }
+          }
+      }
+  
+      return var6;
+  }
+  ```
+
+* 选择器源码是NIO的核心源码，简单过一遍，大概流程为：
+  * 注册时注册`Socket`句柄到内存对象中 
+  * `select()`时构造多道线程取对应区间的`Socket`句柄，线程在处理过程中分为协调线程和工作线程，注意其中协调获取的关系
+  * 添加有效的`Socket`句柄到`SelectionKey`列表中，通过`selectKeys()`可以直接获取到，进行后续事件处理
 
 # 4，[Netty](https://netty.io/)
 
