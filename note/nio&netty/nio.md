@@ -133,7 +133,7 @@ public class BIOClient {
 ### 3.1.2，Java NIO三大核心关系
 
 * 每个`Channel`对应一个`Buffer`
-* `Selector`对应一个县城，一个线程对应多个`Channel`（即连接）
+* `Selector`对应一个线程，一个线程对应多个`Channel`（即连接）
 * `Selector`进行轮询切换`Channel`，并由事件决定处理逻辑
 * `Buffer`就是一个内存块，底层由数组构成
 * 数据的读取和写入通过`Buffer`，并通过`Channel`进行`Buffer`数据传递
@@ -237,28 +237,30 @@ public abstract ByteBuffer put(int index, byte b);
 
   *`mark`初始化为-1，并且如果不存在`mark`操作，会一直是-1*
 
+
+
 ```java
 // 初始化容量为5，该长度后续稳定
 ByteBuffer buffer = ByteBuffer.allocate(5);
 ByteBuffer buffer = ByteBuffer.allocateDirect(5);
 ```
 
-![1576243536858](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576243536858.png)
-
 * 写数据：`capacity = 5`, `limit = 5`, `position = 2`, `mark = -1`
 
   *写数据后，`mark`, `limit`, `mark`不变，`position`推进长度位*
+
+
 
 ```java
 // 写入两个长度位数据
 buffer.put("ab".getBytes());
 ```
 
-![1576244011830](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576244011830.png)
-
 * 写读转换：`capacity = 5`, `limit = position = 2`, `position = 0`, `mark = -1`
 
   *写读转换后，将数组中的有效数据返回通过`limit`和`position`包起来，并通过`position`前移进行读取，直到读到`limit`位置，标识整个数组读取完成*
+
+
 
 ```java
 // 缓冲区从写到读转换时，需要调用该方法进行读写位重置
@@ -267,7 +269,7 @@ buffer.put("ab".getBytes());
 buffer.flip();
 ```
 
-![1576244295873](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576244295873.png)
+
 
 * 取数据：`capacity = 5`, `limit = 2`, `position = 1`, `mark = -1`
 
@@ -284,10 +286,9 @@ buffer.get(bytes);
 /* 这一部分获取数据后 position 不变 */
 // 取指定索引数据
 buffer.get(0);
-
 ```
 
-![1576244737312](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576244737312.png)
+
 
 * 设置标记位：`capacity = 5`, `limit = 2`, `position = 1`, `mark = position = 1`
 
@@ -297,13 +298,13 @@ buffer.get(0);
 buffer.mark();
 ```
 
-![1576245021937](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576245021937.png)
+
 
 * 继续取数据：`capacity = 5`, `limit = 2`, `position = 2`, `mark = 1`
 
   *如上所说，`position`继续前移，像演示这样，取了后`limit`值与`position`值已经相等，说明已经读取完成，如果再次强行读取，会报`BufferUnderflowException`异常*
 
-![1576245171287](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576245171287.png)
+
 
 * 标记位重置：`capacity = 5`, `limit = 2`, `position = mark = 1`, `mark = -1`
 
@@ -313,7 +314,7 @@ buffer.mark();
 buffer.reset();
 ```
 
-![1576245362562](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576245362562.png)
+
 
 * 操作位重置：`capacity = 5`, `limit = 2`, `position = 0`, `mark = -1`
 
@@ -323,7 +324,7 @@ buffer.reset();
 buffer.rewind();
 ```
 
-![1576245513860](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576245513860.png)
+
 
 * 数据清空：`capacity = 5`, `limit = 5`, `position = 0`, `mark = -1`
 
@@ -333,7 +334,7 @@ buffer.rewind();
 buffer.clear();
 ```
 
-![1576245608145](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1576245608145.png)
+
 
 ### 3.1.5，Channel通道
 
@@ -1997,6 +1998,7 @@ public class AIOClient {
               this.channelArray[this.totalChannels] = var1;
               // 设置SelectionKey的索引值, 添加事件时候会用到
               var1.setIndex(this.totalChannels);
+              // SelectionKey句柄和对象的映射
               this.fdMap.put(var1);
               // 添加到选择器的注册列表中
               this.keys.add(var1);
@@ -2264,7 +2266,9 @@ public class AIOClient {
       // 当线程数量不足时，初始化线程，并启动，（此处启动会阻塞）
       if(this.threadsCount > this.threads.size()) {
           for(var1 = this.threads.size(); var1 < this.threadsCount; ++var1) {
-              // 初始化线程，SelectThread后续分析
+              // 初始化线程，此处会初始化多个SelectThread对象
+              // 每一个SelectThread内部包含一个SubSelector
+              // 一个SubSelector负责的句柄区间就是(0 ~ 1024) * var1
               WindowsSelectorImpl.SelectThread var2 = new WindowsSelectorImpl.SelectThread(var1);
               this.threads.add(var2);
               var2.setDaemon(true);
@@ -2299,7 +2303,7 @@ public class AIOClient {
       private synchronized boolean waitForStart(WindowsSelectorImpl.SelectThread var1) {
           while(this.runsCounter == var1.lastRun) {
               try {
-                  // 同一批次执行，线程统一为预执行状态，在次阻塞，等待唤醒
+                  // 同一批次执行，线程统一为预执行状态，在此阻塞，等待唤醒
                   WindowsSelectorImpl.this.startLock.wait();
               } catch (InterruptedException var3) {
                   Thread.currentThread().interrupt();
@@ -2334,10 +2338,13 @@ public class AIOClient {
           this.threadsToFinish = WindowsSelectorImpl.this.threads.size();
       }
   
+      // 在SelectThread中,只有poll到数据,才会走到该方法,不然会一直阻塞
       private synchronized void threadFinished() {
-          // 如果要执行的线程数与总的线程数相等,
+          // 如果要执行的线程数与总的线程数相等, 则唤醒主线程进行工作, 
+          // 因为内部有参数控制, 多次唤醒无效,所以此处只唤醒一次
           if(this.threadsToFinish == WindowsSelectorImpl.this.threads.size()) {
-              // 唤醒沉睡的工作线程，进行事件选择
+              // 唤醒select()主线程开始工作
+              // 此处唤醒应该是通过Pipe管道的方式唤醒的
               WindowsSelectorImpl.this.wakeup();
           }
   		// 剩余线程数量递减
@@ -2349,11 +2356,13 @@ public class AIOClient {
           }
       }
   
+      // 表示等待sub工作线程执行完成
       private synchronized void waitForHelperThreads() {
+          // 唤醒select()主线程
           if(this.threadsToFinish == WindowsSelectorImpl.this.threads.size()) {
               WindowsSelectorImpl.this.wakeup();
           }
-          // 如果其他线程没有执行完,阻塞当前线程
+          // 如果存在辅助线程没有执行完, 阻塞当前线程, 并等待
           while(this.threadsToFinish != 0) {
               try {
                   WindowsSelectorImpl.this.finishLock.wait();
@@ -2395,7 +2404,7 @@ public class AIOClient {
           // threadFinished()：唤醒工作线程进行事件选择
           for(; !WindowsSelectorImpl.this.startLock.waitForStart(this); WindowsSelectorImpl.this.finishLock.threadFinished()) {
               try {
-                  // 工作线程开始工作
+                  // sub工作线程阻塞获取注册事件
                   this.subSelector.poll(this.index);
               } catch (IOException var2) {
                   WindowsSelectorImpl.this.finishLock.setException(var2);
@@ -4537,7 +4546,7 @@ log4j.appender.stdout.layout.ConversionPattern=[%P] %C{1} - %m%n
 
 ### 4.5.1，粘包和拆包基本介绍
 
-* TCP协议是面向连接，面向流的，提供高可靠性服务。收发两端都有一一对应的`Socket`，因此，发送端为了将多个发给接收端的包，更有效的发给接收端，使用优化方法（Nagle算法），将多次间隔较少且数据量较小的数据，合并成一个多大的数据包，然后进行封包。这样虽然提高了效率，但是接收端无法分别出完整的数据包，因此面向流的通信是无消息保护边界的
+* TCP协议是面向连接，面向流的，提供高可靠性服务。收发两端都有一一对应的`Socket`，因此，发送端为了将多个发给接收端的包，更有效的发给接收端，使用优化方法（Nagle算法），将多次间隔较少且数据量较小的数据，合并成一个大的数据包，然后进行封包。这样虽然提高了效率，但是接收端无法分别出完整的数据包，因此面向流的通信是无消息保护边界的
 * 由于TCP无消息保护边界，需要在接收端处理消息边界问题，也就是所谓的粘包，拆包问题
 * TCP粘包，拆包问题图解
 
@@ -4969,7 +4978,7 @@ public class DispackageClientHandler extends SimpleChannelInboundHandler<MyProto
 * ``ServerBootStrap.bind()`端口绑定
   * `initAndRegister`：初始化数据并注册通道
   * `doBind0`：绑定端口并启动
-* `io.netty.channel.AbstractChannel.AbstractUnsafe#bind`绑定成功后添加回调任务`AbstractChannel.this.pipeline.fireChannelActive()`，执行到`io.netty.channel.nio.AbstractNioChannel#doBeginRead`并初始化事件状态
+* `io.netty.channel.AbstractChannel.AbstractUnsafe#bind`绑定成功后添加回调任务`AbstractChannel.this.pipeline.fireChannelActive()`，并继续执行到`io.netty.channel.nio.AbstractNioChannel#doBeginRead`初始化事件状态
 
 ### 4.6.2，接收请求过程剖析
 

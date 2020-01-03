@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
  */
 public class SelfPipe {
 
-	public static void main(String[] args) throws IOException {
+	public static void main_1(String[] args) throws IOException {
 		Pipe pipe = Pipe.open();
 
 		// 通过sink发送数据
