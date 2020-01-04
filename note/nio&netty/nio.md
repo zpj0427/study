@@ -237,7 +237,7 @@ public abstract ByteBuffer put(int index, byte b);
 
   *`mark`初始化为-1，并且如果不存在`mark`操作，会一直是-1*
 
-
+![1578112409447](E:\gitrepository\study\note\image\nio\1578112409447.png)
 
 ```java
 // 初始化容量为5，该长度后续稳定
@@ -249,7 +249,7 @@ ByteBuffer buffer = ByteBuffer.allocateDirect(5);
 
   *写数据后，`mark`, `limit`, `mark`不变，`position`推进长度位*
 
-
+![1578112421131](E:\gitrepository\study\note\image\nio\1578112421131.png)
 
 ```java
 // 写入两个长度位数据
@@ -260,7 +260,7 @@ buffer.put("ab".getBytes());
 
   *写读转换后，将数组中的有效数据返回通过`limit`和`position`包起来，并通过`position`前移进行读取，直到读到`limit`位置，标识整个数组读取完成*
 
-
+![1578112431642](E:\gitrepository\study\note\image\nio\1578112431642.png)
 
 ```java
 // 缓冲区从写到读转换时，需要调用该方法进行读写位重置
@@ -269,11 +269,11 @@ buffer.put("ab".getBytes());
 buffer.flip();
 ```
 
-
-
 * 取数据：`capacity = 5`, `limit = 2`, `position = 1`, `mark = -1`
 
   *取数据就是对`position`位置进行后移，并不断取数据直到`limit`*
+
+![1578112461817](E:\gitrepository\study\note\image\nio\1578112461817.png)
 
 ```java
 /* 这一部分获取数据后 position 后移 */
@@ -288,53 +288,51 @@ buffer.get(bytes);
 buffer.get(0);
 ```
 
-
-
 * 设置标记位：`capacity = 5`, `limit = 2`, `position = 1`, `mark = position = 1`
 
   *设置标记位就是对`position`位置进行标记，值存储在`mark`属性中，后续读取`position`前移，但`mark`值维持不变*
+
+![1578112479646](E:\gitrepository\study\note\image\nio\1578112479646.png)
 
 ```java
 buffer.mark();
 ```
 
-
-
 * 继续取数据：`capacity = 5`, `limit = 2`, `position = 2`, `mark = 1`
 
   *如上所说，`position`继续前移，像演示这样，取了后`limit`值与`position`值已经相等，说明已经读取完成，如果再次强行读取，会报`BufferUnderflowException`异常*
 
-
+![1578112490857](E:\gitrepository\study\note\image\nio\1578112490857.png)
 
 * 标记位重置：`capacity = 5`, `limit = 2`, `position = mark = 1`, `mark = -1`
 
   *重置标记位与`mark()`方法配合使用，将设置的标记位重置为初始状态。配合使用可以实现对`Buffer`数组中部分区间的重复读取*
 
+![1578112505240](E:\gitrepository\study\note\image\nio\1578112505240.png)
+
 ```java
 buffer.reset();
 ```
 
-
-
 * 操作位重置：`capacity = 5`, `limit = 2`, `position = 0`, `mark = -1`
 
-  *操作位重置，就是对`position`置0值，`limit`位置不变，且数据不清楚*
+  *操作位重置，就是对`position`置0值，`limit`位置不变，且数据不清除*
+
+![1578112525974](E:\gitrepository\study\note\image\nio\1578112525974.png)
 
 ```java
 buffer.rewind();
 ```
 
-
-
 * 数据清空：`capacity = 5`, `limit = 5`, `position = 0`, `mark = -1`
 
   *四个基本属性回到初始化状态，数据清空也只是对基本属性值初始化，并不会对数据进行清空*
+  
+  ![1578112549735](E:\gitrepository\study\note\image\nio\1578112549735.png)
 
 ```java
 buffer.clear();
 ```
-
-
 
 ### 3.1.5，Channel通道
 
