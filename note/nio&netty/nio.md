@@ -231,11 +231,11 @@ public abstract ByteBuffer put(int index, byte b);
 
 * 初始化：`capacity = 5`, `limit = 5`, `position = 0`, `mark = -1`
 
-  *`capacity`和`limit`初始化为缓冲区长度*
+  * *`capacity`和`limit`初始化为缓冲区长度*
 
-  *`position`初始化为0值*
+  * *`position`初始化为0值*
 
-  *`mark`初始化为-1，并且如果不存在`mark`操作，会一直是-1*
+  * *`mark`初始化为-1，并且如果不存在`mark`操作，会一直是-1*
 
 ![1578112409447](E:\gitrepository\study\note\image\nio\1578112409447.png)
 
@@ -247,7 +247,7 @@ ByteBuffer buffer = ByteBuffer.allocateDirect(5);
 
 * 写数据：`capacity = 5`, `limit = 5`, `position = 2`, `mark = -1`
 
-  *写数据后，`mark`, `limit`, `mark`不变，`position`推进长度位*
+  * *写数据后，`mark`, `limit`, `mark`不变，`position`推进长度位*
 
 ![1578112421131](E:\gitrepository\study\note\image\nio\1578112421131.png)
 
@@ -258,7 +258,7 @@ buffer.put("ab".getBytes());
 
 * 写读转换：`capacity = 5`, `limit = position = 2`, `position = 0`, `mark = -1`
 
-  *写读转换后，将数组中的有效数据返回通过`limit`和`position`包起来，并通过`position`前移进行读取，直到读到`limit`位置，标识整个数组读取完成*
+  * *写读转换后，将数组中的有效数据返回通过`limit`和`position`包起来，并通过`position`前移进行读取，直到读到`limit`位置，标识整个数组读取完成*
 
 ![1578112431642](E:\gitrepository\study\note\image\nio\1578112431642.png)
 
@@ -271,7 +271,7 @@ buffer.flip();
 
 * 取数据：`capacity = 5`, `limit = 2`, `position = 1`, `mark = -1`
 
-  *取数据就是对`position`位置进行后移，并不断取数据直到`limit`*
+  * *取数据就是对`position`位置进行后移，并不断取数据直到`limit`*
 
 ![1578112461817](E:\gitrepository\study\note\image\nio\1578112461817.png)
 
@@ -290,7 +290,7 @@ buffer.get(0);
 
 * 设置标记位：`capacity = 5`, `limit = 2`, `position = 1`, `mark = position = 1`
 
-  *设置标记位就是对`position`位置进行标记，值存储在`mark`属性中，后续读取`position`前移，但`mark`值维持不变*
+  * *设置标记位就是对`position`位置进行标记，值存储在`mark`属性中，后续读取`position`前移，但`mark`值维持不变*
 
 ![1578112479646](E:\gitrepository\study\note\image\nio\1578112479646.png)
 
@@ -300,13 +300,13 @@ buffer.mark();
 
 * 继续取数据：`capacity = 5`, `limit = 2`, `position = 2`, `mark = 1`
 
-  *如上所说，`position`继续前移，像演示这样，取了后`limit`值与`position`值已经相等，说明已经读取完成，如果再次强行读取，会报`BufferUnderflowException`异常*
+  * *如上所说，`position`继续前移，像演示这样，取了后`limit`值与`position`值已经相等，说明已经读取完成，如果再次强行读取，会报`BufferUnderflowException`异常*
 
 ![1578112490857](E:\gitrepository\study\note\image\nio\1578112490857.png)
 
 * 标记位重置：`capacity = 5`, `limit = 2`, `position = mark = 1`, `mark = -1`
 
-  *重置标记位与`mark()`方法配合使用，将设置的标记位重置为初始状态。配合使用可以实现对`Buffer`数组中部分区间的重复读取*
+  * *重置标记位与`mark()`方法配合使用，将设置的标记位重置为初始状态。配合使用可以实现对`Buffer`数组中部分区间的重复读取*
 
 ![1578112505240](E:\gitrepository\study\note\image\nio\1578112505240.png)
 
@@ -316,7 +316,7 @@ buffer.reset();
 
 * 操作位重置：`capacity = 5`, `limit = 2`, `position = 0`, `mark = -1`
 
-  *操作位重置，就是对`position`置0值，`limit`位置不变，且数据不清除*
+  * *操作位重置，就是对`position`置0值，`limit`位置不变，且数据不清除*
 
 ![1578112525974](E:\gitrepository\study\note\image\nio\1578112525974.png)
 
@@ -326,7 +326,7 @@ buffer.rewind();
 
 * 数据清空：`capacity = 5`, `limit = 5`, `position = 0`, `mark = -1`
 
-  *四个基本属性回到初始化状态，数据清空也只是对基本属性值初始化，并不会对数据进行清空*
+  * *四个基本属性回到初始化状态，数据清空也只是对基本属性值初始化，并不会对数据进行清空*
   
   ![1578112549735](E:\gitrepository\study\note\image\nio\1578112549735.png)
 
@@ -383,6 +383,7 @@ public abstract SocketChannel accept() throws IOException;
 public abstract ServerSocket socket();
 // 注册选择器
 public final SelectionKey register(Selector sel, int ops) throws ClosedChannelException;
+
 /************SocketChannel****************/
 // 初始化
 public static SocketChannel open() throws IOException;
@@ -544,42 +545,6 @@ public void scatterAndAggregated() throws Exception {
 }
 ```
 
-* 分散`Scattering`和聚集`Gatering`
-
-```java
-@Test
-public void scatterAndAggregated() throws Exception {
-    /* 分散读取 */
-    // 创建文件并授权
-    RandomAccessFile randomAccessFile = new RandomAccessFile("F:\\test.txt", "rw");
-    // 获取通道
-    FileChannel inChannel = randomAccessFile.getChannel();
-    // 构造缓冲区, 构造分散缓冲区
-    ByteBuffer bufferFirst = ByteBuffer.allocate(128);
-    ByteBuffer bufferSecond = ByteBuffer.allocate(1024);
-    ByteBuffer[] lstBuffers = { bufferFirst, bufferSecond };
-    // 进行分散读取
-    inChannel.read(lstBuffers);
-    // 解析数据
-    for (ByteBuffer buffer : lstBuffers) {
-        // 从读状态转为写状态, 并输出
-        buffer.flip();
-        System.out.println(
-            "初始化长度: " + buffer.capacity() + ", 结果数据: " + new String(buffer.array(), 0, buffer.limit()));
-    }
-    /*******************************************************************/
-    /* 聚集写入 */
-    RandomAccessFile accessFile = new RandomAccessFile("F://2.txt", "rw");
-    FileChannel outChannel = accessFile.getChannel();
-    outChannel.write(lstBuffers);
-    // 关闭资源
-    inChannel.close();
-    outChannel.close();
-    randomAccessFile.close();
-    accessFile.close();
-}
-```
-
 ### 3.1.6，Buffer和Channel的注意事项和细节梳理
 
 * `ByteBuffer`支持类型化的`put()`和`get()`，`put()`放入的是什么数据，`get()`就应该使用相应的数据类型接收，否则可能会有`BufferUnderFlowException`；**`short`，`int`，`long`**在内存中长度分配不一致，如果存储多个`short`后，用`long`接收，则注定长度越界
@@ -626,7 +591,7 @@ public void readOnly() {
 #### 3.1.7.1，Selector基本介绍
 
 * NIO是非阻塞式IO，可以用一个线程，处理多个客户端连接，就是使用到`Selector`选择器
-* `Selector`能够检测多个注册的通道上是否有时间发生（多个`Channel`可以以事件的方式注册到同一个`Selector`上），如果有时间发生，可以获取事件后针对每一个事件进行相应的处理。这就是使用一个单线程管理多个通道，处理多个连接和请求
+* `Selector`能够检测多个注册的通道上是否有事件发生（多个`Channel`可以以事件的方式注册到同一个`Selector`上），如果有事件发生，可以获取事件后针对每一个事件进行相应的处理。这就是使用一个单线程管理多个通道，处理多个连接和请求
 * 只有在连接或者通道真正有读写发生时，才进行读写，这就大大减少了系统开销，并且不必要为每一个连接都创建一个线程，不用去维护多个线程
 * 避免了多线程之前的上下文切换导致的开销
 
@@ -2010,6 +1975,28 @@ public class AIOClient {
   }
   ```
   
+* `WindowsSelectorImpl.growIfNeeded`：扩容
+
+  ```java
+  private void growIfNeeded() {
+      if(this.channelArray.length == this.totalChannels) {
+          // 数量超过定长，直接进行二倍扩容
+          int var1 = this.totalChannels * 2;
+          SelectionKeyImpl[] var2 = new SelectionKeyImpl[var1];
+          System.arraycopy(this.channelArray, 1, var2, 1, this.totalChannels - 1);
+          this.channelArray = var2;
+          this.pollWrapper.grow(var1);
+      }
+  	// 数量为1024的倍数，对线程加1，select()时作为子线程进行
+      if(this.totalChannels % 1024 == 0) {
+          this.pollWrapper.addWakeupSocket(this.wakeupSourceFd, this.totalChannels);
+          ++this.totalChannels;
+          ++this.threadsCount;
+      }
+  
+  }
+  ```
+  
 * `AbstractSelectableChannel.addKey()`：注册完成，添加到通道的`SelectionKey[]`数组中
 
   ```java
@@ -2282,7 +2269,7 @@ public class AIOClient {
   }
   ```
 
-* 真正执行`Selector`的具体代码，与`WindowsSelectorImpl`的三个内部类有关
+* 真正执行`Selector`的具体代码，与`WindowsSelectorImpl`的四个内部类有关
 
 * `StartLock`：
 
@@ -2412,7 +2399,125 @@ public class AIOClient {
   }
   ```
 
-* `updateSelectedKeys()`：添加选择到的数据到集合中
+* `SubSelector`
+
+  ```java
+  private final class SubSelector {
+      // 当前线程读取的句柄区间
+      private final int pollArrayIndex;
+      // 事件句柄数组，其中第一个元素表示长度，之后表示真实的句柄地址
+      private final int[] readFds;
+      private final int[] writeFds;
+      private final int[] exceptFds;
+  
+      private SubSelector() {
+          this.readFds = new int[1025];
+          this.writeFds = new int[1025];
+          this.exceptFds = new int[1025];
+          this.pollArrayIndex = 0;
+      }
+  
+      private SubSelector(int var2) {
+          this.readFds = new int[1025];
+          this.writeFds = new int[1025];
+          this.exceptFds = new int[1025];
+          this.pollArrayIndex = (var2 + 1) * 1024;
+      }
+  
+      // poll操作后，会将上面三个句柄数组进行填充
+      private int poll() throws IOException {
+          return this.poll0(WindowsSelectorImpl.this.pollWrapper.pollArrayAddress, Math.min(WindowsSelectorImpl.this.totalChannels, 1024), this.readFds, this.writeFds, this.exceptFds, WindowsSelectorImpl.this.timeout);
+      }
+  
+      private int poll(int var1) throws IOException {
+          return this.poll0(WindowsSelectorImpl.this.pollWrapper.pollArrayAddress + (long)(this.pollArrayIndex * PollArrayWrapper.SIZE_POLLFD), Math.min(1024, WindowsSelectorImpl.this.totalChannels - (var1 + 1) * 1024), this.readFds, this.writeFds, this.exceptFds, WindowsSelectorImpl.this.timeout);
+      }
+  
+      private native int poll0(long var1, int var3, int[] var4, int[] var5, int[] var6, long var7);
+  
+      // processSelectedKeys
+      // 此处分别对不同的事件类型进行处理
+      private int processSelectedKeys(long var1) {
+          byte var3 = 0;
+          // 分别对三个句柄数组进行操作，并返回数量
+          int var4 = var3 + this.processFDSet(var1, this.readFds, Net.POLLIN, false);
+          var4 += this.processFDSet(var1, this.writeFds, Net.POLLCONN | Net.POLLOUT, false);
+          var4 += this.processFDSet(var1, this.exceptFds, Net.POLLIN | Net.POLLCONN | Net.POLLOUT, true);
+          // 最终返回整体数量
+          return var4;
+      }
+  
+      // processFDSet
+      private int processFDSet(long var1, int[] var3, int var4, boolean var5) {
+          int var6 = 0;
+  		// 从此处可以看出，第一个元素表示数量
+          // 从第二个元素开始通过句柄地址获取数据进行处理
+          for(int var7 = 1; var7 <= var3[0]; ++var7) {
+              int var8 = var3[var7];
+              if(var8 == WindowsSelectorImpl.this.wakeupSourceFd) {
+                  synchronized(WindowsSelectorImpl.this.interruptLock) {
+                      WindowsSelectorImpl.this.interruptTriggered = true;
+                  }
+              } else {
+                  // 通过句柄地址获取到的事件数据
+                  WindowsSelectorImpl.MapEntry var9 = WindowsSelectorImpl.this.fdMap.get(var8);
+                  if(var9 != null) {
+                      SelectionKeyImpl var10 = var9.ski;
+                      if(!var5 || !(var10.channel() instanceof SocketChannelImpl) || !WindowsSelectorImpl.this.discardUrgentData(var8)) {
+                          // 此处表示注册的事件在列表中已经存在,对事件类型进行变更
+                          if(WindowsSelectorImpl.this.selectedKeys.contains(var10)) {
+                              if(var9.clearedCount != var1) {
+                                  if(var10.channel.translateAndSetReadyOps(var4, var10) && var9.updateCount != var1) {
+                                      var9.updateCount = var1;
+                                      ++var6;
+                                  }
+                              } else if(var10.channel.translateAndUpdateReadyOps(var4, var10) && var9.updateCount != var1) {
+                                  var9.updateCount = var1;
+                                  ++var6;
+                              }
+  
+                              var9.clearedCount = var1;
+                          } else {
+                              // 如果不存在,则添加到集合中去
+                              if(var9.clearedCount != var1) {
+                                  var10.channel.translateAndSetReadyOps(var4, var10);
+                                  if((var10.nioReadyOps() & var10.nioInterestOps()) != 0) {
+                                      WindowsSelectorImpl.this.selectedKeys.add(var10);
+                                      var9.updateCount = var1;
+                                      ++var6;
+                                  }
+                              } else {
+                                  var10.channel.translateAndUpdateReadyOps(var4, var10);
+                                  if((var10.nioReadyOps() & var10.nioInterestOps()) != 0) {
+                                      WindowsSelectorImpl.this.selectedKeys.add(var10);
+                                      var9.updateCount = var1;
+                                      ++var6;
+                                  }
+                              }
+  
+                              var9.clearedCount = var1;
+                          }
+                      }
+                  }
+              }
+          }
+  
+          return var6;
+      }
+  }
+  ```
+
+* 四个核心类调用关系
+  
+  * 在 adjustThreadsCount() 中进行线程准备时，虽然对初始化的线程类 SelectThread 进行了 start() 操作，但是在线程内的 run() 中进行了线程阻塞 startLock.waitForStart()，等待再次唤醒；此外，线程数量是在注册时 SelectionKey 超过 1024的倍数时进行递增的
+  * 线程准备后，将已经完成线程的计数器进行重置（finishLock.reset()），重置为线程数量，表示所有线程已经启动，并都没有执行完成
+  * 重置完成后，唤醒所有准备好的线程 notifyAll() 执行 poll() 操作，获取有效事件
+  * 此处通过 poll() 获取数据，各个线程以 (0 ~ 1023) * N 为区间方式，分别取获取到Socket句柄位置后添加的 SubSelector 的成员数组中
+  * poll() 数据的工作线程线程执行完成后，会调用一次 wakeUp() 方法唤醒 select() 主线程进行工作，因为 wakeUp() 多次调用无效，所以只有第一个完成的工作线程才会进行唤醒操作
+  * poll() 数据的工作线程完成后，下一步会继续判断所有工作线程是否已经全部完成（this.threads.size() > 0），如果没有全部完成，则线程进行等待（this.finishLock.waitForHelperThreads()），等最后一道工作线程（this.threadsToFinish == 0）执行完成后，会唤醒该线程继续执行（this.notify()）
+  * 所有工作线程执行完成后，则当前所有已经注册事件的Socket句柄已经被各个 SubSelector 持有，下一步则从根据各个 SubSelector 持有的 Socket 句柄索引，获取事件，并添加到 selectedKeys 中，等待后续业务处理
+  
+* `updateSelectedKeys()`：添加选择到的数据到数组中
 
   ```java
   private int updateSelectedKeys() {
@@ -2425,78 +2530,12 @@ public class AIOClient {
       for(Iterator var2 = this.threads.iterator(); var2.hasNext(); var4 += var3.subSelector.processSelectedKeys(this.updateCount)) {
           var3 = (WindowsSelectorImpl.SelectThread)var2.next();
       }
-  
       return var4;
-  }
-  
-  // processSelectedKeys
-  // 此处分别对不同的事件类型进行处理
-  private int processSelectedKeys(long var1) {
-      byte var3 = 0;
-      int var4 = var3 + this.processFDSet(var1, this.readFds, Net.POLLIN, false);
-      var4 += this.processFDSet(var1, this.writeFds, Net.POLLCONN | Net.POLLOUT, false);
-      var4 += this.processFDSet(var1, this.exceptFds, Net.POLLIN | Net.POLLCONN | Net.POLLOUT, true);
-      return var4;
-  }
-  
-  // processFDSet
-  private int processFDSet(long var1, int[] var3, int var4, boolean var5) {
-      int var6 = 0;
-  
-      for(int var7 = 1; var7 <= var3[0]; ++var7) {
-          int var8 = var3[var7];
-          if(var8 == WindowsSelectorImpl.this.wakeupSourceFd) {
-              synchronized(WindowsSelectorImpl.this.interruptLock) {
-                  WindowsSelectorImpl.this.interruptTriggered = true;
-              }
-          } else {
-              WindowsSelectorImpl.MapEntry var9 = WindowsSelectorImpl.this.fdMap.get(var8);
-              if(var9 != null) {
-                  SelectionKeyImpl var10 = var9.ski;
-                  if(!var5 || !(var10.channel() instanceof SocketChannelImpl) || !WindowsSelectorImpl.this.discardUrgentData(var8)) {
-                      // 此处表示注册的事件在列表中已经存在,对事件类型进行变更
-                      if(WindowsSelectorImpl.this.selectedKeys.contains(var10)) {
-                          if(var9.clearedCount != var1) {
-                              if(var10.channel.translateAndSetReadyOps(var4, var10) && var9.updateCount != var1) {
-                                  var9.updateCount = var1;
-                                  ++var6;
-                              }
-                          } else if(var10.channel.translateAndUpdateReadyOps(var4, var10) && var9.updateCount != var1) {
-                              var9.updateCount = var1;
-                              ++var6;
-                          }
-  
-                          var9.clearedCount = var1;
-                      } else {
-                          // 如果不存在,则添加到集合中去
-                          if(var9.clearedCount != var1) {
-                              var10.channel.translateAndSetReadyOps(var4, var10);
-                              if((var10.nioReadyOps() & var10.nioInterestOps()) != 0) {
-                                  WindowsSelectorImpl.this.selectedKeys.add(var10);
-                                  var9.updateCount = var1;
-                                  ++var6;
-                              }
-                          } else {
-                              var10.channel.translateAndUpdateReadyOps(var4, var10);
-                              if((var10.nioReadyOps() & var10.nioInterestOps()) != 0) {
-                                  WindowsSelectorImpl.this.selectedKeys.add(var10);
-                                  var9.updateCount = var1;
-                                  ++var6;
-                              }
-                          }
-  
-                          var9.clearedCount = var1;
-                      }
-                  }
-              }
-          }
-      }
-  
-      return var6;
   }
   ```
 
 * 选择器源码是NIO的核心源码，简单过一遍，大概流程为：
+  
   * 注册时注册`Socket`句柄到内存对象中 
   * `select()`时构造多道线程取对应区间的`Socket`句柄，线程在处理过程中分为协调线程和工作线程，注意其中协调获取的关系
   * 添加有效的`Socket`句柄到`SelectionKey`列表中，通过`selectKeys()`可以直接获取到，进行后续事件处理
