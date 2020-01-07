@@ -5012,7 +5012,7 @@ public class DispackageClientHandler extends SimpleChannelInboundHandler<MyProto
 
 * `ServerBootStrap`初始化
 
-* ``ServerBootStrap.bind()`端口绑定
+* `ServerBootStrap.bind()`端口绑定
   * `initAndRegister`：初始化数据并注册通道
   * `doBind0`：绑定端口并启动
 * `io.netty.channel.AbstractChannel.AbstractUnsafe#bind`绑定成功后添加回调任务`AbstractChannel.this.pipeline.fireChannelActive()`，并继续执行到`io.netty.channel.nio.AbstractNioChannel#doBeginRead`初始化事件状态
