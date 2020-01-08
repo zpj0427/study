@@ -1,5 +1,6 @@
 package com.self.datastructure.queue;
 
+import java.lang.annotation.Target;
 import java.util.Scanner;
 
 /**
@@ -17,7 +18,7 @@ public class MyQueue {
     // 数组长度
     private int capacity;
 
-    // 计数器
+    // 有效数据
     private int totalCount;
 
     // 读索引, 读索引指向数组数据的当前位置, 即读取当前索引的值
@@ -39,17 +40,12 @@ public class MyQueue {
 
     // 是否为空
     public boolean isEmpty() {
-        // 写指向实际数据前一个位置
-        // 当读 + 1 = 写的时候, 说明已经空了
-        return (readIndex + 1) % capacity == writeIndex;
-
+        return totalCount == 0;
     }
 
     // 是否已经满了
     public boolean isFull() {
-        // 写指向实际数据前一个位置
-        // 当写 == 读时, 说明数据已经写满了
-        return readIndex == writeIndex;
+        return totalCount == capacity;
     }
 
     // 写数据
@@ -79,18 +75,23 @@ public class MyQueue {
         return data;
     }
 
+    // 遍历需要从读位置遍历到写的位置
     public void showDetails() {
-        for (int i : array) {
-            System.out.print(i + ", ");
+        // 条件是从读索引开始, 读取有效数据个数
+        System.out.print("totalCount: " + totalCount + "\t");
+        for (int i = readIndex; i < readIndex + getTotalCount(); i++) {
+            System.out.print(array[i % capacity] + ", ");
         }
         System.out.println();
     }
 
-    // 获取总数
+    // 获取有效数据总数
     public int getTotalCount() {
+        // 参考图示
         return totalCount;
     }
 
+    // 展示属性值
     public void showProp() {
         System.out.println("read: " + readIndex + ", write: " + writeIndex);
     }
