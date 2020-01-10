@@ -2,21 +2,44 @@ package com.self.datastructure.linked;
 
 import lombok.Data;
 
+import java.util.Stack;
+
 /**
+ * 单向链表
  * @author LiYanBin
  * @create 2020-01-08 14:06
  **/
-public class MyLinkedList {
+public class SingleLinkedList {
 
     public static void main(String[] args) {
-        SimpleLinkedList linkedList = new SimpleLinkedList();
-        linkedList.addByOrder(new LinkedNode(2, "名称", "昵称"));
+        SLinkedList linkedList = new SLinkedList();
         linkedList.addByOrder(new LinkedNode(1, "名称", "昵称"));
-        linkedList.addByOrder(new LinkedNode(4, "名称", "昵称"));
         linkedList.addByOrder(new LinkedNode(3, "名称", "昵称"));
-        linkedList.addByOrder(new LinkedNode(5, "名称", "昵称"));
-        LinkedNode linkedNode = reverseLinked(linkedList.getHead(), false);
-        System.out.println("123");
+        linkedList.addByOrder(new LinkedNode(7, "名称", "昵称"));
+        linkedList.addByOrder(new LinkedNode(9, "名称", "昵称"));
+        linkedList.addByOrder(new LinkedNode(10, "名称", "昵称"));
+
+        SLinkedList secondList = new SLinkedList();
+        secondList.addByOrder(new LinkedNode(2, "名称", "昵称"));
+        secondList.addByOrder(new LinkedNode(4, "名称", "昵称"));
+        secondList.addByOrder(new LinkedNode(5, "名称", "昵称"));
+        secondList.addByOrder(new LinkedNode(6, "名称", "昵称"));
+        secondList.addByOrder(new LinkedNode(8, "名称", "昵称"));
+        // 反转
+        // LinkedNode linkedNode = reverseLinked(linkedList.getHead(), false);
+        // 逆序打印
+        // showDetailsReverse(linkedList.getHead(), false);
+        // 合并
+        showDetails(mergeOrderNode(secondList.getHead(), linkedList.getHead()));
+    }
+
+    // 展示详情信息
+    public static void showDetails(LinkedNode linkedNode) {
+        LinkedNode next = linkedNode.getNext();
+        while (next != null) {
+            System.out.println(next);
+            next = next.getNext();
+        }
     }
 
     /**
@@ -60,6 +83,8 @@ public class MyLinkedList {
 
     /**
      * 单向链表反转
+     * 每次获取下一个节点, 并重新构造该节点为头节点
+     * 把之前存储的头节点置位该节点的next节点, 即一步步遍历, 一步步后推
      * @param head 单向链表
      * @param isNeedHead 头节点是否是有效节点
      * @return
@@ -67,15 +92,15 @@ public class MyLinkedList {
     public static LinkedNode reverseLinked(LinkedNode head, boolean isNeedHead) {
         // 获取有效数据
         LinkedNode realData = isNeedHead ? head : head.getNext();
-        // 初始化返回数据
+        // 初始化返回数据, 不需要头节点的直接初始化虚拟节点
         LinkedNode reverseLinked = isNeedHead ? null : new LinkedNode(head);
         // 反转
         for (; null != realData ;) {
+            // 构造新节点
+            LinkedNode newNode = new LinkedNode(realData);
             if (null == reverseLinked) {
-                reverseLinked = new LinkedNode(realData);
+                reverseLinked = newNode;
             } else {
-                // 构造新节点
-                LinkedNode newNode = new LinkedNode(realData);
                 // 获取下一个节点
                 // 非虚拟头节点
                 if (isNeedHead) {
@@ -95,9 +120,83 @@ public class MyLinkedList {
         return reverseLinked;
     }
 
+    /**
+     * 从尾节点开始打印链表
+     * 方式1:
+     *     先将单链表进行翻转操作, 然后进行遍历即可
+     *     该方式可能会改变原链表结构, 不建议
+     *     该方式可以直接调用反转方法, 并打印
+     * 方式2:
+     *     利用栈数据结构, 将各个节点压入栈中
+     *     利用栈先进后出的特点, 完成逆序打印
+     * @param linkedNode 节点
+     * @param isNeedHead 头结点是否是有效节点
+     */
+    public static void showDetailsReverse(LinkedNode linkedNode, boolean isNeedHead) {
+        Stack<LinkedNode> stack = new Stack<>();
+        LinkedNode realNode = isNeedHead ? linkedNode : linkedNode.getNext();
+        if (null == realNode) {
+            return;
+        }
+        // 遍历节点, 添加到栈中
+        for (; null != realNode; ) {
+            stack.push(realNode);
+            realNode = realNode.getNext();
+        }
+        // 打印栈对象
+        LinkedNode currNode = null;
+        for (;stack.size() > 0; ) {
+            System.out.println(stack.pop());
+        }
+    }
+
+    /**
+     * 合并两个有序(顺序)链表, 默认不需要头结点
+     * @param firstNode
+     * @param secondNode
+     */
+    public static LinkedNode mergeOrderNode(LinkedNode firstNode, LinkedNode secondNode) {
+        // 获取有效节点
+        firstNode = firstNode.getNext();
+        secondNode = secondNode.getNext();
+        // 存在为空, 直接返回
+        if (null == firstNode || null == secondNode) {
+            return null == firstNode ? secondNode : firstNode;
+        }
+        // 比较节点数据
+        // 用首节点编号较小的链表进行遍历,
+        // 较大编号的链表进行填充, 最终返回有效节点
+        return firstNode.getNo() > secondNode.getNo()
+                ? doMergeOrderNode(secondNode, firstNode)
+                : doMergeOrderNode(firstNode, secondNode);
+    }
+
+    public static LinkedNode doMergeOrderNode(LinkedNode firstNode, LinkedNode secondNode) {
+        // 初始化头节点
+        SLinkedList myLinkedList = new SLinkedList();
+        // 遍历节点进行填充
+        for (;null != firstNode;) {
+            // first节点数据大于second节点数据, 将second节点数据置于之前
+            for (;secondNode != null && firstNode.getNo() > secondNode.getNo();) {
+                myLinkedList.add(new LinkedNode(secondNode));
+                // 当前second已经被比较过, 向前推动一位
+                secondNode = secondNode.getNext();
+            }
+            // 处理完成当前区间的seconde数据后, 添加first数据
+            myLinkedList.add(new LinkedNode(firstNode));
+            firstNode = firstNode.getNext();
+        }
+        // first节点遍历完成后, 如果second节点还存在数据, 全部添加到最后
+        for (;null != secondNode;) {
+            myLinkedList.add(new LinkedNode(secondNode));
+            secondNode = secondNode.getNext();
+        }
+        return myLinkedList.getHead();
+    }
+
 }
 
-class SimpleLinkedList {
+class SLinkedList {
 
     // 初始化头结点
     private LinkedNode head = new LinkedNode(-1, "", "");
@@ -164,15 +263,6 @@ class SimpleLinkedList {
                 return;
             }
             temp = next;
-        }
-    }
-
-    // 展示详情信息
-    public void showDetails() {
-        LinkedNode next = head.getNext();
-        while (next != null) {
-            System.out.println(next);
-            next = next.getNext();
         }
     }
 

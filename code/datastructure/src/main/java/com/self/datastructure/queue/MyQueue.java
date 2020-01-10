@@ -1,9 +1,9 @@
 package com.self.datastructure.queue;
 
-import java.lang.annotation.Target;
 import java.util.Scanner;
 
 /**
+ * 循环数组
  * @author LiYanBin
  * @create 2020-01-07 15:34
  **/

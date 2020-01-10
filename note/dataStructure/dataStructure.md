@@ -588,12 +588,10 @@ public class MyQueue {
   }
   ```
 
-* 查找单向链表中的倒数第K个节点
-
-  * 即获取正数第（count - K + 1）个节点的数据
+* 查找单向链表中的倒数第K个节点：即获取正数第（count - K）个节点的数据
 
   ```java
-  /**
+/**
    * 获取单链表中的倒数第K个节点
    * 索引从0开始算, 即倒是第K个节点就是正数第(length - k)
    * @param head 单向链表头结点
@@ -613,6 +611,690 @@ public class MyQueue {
   	return temp;
   }
   ```
-
+  
 * 单链表反转
+
+  ```java
+  /**
+   * 单向链表反转
+   * 每次获取下一个节点, 并重新构造该节点为头节点
+   * 把之前存储的头节点置位该节点的next节点, 即一步步遍历, 一步步后推
+   * @param head 单向链表
+   * @param isNeedHead 头节点是否是有效节点
+   * @return
+   */
+  public static LinkedNode reverseLinked(LinkedNode head, boolean isNeedHead) {
+  	// 获取有效数据
+  	LinkedNode realData = isNeedHead ? head : head.getNext();
+  	// 初始化返回数据, 不需要头节点的直接初始化虚拟节点
+  	LinkedNode reverseLinked = isNeedHead ? null : new LinkedNode(head);
+  	// 反转
+  	for (; null != realData ;) {
+  		// 构造新节点
+  		LinkedNode newNode = new LinkedNode(realData);
+  		if (null == reverseLinked) {
+  			reverseLinked = newNode;
+  		} else {
+  			// 获取下一个节点
+  			// 非虚拟头节点
+  			if (isNeedHead) {
+  				newNode.setNext(reverseLinked);
+  				reverseLinked = newNode;
+  			} else { // 虚拟头节点
+  				// 获取虚拟头节点的下一个节点
+  				LinkedNode nextNode = reverseLinked.getNext();
+  				// 把原节点挂到该节点下
+  				newNode.setNext(nextNode);
+  				// 把当前节点设为下一个节点
+  				reverseLinked.setNext(newNode);
+  			}
+  		}
+  		realData = realData.getNext();
+  	}
+  	return reverseLinked;
+  }
+  ```
+
+* 反向打印链表
+
+  ```java
+  /**
+   * 从尾节点开始打印链表
+   * 方式1:
+   *     先将单链表进行翻转操作, 然后进行遍历即可
+   *     该方式可能会改变原链表结构, 不建议
+   *     该方式可以直接调用反转方法, 并打印
+   * 方式2:
+   *     利用栈数据结构, 将各个节点压入栈中
+   *     利用栈先进后出的特点, 完成逆序打印
+   * @param linkedNode 节点
+   * @param isNeedHead 头结点是否是有效节点
+   */
+  public static void showDetailsReverse(LinkedNode linkedNode, boolean isNeedHead) {
+  	Stack<LinkedNode> stack = new Stack<>();
+  	LinkedNode realNode = isNeedHead ? linkedNode : linkedNode.getNext();
+  	if (null == realNode) {
+  		return;
+  	}
+  	// 遍历节点, 添加到栈中
+  	for (; null != realNode; ) {
+  		stack.push(realNode);
+  		realNode = realNode.getNext();
+  	}
+  	// 打印栈对象
+  	LinkedNode currNode = null;
+  	for (;stack.size() > 0; ) {
+  		System.out.println(stack.pop());
+  	}
+  }
+  ```
+
+* 合并两个有序的单链表，合并之后的链表依然有序
+
+  ```java
+  /**
+   * 合并两个有序(顺序)链表, 默认不需要头结点
+   * @param firstNode
+   * @param secondNode
+   */
+  public static LinkedNode mergeOrderNode(LinkedNode firstNode, LinkedNode secondNode) {
+  	// 获取有效节点
+  	firstNode = firstNode.getNext();
+  	secondNode = secondNode.getNext();
+  	// 存在为空, 直接返回
+  	if (null == firstNode || null == secondNode) {
+  		return null == firstNode ? secondNode : firstNode;
+  	}
+  	// 比较节点数据
+  	// 用首节点编号较小的链表进行遍历,
+  	// 较大编号的链表进行填充, 最终返回有效节点
+  	return firstNode.getNo() > secondNode.getNo()
+  			? doMergeOrderNode(secondNode, firstNode)
+  			: doMergeOrderNode(firstNode, secondNode);
+  }
+  
+  public static LinkedNode doMergeOrderNode(LinkedNode firstNode, LinkedNode secondNode) {
+  	// 初始化头节点
+  	SimpleLinkedList simpleLinkedList = new SimpleLinkedList();
+  	// 遍历节点进行填充
+  	for (;null != firstNode;) {
+  		// first节点数据大于second节点数据, 将second节点数据置于之前
+  		for (;secondNode != null && firstNode.getNo() > secondNode.getNo();) {
+  			simpleLinkedList.add(new LinkedNode(secondNode));
+  			// 当前second已经被比较过, 向前推动一位
+  			secondNode = secondNode.getNext();
+  		}
+  		// 处理完成当前区间的seconde数据后, 添加first数据
+  		simpleLinkedList.add(new LinkedNode(firstNode));
+  		firstNode = firstNode.getNext();
+  	}
+  	// first节点遍历完成后, 如果second节点还存在数据, 全部添加到最后
+  	for (;null != secondNode;) {
+  		simpleLinkedList.add(new LinkedNode(secondNode));
+  		secondNode = secondNode.getNext();
+  	}
+  	return simpleLinkedList.getHead();
+  }
+  ```
+
+## 4.2，双向链表
+
+### 4.2.1，双向链表介绍
+
+* 单向链表查找方向是能是一个方向；双向链表可以向前或者向后查找
+* 单向链表不能自我删除，需要靠辅助节点即前一个节点；双向链表可以进行自删除，因为同时持有上一个节点和下一个节点的地址
+* **遍历**：遍历方式与单向链表基本一致，不过双向链表可以直接从后往前遍历
+* **添加**
+  * 先找到需要插入到双向链表的目标节点
+  * 讲节点和对应前置节点与后置节点的`pre`和`next`属性进行修改
+* 删除
+  * 双向链表可以实现单个节点的自删除，直接遍历到需要删除的当前节点
+  * 将当前节点前置节点的`next`属性指向当前节点的后置节点
+  * 将当前节点后置节点的`pre`属性指向当前节点的前置节点
+  * 处理之后，当前节点在链表中会挂空，也就是从链表中删除
+
+### 4.2.2，双向链表代码演示
+
+```java
+package com.self.datastructure.linked;
+
+import lombok.Data;
+
+/**
+ * 双向链表
+ * @author LiYanBin
+ * @create 2020-01-09 14:21
+ **/
+public class DoubleLinkedList {
+
+    public static void main(String[] args) {
+        DLinkedList dLinkedList = new DLinkedList();
+//        dLinkedList.add(new DoubleNode(0, "名称", "昵称"));
+//        dLinkedList.add(new DoubleNode(1, "名称", "昵称"));
+//        dLinkedList.add(new DoubleNode(2, "名称", "昵称"));
+//        dLinkedList.add(new DoubleNode(3, "名称", "昵称"));
+
+        dLinkedList.addByOrder(new DoubleNode(3, "名称", "昵称"));
+        dLinkedList.addByOrder(new DoubleNode(2, "名称", "昵称"));
+        dLinkedList.addByOrder(new DoubleNode(4, "名称", "昵称"));
+        dLinkedList.addByOrder(new DoubleNode(1, "名称", "昵称"));
+        dLinkedList.showDetailsFromHead();
+    }
+
+}
+
+class DLinkedList {
+
+    private DoubleNode head = new DoubleNode(-1, "", "");
+
+    private DoubleNode tail = new DoubleNode(-2, "", "");
+
+    public DLinkedList() {
+        head.setNext(tail);
+        tail.setPre(head);
+    }
+
+    // 根据序列号添加
+    public void addByOrder(DoubleNode doubleNode) {
+        // 获取有效数据
+        DoubleNode realData = head.getNext();
+        for (;null != realData;) {
+            // 遍历到尾节点, 直接添加
+            if (realData == tail) {
+                add(doubleNode);
+                return;
+            }
+            // 编号大于当前编号, 则置于该编号之前
+            if (realData.getNo() > doubleNode.getNo()) {
+                DoubleNode pre = realData.getPre();
+                pre.setNext(doubleNode);
+                doubleNode.setPre(pre);
+                doubleNode.setNext(realData);
+                realData.setPre(doubleNode);
+                return;
+            }
+            realData = realData.getNext();
+        }
+    }
+
+    // 添加数据到链表中, 默认添加到链表尾部
+    public void add(DoubleNode doubleNode) {
+        // 获取尾节点的上一个节点
+        DoubleNode preNode = tail.getPre();
+        // 将上一个节点置为该节点的前置节点,
+        preNode.setNext(doubleNode);
+        // 添加该节点的前置节点和后置节点
+        doubleNode.setPre(preNode);
+        doubleNode.setNext(tail);
+        // 将tail节点的前置节点改为该节点
+        tail.setPre(doubleNode);
+    }
+
+    // 删除指定数据
+    public void remove(int no) {
+        DoubleNode realData = head.getNext();
+        for (;null != realData && tail != realData;) {
+            // 匹配到数据, 直接移除
+            if (realData.getNo() == no) {
+                // 获取前置节点
+                DoubleNode pre = realData.getPre();
+                // 获取后置节点
+                DoubleNode next = realData.getNext();
+                // 互为前置后置节点, 将当前节点挂空
+                pre.setNext(next);
+                next.setPre(pre);
+                realData = null; // 辅助GC
+                return;
+            }
+            realData = realData.getNext();
+        }
+    }
+
+    // 打印, 从头打印
+    public void showDetailsFromHead() {
+        DoubleNode realData = head.getNext();
+        for (;null != realData && tail != realData;) {
+            System.out.println(realData);
+            realData = realData.getNext();
+        }
+    }
+
+    // 打印, 从尾部打印
+    public void showDetailsFromTail() {
+        DoubleNode realData = tail.getPre();
+        for (;null != realData && realData != head;) {
+            System.out.println(realData);
+            realData = realData.getPre();
+        }
+    }
+
+    public DoubleNode getHead() {
+        return head;
+    }
+
+    public DoubleNode getTail() {
+        return tail;
+    }
+
+}
+
+@Data
+class DoubleNode {
+
+    private DoubleNode pre;
+
+    private DoubleNode next;
+
+    private int no;
+
+    private String name;
+
+    private String nickName;
+
+    public DoubleNode(DoubleNode doubleNode) {
+        this(doubleNode.getNo(), doubleNode.getName(), doubleNode.getNickName());
+    }
+
+    public DoubleNode(int no, String name, String nickName) {
+        this(no, name, nickName, null, null);
+    }
+
+    public DoubleNode(int no, String name, String nickName, DoubleNode pre, DoubleNode next) {
+        this.no = no;
+        this.name = name;
+        this.nickName = nickName;
+        this.pre = pre;
+        this.next = next;
+    }
+
+    @Override
+    public String toString() {
+        return "[DoubleNode: no = " + no + ", name = " + name + ", nickName = " + nickName + "]";
+    }
+
+}
+```
+
+## 4.3，单向环形链表：约瑟夫问题（Josephu）
+
+### 4.3.1，Josephu（约瑟夫）问题
+
+* 设编号为1，2 ... n的n个人围成一个圈，并约定编号为K（1<=K<=n）的人从1开始报数，数到M的那个人出列，他的下一位又从1开始数，依次类推，知道所有人出列
+* 通过不带头节点的单向链表来处理
+
+### 4.3.2，Josephu（约瑟夫）问题实现代码
+
+```java
+package com.self.datastructure.linked;
+
+import lombok.Data;
+
+import java.util.Scanner;
+
+/**
+ * 约瑟夫问题解决代码
+ * @author LiYanBin
+ * @create 2020-01-09 15:45
+ **/
+public class JosephuQuestion {
+
+    public static void main(String[] args) {
+        // 初始化游戏玩家
+        JosephuLinkedList linkedList = new JosephuLinkedList();
+        for (int i = 0; i < 10; i++) {
+            linkedList.add(new Node(i));
+        }
+        linkedList.startGame();
+    }
+
+}
+
+class JosephuLinkedList {
+
+    // 该头节点表示有效节点
+    private Node head = null;
+
+    // 统计总数
+    private int totalCount = 0;
+
+    // 开始游戏
+    public void startGame() {
+        Scanner scanner = new Scanner(System.in);
+        // 默认从头号玩家开始
+        Node startNode = head;
+        for(;;) {
+            if (totalCount == 0) {
+                System.out.println("编号全部移除, 游戏结束...");
+                return;
+            }
+            System.out.println("当前游戏人数: " + totalCount);
+            String input = scanner.nextLine();
+            switch (input) {
+                case "s": // show
+                    showDetails();
+                    break;
+                case "r": // run
+                    System.out.println("输入跳过的人数: M");
+                    int runCount = scanner.nextInt();
+                    // 移除数据
+                    // 从1号开始数两位, 则移除3号, 下一次从4号开始玩
+                    // 此处获取要移除数据的前一位
+                    Node targetPreNode = startNode;
+                    for (int i = 0; i < runCount - 1; i++, targetPreNode = targetPreNode.getNext());
+                    // 记录, 获取移除数据的下一个数据, 此处需要两次next
+                    startNode = targetPreNode.getNext().getNext();
+                    System.out.println("移除完成..., 移除编号: " + targetPreNode.getNext().getNo() + ", 下次开始编号: " + startNode.getNo());
+                    // 直接移除, 将该节点的next 指向目标节点的next, 将目标节点挂空
+                    targetPreNode.setNext(targetPreNode.getNext().getNext());
+                    totalCount--;
+                    // 移除, 此处不需要调移除, 可以直接处理调
+                    // remove(targetNode.getNo());
+                    break;
+                case "e": //exit
+                    return;
+                default:
+                    break;
+            }
+        }
+    }
+
+    // 添加元素
+    public void add(Node node) {
+        // 设置为头结点
+        if (null == head) {
+            totalCount++;
+            head = node;
+            head.setNext(head);
+            return;
+        }
+        // 与头节点进行比较
+        Node temp = head;
+        for (;null != temp;) {
+            // 从头节点开始, 每次获取到下一个节点进行判断
+            Node next = temp.getNext();
+            if (head == next) { // 与头节点相等, 说明已经到有效链表末尾
+                totalCount++;
+                temp.setNext(node);
+                node.setNext(head);
+                return;
+            }
+            temp = temp.getNext();
+        }
+    }
+
+    public void remove(int no) {
+        if (null == head) return;
+        // 头结点处理
+        if (head.getNo() == no) {
+            // 链表只有当前数据, 直接清空
+            if (head == head.getNext()) {
+                head = null;
+
+            } else {
+                // 链表存在其他数据, 移除头节点后遍历
+                Node preHead = head;
+                head = head.getNext();
+                Node temp = head;
+                for (; null != temp; ) {
+                    // 再遇头节点
+                    if (preHead == temp.getNext()) {
+                        temp.setNext(head);
+                        break;
+                    }
+                    temp = temp.getNext();
+                }
+            }
+        } else { // 非头节点处理
+            Node temp = head;
+            for (;null != temp;) {
+                Node next = temp.getNext();
+                // 无论是否存在, 再遇头结点直接移除
+                if (next == head) {
+                    return;
+                }
+                // 存在, 直接移除
+                if (next.getNo() == no) {
+                    temp.setNext(next.getNext());
+                    break;
+                }
+                temp = temp.getNext();
+            }
+        }
+        totalCount--;
+    }
+
+    public void showDetails() {
+        if (null == head) {
+            System.out.println("数据为空...");
+            return;
+        }
+        Node temp = head;
+        boolean flag = false;
+        for (;null != temp;) {
+            if (flag && temp == head) {
+                System.out.println("遍历完成...");
+                return;
+            }
+            flag = true;
+            System.out.println(temp);
+            temp = temp.getNext();
+        }
+    }
+
+    public Node getHead() {
+        return head;
+    }
+
+}
+
+@Data
+class Node {
+
+    // 编号
+    private int no;
+
+    // 下一个节点
+    private Node next;
+
+    public Node(int no) {
+        this.no = no;
+    }
+
+    @Override
+    public String toString() {
+        return "[Node: no = " + no + "]";
+    }
+
+}
+```
+
+# 5，栈（Stack）
+
+## 5.1，栈基本介绍
+
+* 栈是一种先入后出（FIFO）的有序列表
+
+* 栈限制线性表中**元素的插入和删除只能在线性表的同一端**进行的一种特殊线性表。允许插入和删除的一端，为变化的一端，称为栈顶，另一端为固定的一端，称为栈底
+
+* 出栈（`pop`）入栈（`push`）原理图如下：
+
+  ![1578638346672](E:\gitrepository\study\note\image\dataStructure\1578638346672.png)
+
+## 5.2，栈模拟代码演示
+
+* 数组模拟
+
+```java
+package com.self.datastructure.stack;
+
+import lombok.Data;
+
+/**
+ * 通过数组模拟栈数据结构
+ * @author LiYanBin
+ * @create 2020-01-10 14:53
+ **/
+public class ArrayStackDemo {
+
+    public static void main(String[] args) {
+        ArrayStack arrayStack = new ArrayStack(10);
+        for (int i = 0; i < 10; i++, arrayStack.push(i));
+        arrayStack.showDetails();
+    }
+
+    @Data
+    private static class ArrayStack {
+        private int count; // 数组有效数据数量
+
+        private int capacity; // 数组总长度
+
+        private int[] stack; // 底层数组
+
+        private static final int DEFAULT_LENGTH = 10;
+
+        public ArrayStack() {
+            this(DEFAULT_LENGTH);
+        }
+
+        public ArrayStack(int length) {
+            this.capacity = length;
+            this.stack = new int[length];
+        }
+
+        // 添加数据, 添加到数组尾部
+        public void push(int data) {
+            if (isFull()) {
+                throw new IndexOutOfBoundsException("数组已满...");
+            }
+            stack[count++] = data;
+        }
+
+        // 弹出数据, 从数组尾部弹出
+        public int pop() {
+            if (isEmpty()) {
+                throw new IndexOutOfBoundsException("数组为空...");
+            }
+            return stack[--count];
+        }
+
+        // 判断数组是否已满
+        public boolean isFull() {
+            return count == capacity;
+        }
+
+        // 判断数组是否为空
+        public boolean isEmpty() {
+            return count == 0;
+        }
+
+        // 栈遍历, 从栈顶开始遍历
+        public void showDetails() {
+            int tempCount = count;
+            for (;tempCount > 0;) {
+                System.out.println(stack[--tempCount]);
+            }
+        }
+    }
+
+}
+```
+
+* 链表模拟
+
+```java
+package com.self.datastructure.stack;
+
+import lombok.Data;
+
+/**
+ * 通过单向链表模拟栈数据结构
+ * @author LiYanBin
+ * @create 2020-01-10 15:15
+ **/
+public class LinkedStackDemo {
+
+    public static void main(String[] args) {
+        LinkedStack linkedStack = new LinkedStack();
+        for (int i = 0; i < 10; i++, linkedStack.push(i));
+        for (int i = 0; i < 10; i++)
+            System.out.println(linkedStack.pop().getData());
+    }
+
+
+    private static class LinkedStack {
+
+        // 头结点, 该几点不虚拟
+        private Node head;
+
+        // 添加链表节点到栈中
+        public void push(int data) {
+            Node newNode = new Node(data);
+            if (null == head) {
+                head = newNode;
+            } else {
+                Node temp = head;
+                // 获取到最后一个有效节点
+                for (;null != temp.getNext(); temp = temp.getNext());
+                temp.setNext(newNode);
+            }
+        }
+
+        public Node pop() {
+            // 节点为空处理
+            if (isEmpty()) {
+                throw new IndexOutOfBoundsException("链表为空...");
+            }
+            // 只存在头节点处理
+            Node temp = head;
+            if (null == head.getNext()) {
+                head = null;
+                return temp;
+            } else {
+                // 获取到尾节点的上一个节点
+                for (temp = head; temp.getNext().getNext() != null; temp = temp.getNext());
+                // 获取的temp表示要获取节点的前置节点
+                // 返回目标节点, 并将前置节点的next为空置空
+                Node resultData = temp.getNext();
+                temp.setNext(null);
+                return resultData;
+            }
+        }
+
+        public boolean isEmpty() {
+            return head == null;
+        }
+
+
+    }
+
+    /**
+     * 自定义链表
+     */
+    @Data
+    private static class Node {
+        private int data;
+
+        private Node next;
+
+        public Node(int data) {
+            this(data, null);
+        }
+
+        public Node(Node node) {
+            this(node.getData(), null);
+        }
+
+        public Node(int data, Node next) {
+            this.data = data;
+            this.next = next;
+        }
+
+    }
+
+}
+```
+
+## 5.3，栈模拟计算器
+
+中缀表达式简易计算器：不带括号，可以考虑对自责运算排序（/ * - +）
 
