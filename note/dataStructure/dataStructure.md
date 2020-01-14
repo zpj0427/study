@@ -1739,3 +1739,246 @@ public class SuffixCalculateDemo {
 * 方法中使用的是引用类型变量，则会基于地址共享发生改变
 * 递归必须向退出递归的条件逼近，否则就是无限递归，最终栈溢出`StackOverflowError`
 * 当一个方法执行完毕，或者遇到return，就会返回，遵守谁调用，就将结果返回给谁，同时当结果返回时，该方法也执行完毕
+
+## 6.2，迷宫问题
+
+* 注意该路径不是最短路径！！！
+
+```java
+package com.self.datastructure.recursion;
+
+/**
+ * 递归_迷宫问题处理
+ * 1, 迷宫二维地图初始化状态为0, 1表示墙壁, 2表示已经走过的路, 3表示死路
+ * 2, 约定迷宫走路策略: 下 -> 右 -> 上 -> 左, 逆时针尝试走
+ * @author LiYanBin
+ * @create 2020-01-13 16:46
+ **/
+public class MazeDemo {
+
+    public static void main(String[] args) {
+        // 初始化迷宫, 初始化二维地图
+        int[][] map = initMap(8, 8);
+        // 初始化地图
+        showDetails(map);
+        // 从指定坐标开始找路, 抵达目的地
+        boolean hasWay = runWay(map, 1, 1, 6, 6);
+        showDetails(map);
+    }
+
+    /**
+     * 迷宫走路
+     * @param map 地图
+     * @param currFirstIndex 当前位置的一维坐标
+     * @param currSecondIndex 当前位置的二维坐标
+     * @param targetFirstIndex 目标诶只的一维坐标
+     * @param targetSecondIndex 目标位置的二维坐标
+     * @return
+     */
+    private static boolean runWay(int[][] map, int currFirstIndex, int currSecondIndex,
+                                  int targetFirstIndex, int targetSecondIndex) {
+        System.out.println("打印当前地图");
+        showDetails(map);
+        // 0表示初始化地图, 即未走
+        // 1表示墙壁或者障碍, 走不通
+        // 2表示已走
+        // 3表示死路
+        // 目标节点以走到, 则返回true, 并顺序返回
+        if (currFirstIndex == targetFirstIndex && currSecondIndex == targetSecondIndex) {
+            map[targetFirstIndex][targetSecondIndex] = 2;
+            return true;
+        } else { // 目标节点不为2, 则继续迷宫探路
+            // 为0表示未走过
+            if (map[currFirstIndex][currSecondIndex] == 0 || map[currFirstIndex][currSecondIndex] == 2) {
+                // 修改为2, 表示已经走过
+                map[currFirstIndex][currSecondIndex] = 2;
+                // 先进行未知区域探索
+                // 向下
+                if (runUnkownArea(map, currFirstIndex + 1, currSecondIndex, targetFirstIndex, targetSecondIndex))
+                    return true;
+                // 向右
+                if (runUnkownArea(map, currFirstIndex, currSecondIndex + 1, targetFirstIndex, targetSecondIndex))
+                    return true;
+                // 向上
+                if (runUnkownArea(map, currFirstIndex - 1, currSecondIndex, targetFirstIndex, targetSecondIndex))
+                    return true;
+                // 向下
+                if (runUnkownArea(map, currFirstIndex, currSecondIndex - 1, targetFirstIndex, targetSecondIndex))
+                    return true;
+                // 未知区域探索完成, 无路可走, 当前节点置位无效
+                map[currFirstIndex][currSecondIndex] = 3;
+                // 进行节点回溯, 继续探索
+                // 向下
+                if (runkownArea(map, currFirstIndex + 1, currSecondIndex, targetFirstIndex, targetSecondIndex))
+                    return true;
+                // 向右
+                if (runkownArea(map, currFirstIndex, currSecondIndex + 1, targetFirstIndex, targetSecondIndex))
+                    return true;
+                // 向上
+                if (runkownArea(map, currFirstIndex - 1, currSecondIndex, targetFirstIndex, targetSecondIndex))
+                    return true;
+                // 向下
+                if (runkownArea(map, currFirstIndex, currSecondIndex - 1, targetFirstIndex, targetSecondIndex))
+                    return true;
+            } else { // 不为0或者2, 表示是墙壁或者死路
+                return false;
+            }
+        }
+        return false;
+    }
+
+    // 区域回溯
+    private static boolean runkownArea(int[][] map, int nextFirstIndex, int nextSecondIndex, int targetFirstIndex, int targetSecondIndex) {
+        if (map[nextFirstIndex][nextSecondIndex] != 3
+                && runWay(map, nextFirstIndex, nextSecondIndex, targetFirstIndex, targetSecondIndex)) {
+            return true;
+        }
+        return false;
+    }
+
+    // 探索未知区域
+    private static boolean runUnkownArea(int[][] map, int nextFirstIndex, int nextSecondIndex, int targetFirstIndex, int targetSecondIndex) {
+        if (map[nextFirstIndex][nextSecondIndex] == 0
+                && runWay(map, nextFirstIndex, nextSecondIndex, targetFirstIndex, targetSecondIndex)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 初始化地图
+     * @param firstIndexCount 一位长度
+     * @param secondIndexCount 二维长度
+     * @return
+     */
+    private static int[][] initMap(int firstIndexCount, int secondIndexCount) {
+        // 初始化地图, 此时地图全部状态为0
+        int[][] map = new int[firstIndexCount][secondIndexCount];
+        // 为地图设置围墙,
+        // 设置上下,
+        // [firstIndexCount - 1, 0], [0, secondIndexCount - 1]
+        // [firstIndexCount - 1, secondIndexCount - 1]
+        for (int i = 0; i < firstIndexCount; i++) {
+            map[i][0] = 1;
+            map[i][secondIndexCount - 1] = 1;
+        }
+        // 设置左右,
+        // [0, 0] -> [0, secondIndexCount - 1],
+        // [firstIndexCount - 1, 0] -> [firstIndexCount - 1, secondIndexCount - 1]
+        for (int i = 0; i < secondIndexCount; i++) {
+            map[0][i] = 1;
+            map[firstIndexCount - 1][i] = 1;
+        }
+        // 设置障碍
+        map[3][1] = 1;
+        map[3][2] = 1;
+        map[2][2] = 1;
+        map[4][4] = 1;
+        map[5][4] = 1;
+        map[6][4] = 1;
+        return map;
+    }
+
+    public static void showDetails(int[][] map) {
+        for (int[] firstIndexData : map) {
+            for (int secondIndexData : firstIndexData) {
+                System.out.print(secondIndexData + " ");
+            }
+            System.out.println();
+        }
+    }
+
+}
+```
+
+## 6.3，八皇后问题
+
+![1578984111041](E:\gitrepository\study\note\image\dataStructure\1578984111041.png)
+
+### 6.3.1，需求概述
+
+* 任意两个皇后不能处于同一行，同一列或者同一斜线上
+
+### 6.3.2，思路分析
+
+* 第一个皇后放第一行第一列
+* 第二个皇后放第二行第一列，然后判断该位置是否OK，否则继续放在第二列，第三列...，依次往后放，找到一个合适的位置
+* 继续第三个皇后，依次类推，最终找到一个合适解
+* 当得到一个正确解时，在栈回退到上一个栈时，就会开始回溯，即将第一个皇后，放在第一列的所有正确解，全部得到
+* 之后继续将第一个皇后放到第二列，继续全步骤循环，理论上会有92种结果
+* 皇后位置理论上应该用二维数组来表示，但是可以使用一维数组来实现，通过索引表示一维行号，索引上的值表示二维位置，来实现二维位置
+
+### 6.3.2，代码
+
+```java
+package com.self.datastructure.recursion;
+
+/**
+ * 递归_八皇后问题处理
+ * @author LiYanBin
+ * @create 2020-01-14 14:40
+ **/
+public class QueueDemo {
+
+    private final static int MAX_COUNT = 8;
+
+    private final static int[] QUEUE_SORT = new int[MAX_COUNT];
+
+    public static void main(String[] args) {
+        run(0); // 从0开始摆放, 总共有92中结果
+    }
+
+    /**
+     * 进行八皇后递归运算
+     * @param n 行号
+     */
+    public static void run(int n) {
+        // 序列从0开始, n为最大值说明皇后已经位置摆放完毕, 直接输出
+        if (n == MAX_COUNT) {
+            showDetails();
+            return;
+        }
+        // 此处n表示行号, 因为摆放棋盘是 MAX_COUNT * MAX_COUNT 的二维棋盘
+        // n表示行号, 即从该行开始摆放
+        for (int i = 0; i < MAX_COUNT; i++) {
+            // 此处表示把皇后摆在第 n 行的 第 i 个索引上
+            // 初始化时候, 第一个皇后摆在[0, 0]的位置,
+            QUEUE_SORT[n] = i;
+            // 摆放完成后, 判断该位置是否与其他位置冲突
+            if (judge(n)) { // 为true表示不冲突
+                // 不冲突时, 继续进行下一个皇后摆放
+                run(n + 1);
+            }
+            // 冲突, 把当前皇后位置后移一位, 通过i++表示
+        }
+    }
+
+    // 判断当前摆放位置是否合适
+    // 不能在同一行, 一维数组表示, 这部分不存在
+    // 不能在同一列, 即数组中不能有重复的值
+    // 不能在同一斜线, 即 -> |索引 - 索引| != |索引值 - 索引值|
+    public static boolean judge(int n) {
+        // 遍历数组, 只遍历当前数组存在元素的部分
+        // 即 n 以前的元素
+        for (int i = 0; i < n; i++) {
+            // QUEUE_SORT[i] == QUEUE_SORT[n] 表示在同一列
+            // Math.abs(i - n) == Math.abs(QUEUE_SORT[i] - QUEUE_SORT[n]) 表示在同一斜线
+            // 斜线算法可以根据正方形对角线考虑
+            if (QUEUE_SORT[i] == QUEUE_SORT[n] || Math.abs(i - n) == Math.abs(QUEUE_SORT[i] - QUEUE_SORT[n])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // 打印组合方式
+    public static void showDetails() {
+        for (int data : QUEUE_SORT) {
+            System.out.print(data + "  ");
+        }
+        System.out.println();
+    }
+
+}
+```
+

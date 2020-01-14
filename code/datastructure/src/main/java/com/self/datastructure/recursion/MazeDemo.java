@@ -16,10 +16,7 @@ public class MazeDemo {
         showDetails(map);
         // 从指定坐标开始找路, 抵达目的地
         boolean hasWay = runWay(map, 1, 1, 6, 6);
-        if (hasWay) {
-            System.out.println("寻找迷宫路程成功");
-            showDetails(map);
-        }
+        showDetails(map);
     }
 
     /**
@@ -31,39 +28,72 @@ public class MazeDemo {
      * @param targetSecondIndex 目标位置的二维坐标
      * @return
      */
-    private static boolean runWay(int[][] map, int currFirstIndex, int currSecondIndex, int targetFirstIndex, int targetSecondIndex) {
+    private static boolean runWay(int[][] map, int currFirstIndex, int currSecondIndex,
+                                  int targetFirstIndex, int targetSecondIndex) {
+        System.out.println("打印当前地图");
+        showDetails(map);
         // 0表示初始化地图, 即未走
         // 1表示墙壁或者障碍, 走不通
         // 2表示已走
         // 3表示死路
         // 目标节点以走到, 则返回true, 并顺序返回
-        if (map[targetFirstIndex][targetSecondIndex] == 2) {
+        if (currFirstIndex == targetFirstIndex && currSecondIndex == targetSecondIndex) {
+            map[targetFirstIndex][targetSecondIndex] = 2;
             return true;
         } else { // 目标节点不为2, 则继续迷宫探路
             // 为0表示未走过
             if (map[currFirstIndex][currSecondIndex] == 0 || map[currFirstIndex][currSecondIndex] == 2) {
                 // 修改为2, 表示已经走过
                 map[currFirstIndex][currSecondIndex] = 2;
-                // 根据走路方向继续往下走
-                // 走路顺序为向下 -> 向右 -> 向上 -> 向左逆时针顺序跑
-                if (map[currFirstIndex + 1][currSecondIndex] != 3
-                        && runWay(map, currFirstIndex + 1, currSecondIndex, targetFirstIndex, targetSecondIndex)) {
+                // 先进行未知区域探索
+                // 向下
+                if (runUnkownArea(map, currFirstIndex + 1, currSecondIndex, targetFirstIndex, targetSecondIndex))
                     return true;
-                } else if (map[currFirstIndex + 1][currSecondIndex] != 3
-                        && runWay(map, currFirstIndex, currSecondIndex + 1, targetFirstIndex, targetSecondIndex)) {
+                // 向右
+                if (runUnkownArea(map, currFirstIndex, currSecondIndex + 1, targetFirstIndex, targetSecondIndex))
                     return true;
-                } else if (map[currFirstIndex + 1][currSecondIndex] != 3
-                        && runWay(map, currFirstIndex - 1, currSecondIndex, targetFirstIndex, targetSecondIndex)) {
+                // 向上
+                if (runUnkownArea(map, currFirstIndex - 1, currSecondIndex, targetFirstIndex, targetSecondIndex))
                     return true;
-                } else if (map[currFirstIndex + 1][currSecondIndex] != 3
-                        && runWay(map, currFirstIndex, currSecondIndex - 1, targetFirstIndex, targetSecondIndex)) {
+                // 向下
+                if (runUnkownArea(map, currFirstIndex, currSecondIndex - 1, targetFirstIndex, targetSecondIndex))
                     return true;
-                } else {
-                    map[currFirstIndex][currSecondIndex] = 3;
-                }
+                // 未知区域探索完成, 无路可走, 当前节点置位无效
+                map[currFirstIndex][currSecondIndex] = 3;
+                // 进行节点回溯, 继续探索
+                // 向下
+                if (runkownArea(map, currFirstIndex + 1, currSecondIndex, targetFirstIndex, targetSecondIndex))
+                    return true;
+                // 向右
+                if (runkownArea(map, currFirstIndex, currSecondIndex + 1, targetFirstIndex, targetSecondIndex))
+                    return true;
+                // 向上
+                if (runkownArea(map, currFirstIndex - 1, currSecondIndex, targetFirstIndex, targetSecondIndex))
+                    return true;
+                // 向下
+                if (runkownArea(map, currFirstIndex, currSecondIndex - 1, targetFirstIndex, targetSecondIndex))
+                    return true;
             } else { // 不为0或者2, 表示是墙壁或者死路
                 return false;
             }
+        }
+        return false;
+    }
+
+    // 区域回溯
+    private static boolean runkownArea(int[][] map, int nextFirstIndex, int nextSecondIndex, int targetFirstIndex, int targetSecondIndex) {
+        if (map[nextFirstIndex][nextSecondIndex] != 3
+                && runWay(map, nextFirstIndex, nextSecondIndex, targetFirstIndex, targetSecondIndex)) {
+            return true;
+        }
+        return false;
+    }
+
+    // 探索未知区域
+    private static boolean runUnkownArea(int[][] map, int nextFirstIndex, int nextSecondIndex, int targetFirstIndex, int targetSecondIndex) {
+        if (map[nextFirstIndex][nextSecondIndex] == 0
+                && runWay(map, nextFirstIndex, nextSecondIndex, targetFirstIndex, targetSecondIndex)) {
+            return true;
         }
         return false;
     }
@@ -96,6 +126,9 @@ public class MazeDemo {
         map[3][1] = 1;
         map[3][2] = 1;
         map[2][2] = 1;
+        map[4][4] = 1;
+        map[5][4] = 1;
+        map[6][4] = 1;
         return map;
     }
 
