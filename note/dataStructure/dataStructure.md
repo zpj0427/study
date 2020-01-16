@@ -1982,3 +1982,345 @@ public class QueueDemo {
 }
 ```
 
+
+
+
+
+# 7，排序算法
+
+## 7.1，常见排序分类
+
+* 内部排序（内存排序）
+  * 插入排序
+    * 直接插入排序
+    * 希尔排序
+  * 选择排序
+    * 简单选择排序
+    * 堆排序
+  * 交换排序
+    * 冒泡排序
+    * 快速排序
+  * 归并排序
+  * 基数排序
+* 外部排序（内存和外存结合）
+
+## 7.2，时间复杂度
+
+* **时间频度**：一个算法花费的时间与算法中语句的执行次数成正比例，哪个算法中语句的执行次数多，它花费的时间就多。一个算法中语句的执行次数称为语句频度或者时间频度，记为T(n)。在数量及运算下，时间频度公式的常量项，低次方项，以及系数项都是可以忽略的，时间频度的悬殊差距由高次方决定
+
+### 7.2.1，时间复杂度基本介绍
+
+* 一般情况下，算法中的基本操作语句的重复执行次数是问题规模n的某个函数，用`T(n)`表示，若有某个辅助函数`f(n)`，使得当n趋近于无穷大的时候，`T(n)/f(n)`的极限值不等于零的情况，则称`f(n)`是`T(n)`的同数量级函数，记做`T(n)=O(f(n))`，称`O(f(n))`为算法的渐进时间复杂度，简称**时间复杂度**
+* 时间复杂度算法
+  * 用常数1代替运行时间中的所有加法常熟，为了区别出`O(1)`
+  * 修改后的运行次数函数中，只保留最高阶项
+  * 去除最高阶项的系数
+
+### 7.2.2，常见的时间复杂度
+
+* 常数阶`O(1)`：无论代码执行了多少行，只要没有循环复杂结构，那么这个的时间复杂度就是`O(1)`
+
+  ```java
+  /**
+   * O(1) 时间复杂度
+   * 没有循环结构的顺序执行, 无论执行多少行, 时间复杂度均为O(1)
+   */
+  public static void o1() {
+  	int i = 0;
+  	int j = 0;
+  	i++;
+  	j++;
+  	System.out.println(i + j);
+  }
+  ```
+
+* 对数阶`O(log2n)`
+
+  ```java
+  /**
+   * O(log2n) 时间复杂度
+   * 此处 i 以二倍的速度增长, 也就是说到 2^n 后趋近于count, 整个过程执行log2n次
+   */
+  public static void log2n(int count) {
+  	for (int i = 1; i <= count; i *= 2);
+  }
+  ```
+
+* 线性阶`O(n)`
+
+  ```java
+  /**
+   * O(n) 线性阶, 即代码循环次数随count的变化成线性变化
+   */
+  public static void n(int count) {
+  	for (int i = 0; i < count; i++) {
+  		System.out.println(i);
+  	}
+  }
+  ```
+
+* 线性对数阶`O(nlog2n)`：线性阶与对数阶的嵌套
+
+  ```java
+  /**
+   * O(nlog2n) 线程对数阶, 线性阶与对数阶的嵌套
+   */
+  public static void nlog2n(int count) {
+  	// 线性阶
+  	for (int i = 0; i < count; i++) {
+  		// 对数阶
+  		int j = 0;
+  		while (j < count) {
+  			j *= 2;
+  		}
+  	}
+  }
+  ```
+
+* 平方阶`O(n^2)`：双层线性循环嵌套
+
+  ```java
+  /**
+   * O(n2) 平方阶, 就是双层线性循环嵌套
+   */
+  public static void n2(int count) {
+  	// 线性阶
+  	for (int i = 0; i < count; i++) {
+  		// 线性阶
+  		for (int j = 0; j < count; i++) {
+  			System.out.println(i + j);
+  		}
+  	}
+  }
+  ```
+
+* 立方阶`O(n^3)`：三层线性循环嵌套
+
+  ```java
+  /**
+   * O(n3) 立方阶, 就是三层线性循环嵌套
+   */
+  public static void n3(int count) {
+  	// 线性阶
+  	for (int z = 0; z < count; z++) {
+  		// 线性阶
+  		for (int i = 0; i < count; i++) {
+  			// 线性阶
+  			for (int j = 0; j < count; j++) {
+  				System.out.println(z + i + j);
+  			}
+  		}
+  	}
+  }
+  ```
+
+* K次方阶`O(n^k)`：参考二阶和三阶，即K次的线程循环嵌套
+
+* 指数阶`O(2^n)`
+
+* 算法复杂度的优先级顺序
+
+  ```
+  O(1) < O(log2n) < O(n) < O(nlog2n) < O(n^2) < O(n^3) < O(n^k) <  O(2^n)
+  ```
+
+### 7.2.3，平均时间复杂度和最坏时间复杂度
+
+* **平均时间复杂度**是指所有可能的输入实例均以等概率出现的情况下，该算法的运行时间
+
+* **最坏时间复杂度**是最快情况下的时间复杂度，也是一般讨论的时间复杂度。是指任何输入实例的运行时间上限，这样保证算法时间不会比最坏情况更长
+
+* 平均时间复杂度与最坏时间复杂度是否一致，主要参考算法
+
+  ![1579070052700](E:\gitrepository\study\note\image\dataStructure\1579070052700.png)
+
+## 7.3，空间复杂度
+
+* 空间复杂度是指一个算法所耗费的存储空间，也是问题规模n的函数
+* 空间复杂度是对一个算法在运行过程中临时占用存储空间大小的量度。有的算法需要占用的临时工作单元数与解决问题的规模n有关，随着n的增大而增大，当n较大时，将占用较多的村粗单元，比如快速排序和归并排序、基数排序等
+* 在做算法分析时，主要讨论的是时间复杂度，**用空间换时间**
+
+
+
+## 7.4，冒泡排序
+
+### 7.4.1，基本介绍
+
+* 冒泡排序是对数组的第一个元素开始，从前往后（从最小下标开始）依次比较相邻两个元素的值，若发现逆序则进行交换，使得较大的元素逐渐往后移动
+* 优化：在排序过程中，可以设置标志位，如果存在某一趟比较没有发生元素的位置互换，则说明数组已经有序，直接退出，无需再进行后续比较
+* 冒泡排序的时间复杂度为`O(n^2)`
+
+### 7.4.2，代码演示
+
+```java
+package com.self.datastructure.sort;
+
+import java.util.Arrays;
+
+/**
+ * 排序_冒泡排序
+ */
+public class BubbleSortDemo {
+
+    public static void main(String[] args) {
+        // int[] array = {9, -1, 4, -2, 3, -5, 8};
+        // int[] array = {1, 2, 3, 4, 6, 5, 7, 8};
+        // 10万个数测试，测试结果为20S
+        int[] array = new int[100000];
+        for (int i = 0; i < 100000; i++) {
+            array[i] = (int) (Math.random() * 8000000);
+        }
+        long startTime = System.currentTimeMillis();
+        bubbleSort(array);
+        System.out.println("cast time : " + (System.currentTimeMillis() - startTime));
+    }
+
+    // 冒泡排序
+    private static void bubbleSort(int[] array) {
+        // 外循环表示跑的趟数, 总趟数为 (长度 - 1)
+        for (int i = 0; i < array.length - 1; i++) {
+            // 定义标志位, 如果已经有序排列, 不再执行后续逻辑
+            boolean flag = true;
+            // 内循环进行冒泡比较
+            // 内循环从0开始, 循环 (array.length - i - 1) 次
+            // 外循环每跑一趟, 固定一个最大数到右侧, 内循环比较不会再次比较最大数
+            // 内循环比较实用当前数与后一个数进行比较, 所以需要额外减1, 保证数组边界
+            // 用当前数和后一个数进行比较, 如果当前数大于后一个数, 则进行交换
+            for (int j = 0; j < array.length - i - 1; j++) {
+                if (array[j] > array[j + 1]) {
+                    // 存在变更, 设置标志位为false
+                    flag = false;
+                    int temp = array[j];
+                    array[j] = array[j + 1];
+                    array[j + 1] = temp;
+                }
+            }
+            // 已经顺序化, 直接退出
+            if (flag) {
+                break;
+            }
+        }
+    }
+
+}
+```
+
+## 7.5，选择排序
+
+### 7.5.1，基本介绍
+
+* 选择排序也属于内部排序，是从欲排序的数据中，按指定的规则选出某一元素，再依规定交换位置已达到排序的目的
+* 选择排序的基本思想是：从第一个数开始，依次与后面的数进行比较，选出最小的数并进行位置交换，之后进行第二个和后续所有数据的比较和交换，以此类推。通过`length - 1`次后，获取到一个从小到大排列的有序数组
+* 选择排序的时间复杂度为`O(n^2)`。大数据量下，相对于冒泡排序性能会好很多，主要是因为选择排序比冒泡排序内部交换更少
+
+![1579158369247](E:\gitrepository\study\note\image\dataStructure\1579158369247.png)
+
+### 7.5.2，代码演示
+
+```java
+package com.self.datastructure.sort;
+
+import java.util.Arrays;
+
+/**
+ * 选择排序
+ * @author PJ_ZHANG
+ * @create 2020-01-15 14:36
+ **/
+public class SelectSort {
+
+    public static void main(String[] args) {
+        // int[] array = {10, 8, 3, 9, 2, 6, -1};
+        // 10万个数测试，测试结果为5S
+        int[] array = new int[100000];
+        for (int i = 0; i < 100000; i++) {
+            array[i] = (int) (Math.random() * 8000000);
+        }
+        long startTime = System.currentTimeMillis();
+        selectSort(array);
+        // System.out.println(Arrays.toString(array));
+        System.out.println("cast time : " + (System.currentTimeMillis() - startTime));
+    }
+
+    // 选择排序处理
+    // 从一个数开始, 依次与后面所有的数比较, 并将当前数替换为最小数, 并在头部固定
+    // 全部处理完成后, 会形成一个顺序数组
+    private static void selectSort(int[] array) {
+        // 从第一个元素开始比较, 比较到倒数第二个元素, 最后一个元素无需自比较
+        for (int i = 0; i < array.length - 1; i++) {
+            int temp = array[i]; // 默认取当前值为最小值
+            int minIndex = i; // 最小值索引
+            // 内循环从外循环的后一个元素开始算起, 进行元素比较, 一直比较到最后一个元素
+            for (int j = i + 1; j < array.length; j++) {
+                // 比较获取到最小值
+                if (temp > array[j]) {
+                    temp = array[j]; // 最小值
+                    minIndex = j; // 最小值索引
+                }
+            }
+            // 循环完成后, 如果存在小于该元素的索引值, 则进行替换
+            if (minIndex != i) {
+                array[minIndex] = array[i];
+                array[i] = temp;
+            }
+        }
+    }
+
+}
+```
+
+## 7.6，插入排序
+
+### 7.6.1，基本介绍
+
+* 插入排序输入内部排序法，是对欲排序的元素以插入的方式找到合适的位置，以达到排序的目的
+* 基本思想：将一个数组在物理上划分为有序数组部分和无序数组部分；开始时有序数组部分只包括第一个元素，从第二个元素开始，依次与前一个元素进行比较并确定其位置。第二个元素排序完成后，此时有序数组部分有两个元素（第一，二个元素），无序数组部分是其他元素；继续从第三个元素开始，依次类推，直到所有元素比较完毕，注意元素插入到有序数据部分时，有序数组内部位于该元素后续位置的元素需要统一后移；
+* 插入排序算法复杂度为`O(n^2)`
+
+![1579167493138](E:\gitrepository\study\note\image\dataStructure\1579167493138.png)
+
+### 7.6.2，代码演示
+
+```java
+package com.self.datastructure.sort;
+
+import java.util.Arrays;
+
+/**
+ * 排序_插入排序
+ * @author PJ_ZHANG
+ * @create 2020-01-16 15:20
+ **/
+public class InsertionSort {
+
+    public static void main(String[] args) {
+        // int[] array = {10, 8, 3, 9, 2, 6, -1};
+        // 10万个数测试, 2S
+        int[] array = new int[100000];
+        for (int i = 0; i < 100000; i++) {
+            array[i] = (int) (Math.random() * 8000000);
+        }
+        long startTime = System.currentTimeMillis();
+        insertionSort(array);
+        // System.out.println(Arrays.toString(array));
+        System.out.println("cast time : " + (System.currentTimeMillis() - startTime));
+    }
+
+    // 插入排序
+    private static void insertionSort(int[] array) {
+        // 固定第一个元素, 从后续元素开始于第一个元素比较
+        for (int i = 1; i < array.length; i++) {
+            int temp = array[i]; // 保存当前操作数据
+            int currIndex = i;
+            // 如果后续元素小于固定的最后一个元素, 则进行位置交换, 并以此类推知道顺序位置
+            for (;currIndex > 0 && temp < array[currIndex - 1];) {
+                array[currIndex] = array[currIndex - 1];
+                currIndex--;
+            }
+            array[currIndex] = temp;
+        }
+    }
+
+}
+```
+
