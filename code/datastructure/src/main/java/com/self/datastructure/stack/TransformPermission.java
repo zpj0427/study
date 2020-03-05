@@ -35,7 +35,7 @@ public class TransformPermission {
         Stack<String> operateStack = new Stack<>();
         // 遍历表达式数组, 进行处理
         for (int i = 0; i < permissionArray.length; i++) {
-            // 数组直接入栈
+            // 数字直接入栈
             if (permissionArray[i].matches("^[+-]?[0-9]+$")) {
                 numberStack.push(permissionArray[i]);
             } else if(permissionArray[i].matches("^\\($")) {

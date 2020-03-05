@@ -4,7 +4,7 @@
 
 * 数据结构（data structure）是一门研究组织数据方式的学科，有了编程语言也就有了数据结构，使用数据结构可以编写更有效率的代码
 * 程序 = 数据结构 + 算法
-* 数据结构是算法的基础，要学号算法，一定要学好数据结构
+* 数据结构是算法的基础，要学好算法，一定要学好数据结构
 
 ## 1.2，线性结构和非线性结构
 
@@ -12,8 +12,8 @@
 
 * 数据元素之间存在一对一的线性关系
 * 线性结构有两种不同的存储结构，即顺序存储结构（*数组*）和链式存储结构（*链表*）
-* 顺序存储：即顺序表，顺表表中的元素是连续的
-* 链式存储：元素不一定是连续的，元素节点中存放数据元素已经相邻元素的地址信息
+* 顺序存储：即顺序表，顺序表中的元素是连续的
+* 链式存储：元素不一定是连续的，元素节点中存放数据元素以及相邻元素的地址信息
 * 线性结构常见的有：数组，队列，列表和栈
 
 ### 1.3.2，非线性结构
@@ -1112,7 +1112,7 @@ class Node {
 
 ## 5.1，栈基本介绍
 
-* 栈是一种先入后出（FIFO）的有序列表
+* 栈是一种先入后出的有序列表
 
 * 栈限制线性表中**元素的插入和删除只能在线性表的同一端**进行的一种特殊线性表。允许插入和删除的一端，为变化的一端，称为栈顶，另一端为固定的一端，称为栈底
 
@@ -1538,7 +1538,7 @@ public class MiddleCalculateDemo {
 
 5. 遇到括号时
 
-* 如果是左括号`(`，则直接压入`s1`
+* 如果是左括号`(`，则直接压入`s1`，包括左括号处理及栈顶为左括号场景
 * 如果是右括号`)`，则依次弹出`s1`栈顶的运算符，并压入到`s2`，直到遇到左括号为止，此时可以将这一对括号丢弃
 
 6. 重复步骤2到步骤5，直到扫描到表达式尾部
@@ -1590,7 +1590,7 @@ public class TransformPermission {
         Stack<String> operateStack = new Stack<>();
         // 遍历表达式数组, 进行处理
         for (int i = 0; i < permissionArray.length; i++) {
-            // 数组直接入栈
+            // 数字直接入栈
             if (permissionArray[i].matches("^[+-]?[0-9]+$")) {
                 numberStack.push(permissionArray[i]);
             } else if(permissionArray[i].matches("^\\($")) {
@@ -2137,7 +2137,7 @@ public class QueueDemo {
 ## 7.3，空间复杂度
 
 * 空间复杂度是指一个算法所耗费的存储空间，也是问题规模n的函数
-* 空间复杂度是对一个算法在运行过程中临时占用存储空间大小的量度。有的算法需要占用的临时工作单元数与解决问题的规模n有关，随着n的增大而增大，当n较大时，将占用较多的村粗单元，比如快速排序和归并排序、基数排序等
+* 空间复杂度是对一个算法在运行过程中临时占用存储空间大小的量度。有的算法需要占用的临时工作单元数与解决问题的规模n有关，随着n的增大而增大，当n较大时，将占用较多的存储单元，比如快速排序和归并排序、基数排序等
 * 在做算法分析时，主要讨论的是时间复杂度，**用空间换时间**
 
 
@@ -2324,3 +2324,99 @@ public class InsertionSort {
 }
 ```
 
+## 7.7，希尔排序
+
+### 7.7.1，希尔排序介绍
+
+* 希尔排序也是一种插入排序，是简单拆入排序经过改进之后的一个更高效的版本，也称为缩小增量排序
+
+### 7.7.2，希尔排序的基本思想及示意图
+
+* 对数组元素进行两两分组, 分为 (N / 2) 组, 且一组的两个数据间步长为 (N / 2)
+
+* 对各组数据进行插入排序, 使各组数据有序
+* 对上一步有序的数据, 继续分为 (N / 2 / 2) 组, 每组数据步长为 (N / 2 / 2)
+* 继续对该组数进行插入排序, 使各组数据有序
+* 以此类推, 直到 (N / 2 / ... / 2 = 1) 时, 不能继续分组, 最后进行插入排序, 使有序
+
+![1583402266296](E:\gitrepository\study\note\image\dataStructure\1583402266296.png)
+
+![1583402276669](E:\gitrepository\study\note\image\dataStructure\1583402276669.png)
+
+### 7.7.3，代码示例
+
+```java
+package com.self.datastructure.sort;
+
+import java.lang.annotation.Target;
+import java.util.Arrays;
+
+/**
+ * 希尔排序
+ *
+ * @author PJ_ZHANG
+ * @create 2020-03-05 14:26
+ **/
+public class ShellSort {
+
+    public static void main(String[] args) {
+//        int[] array = {4, 6, 7, 8, 1, 3, 5, 2, 9, 0};
+        // 10万个数测试
+        int[] array = new int[100000];
+        for (int i = 0; i < 100000; i++) {
+            array[i] = (int) (Math.random() * 8000000);
+        }
+        long startTime = System.currentTimeMillis();
+        sortAndMove(array);
+//        System.out.println(Arrays.toString(array));
+        System.out.println("cast time : " + (System.currentTimeMillis() - startTime));
+    }
+
+    // 希尔排序_交换法排序
+    // * 对数组元素进行两两分组, 分为 (N / 2) 组, 且一组的两个数据间步长为 (N / 2)
+    // * 对各组数据进行插入排序, 使各组数据有序
+    // * 对上一步有序的数据, 继续分为 (N / 2 / 2) 组, 每组数据步长为 (N / 2 / 2)
+    // * 继续对该组数进行插入排序, 使各组数据有序
+    // * 以此类推, 直到 (N / 2 / ... / 2 = 1) 时, 不能继续分组, 最后进行插入排序, 使有序
+    // * 10W数据 -> 14330ms
+    public static void sortAndChange(int[] array) {
+        // 初始化分组
+        for (int gap = array.length / 2; gap > 0; gap /= 2) {
+            // 从每一组的第二个数据开始进行比较
+            for (int i = gap; i < array.length; i++) {
+                // 依次与前面的数据进行比较
+                for (int j = i - gap; j >= 0; j -= gap) {
+                    // 如果前一个数量大于后一个数量
+                    // 则依次循环向前替换
+                    if (array[j] > array[j + gap]) {
+                        int temp = array[j];
+                        array[j] = array[j + gap];
+                        array[j + gap] = temp;
+                    }
+                }
+            }
+        }
+    }
+
+    // 希尔排序_移位法排序
+    // 10W数据: 40ms
+    public static void sortAndMove(int[] array) {
+        for (int gap = array.length / 2; gap > 0; gap /= 2) {
+            for (int i = gap; i < array.length; i++) {
+                int j = i; // 从当前索引开始处理
+                int temp = array[i]; // 存储当前索引位置值进行比较
+                if (temp < array[j - gap]) {
+                    for (;j - gap >= 0 && temp < array[j - gap]; j -= gap) {
+                        array[j] = array[j - gap];
+                    }
+                    array[j] = temp;
+                }
+            }
+        }
+    }
+
+
+}
+```
+
+## 7.8，快速排序
