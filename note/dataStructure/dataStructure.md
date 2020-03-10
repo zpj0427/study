@@ -2360,16 +2360,16 @@ import java.util.Arrays;
 public class ShellSort {
 
     public static void main(String[] args) {
-//        int[] array = {4, 6, 7, 8, 1, 3, 5, 2, 9, 0};
+        int[] array = {4, 6, 7, 8, 1, 3, 5, 2, 9, 0};
         // 10万个数测试
-        int[] array = new int[100000];
-        for (int i = 0; i < 100000; i++) {
-            array[i] = (int) (Math.random() * 8000000);
-        }
-        long startTime = System.currentTimeMillis();
+//        int[] array = new int[100000];
+//        for (int i = 0; i < 100000; i++) {
+//            array[i] = (int) (Math.random() * 8000000);
+//        }
+//        long startTime = System.currentTimeMillis();
         sortAndMove(array);
-//        System.out.println(Arrays.toString(array));
-        System.out.println("cast time : " + (System.currentTimeMillis() - startTime));
+        System.out.println(Arrays.toString(array));
+//        System.out.println("cast time : " + (System.currentTimeMillis() - startTime));
     }
 
     // 希尔排序_交换法排序
@@ -2405,19 +2405,236 @@ public class ShellSort {
             for (int i = gap; i < array.length; i++) {
                 int j = i; // 从当前索引开始处理
                 int temp = array[i]; // 存储当前索引位置值进行比较
-                if (temp < array[j - gap]) {
-                    for (;j - gap >= 0 && temp < array[j - gap]; j -= gap) {
-                        array[j] = array[j - gap];
-                    }
-                    array[j] = temp;
+                for (;j - gap >= 0 && temp < array[j - gap]; j -= gap) {
+                    array[j] = array[j - gap];
                 }
+                array[j] = temp;
             }
         }
     }
-
 
 }
 ```
 
 ## 7.8，快速排序
+
+### 7.8.1，快速排序法介绍
+
+* 快速排序是对冒泡排序的一种改进，通过一趟排序将要排序的数据分为独立的两部分，其中一部分的所有数据都比另外一部分的所有数据都要小；然后再按此方法对这两部分数据分别进行快速排序，整个排序过程可以递归进行，通过多次递归，达到整个数组为有序数组。
+* 快速排序基本思想如下：
+  * 先从数组中随机取一个参考值
+  * 分别从数组两边(left, right)开始取数据进行比较
+  * 如果left取到的数据大于基准数据, right取到的数据小于基准数据, 则进行交换
+  * 交换完成后, 对两侧数据分别与参考值比较, 如果与参考值相等, 则对侧进1
+  * 一次遍历完成后, 以参考值为中点, 左侧数据小于该值, 右侧数据大于该值
+  * 继续递归左右两边进行同样处理, 直到左右两侧数据数量足够下, 则数组有序
+
+### 7.8.2，快速排序示意图
+
+![1583822882468](E:\gitrepository\study\note\image\dataStructure\1583822882468.png)
+
+### 7.8.3，代码实现
+
+```java
+package com.self.datastructure.sort;
+
+/**
+ * 快速排序
+ *
+ * @author PJ_ZHANG
+ * @create 2020-03-06 15:00
+ **/
+public class QuickSort {
+
+    private static int count = 0;
+
+    public static void main(String[] args) {
+//        int[] array = {6, 8, 9, 1, 4, 3, 5, 6, 8};
+        // 10万个数测试, 44ms
+        // 100万测试, 193ms
+        // 1000万测试, 2224ms
+        int[] array = new int[10000000];
+        for (int i = 0; i < 10000000; i++) {
+            array[i] = (int) (Math.random() * 8000000);
+        }
+        long startTime = System.currentTimeMillis();
+        quickSort(array, 0, array.length - 1);
+//        System.out.println(Arrays.toString(array));
+        System.out.println("cast time : " + (System.currentTimeMillis() - startTime));
+        System.out.println("调用次数: " + count);
+    }
+
+    // 快速排序
+    // 先从数组中随机取一个参考值,
+    // 分别从数组两边(left, right)开始取数据进行比较
+    // 如果left取到的数据大于基准数据, right取到的数据小于基准数据, 则进行交换
+    // 交换完成后, 对两侧数据分别与参考值比较, 如果与参考值相等, 则对侧进1
+    // 一次遍历完成后, 以参考值为中点, 左侧数据小于该值, 右侧数据大于该值
+    // 继续递归左右两边进行同样处理, 知道左右两侧数据数量足够下, 则数组有序
+    private static void quickSort(int[] array, int left, int right) {
+        count++;
+        int l = left;
+        int r = right;
+        // 取一个基本值
+        int baseData = array[l];
+        // 从两边开始进行判断
+        while (l < r) {
+            // 去左侧大于等于基本值的数据
+            while (array[l] < baseData) {
+                l++;
+            }
+            // 取右侧小于等于基本值的数据
+            while (array[r] > baseData) {
+                r--;
+            }
+            // 如果此时l大于等于r, 说明一趟已经比较完成, 直接退出
+            if (l >= r) {
+                break;
+            }
+            // 进行数据交换
+            int temp = array[l];
+            array[l] = array[r];
+            array[r] = temp;
+            // 因为上面已经进行过交换
+            // 如果l侧数据与基础数据相等,则r测数据一定大于基础数据, r--
+            if (array[l] == baseData) {
+                r--;
+            }
+            // 如果r侧数据与基础数据相等,则l测数据一定小于基础数据, l++
+            if (array[r] == baseData) {
+                l++;
+            }
+        }
+        // 出循环后, 说明一个基础值的数据已经比较完毕, 此时如果l = r, 则错开数据
+        // 两侧分别进1
+        // 如果不添加该部分, 可能会栈溢出
+        if (l == r) {
+            l++;
+            r--;
+        }
+        // 以当前基准值为中点, 左侧为小于该值的数据, 右侧为大于该值的数据, 递归进行两侧处理, 知道数据有序
+        if (left < r) {
+            quickSort(array, left, r);
+        }
+        if (l < right) {
+            quickSort(array, l, right);
+        }
+    }
+
+}
+
+```
+
+## 7.9，归并排序
+
+### 7.9.1，归并排序概述
+
+* 归并排序就是利用归并的思想实现的排序方式，采用了经典的分治策略；分治法就是先将问题分成一些小的问题然后递归求解，治阶段就是将分阶段得到的各答案补在一起，即分而治之
+* 归并排序基本思想
+  * 归并排序为分和治两个部分，其中分部分是对数组元素完全拆分，拆无可拆时开始治；治就是对已经拆散的数据按顺序依次重组起来；此外，归并排序需要一个额外空间进行有序数据重组
+  * 首先拆，归并排序拆的目的是将数组中的每一 元素都拆分出来
+  * 拆完之后治，治是对拆开的每一组数据依次排序，并最终递归到全数据有序
+  * 治过程中，需要对数组中的相邻两部分进行排序，再每一次排序过程中，首先对两部分数组中交叉重叠的部分依次有序添加到临时数组中；其次，对两部分数组中存在剩余数据数组的剩余数据依次添加到临时数组中；最后，用临时数组的元素，依次替换到原数组中参与治的两部分数组的元素，即（left - right部分）
+
+### 7.9.2，归并排序示意图
+
+* 分-治示意图
+
+![1583831080333](E:\gitrepository\study\note\image\dataStructure\1583831080333.png)
+
+* 合并子序列示意图
+
+![1583831132995](E:\gitrepository\study\note\image\dataStructure\1583831132995.png)
+
+### 7.9.3，代码实现
+
+```java
+package com.self.datastructure.sort;
+
+import java.util.Arrays;
+
+/**
+ * 归并排序
+ *
+ * @author PJ_ZHANG
+ * @create 2020-03-10 15:11
+ **/
+public class MergeSort {
+
+    public static void main(String[] args) {
+        //        int[] array = {6, 8, 9, 1, 4, 3, 5, 6, 8};
+        // 10万个数测试, 29ms
+        // 100万测试, 270ms
+        // 1000万测试, 2480ms
+        int[] array = new int[10000000];
+        int[] tempArray = new int[array.length];
+        for (int i = 0; i < 10000000; i++) {
+            array[i] = (int) (Math.random() * 8000000);
+        }
+        long startTime = System.currentTimeMillis();
+        mergeSort(array, 0, array.length - 1, tempArray);
+//        System.out.println(Arrays.toString(array));
+        System.out.println("cast time : " + (System.currentTimeMillis() - startTime));
+    }
+
+    /**
+     * 归并排序
+     * @param array 原数组
+     * @param left 左侧索引
+     * @param right 右侧索引
+     * @param tempArray 临时数组
+     */
+    private static void mergeSort(int[] array, int left, int right, int[] tempArray) {
+        int middle = (left + right) / 2;
+        // 先拆分, 拆分到单个数据
+        if (left < right) {
+            // 向左拆分
+            mergeSort(array, left, middle, tempArray);
+            // 向右拆分
+            mergeSort(array, middle + 1, right, tempArray);
+            // 再进行合并
+            merge(array, left, right, middle, tempArray);
+        }
+    }
+
+    /**
+     * 合并数据
+     * @param array 原始数组
+     * @param left 左侧索引
+     * @param right 右侧索引
+     * @param middle 中间位置索引, 即要合并数据的中间索引
+     * @param tempArray 临时数组
+     */
+    private static void merge(int[] array, int left, int right, int middle, int[] tempArray) {
+        int tempIndex = 0;
+        int leftIndex = left;
+        int rightIndex = middle + 1;
+        // 先对两部分数据重叠部分比较入组排序
+        // 直到一边的数据处理完成即止, 到下一步继续处理
+        while (leftIndex <= middle && rightIndex <= right) {
+            if (array[leftIndex] > array[rightIndex]) {
+                tempArray[tempIndex++] = array[rightIndex++];
+            } else {
+                tempArray[tempIndex++] = array[leftIndex++];
+            }
+        }
+
+        // 分别对两部分数据多余部分直接入组排序
+        while (leftIndex <= middle) {
+            tempArray[tempIndex++] = array[leftIndex++];
+        }
+        while (rightIndex <= right) {
+            tempArray[tempIndex++] = array[rightIndex++];
+        }
+        // 复制临时组数据到原数组
+        tempIndex = 0;
+        int tempLeft = left;
+        while (tempLeft <= right) {
+            array[tempLeft++] = tempArray[tempIndex++];
+        }
+    }
+
+}
+
+```
 

@@ -13,9 +13,11 @@ public class ShellSort {
 
     public static void main(String[] args) {
 //        int[] array = {4, 6, 7, 8, 1, 3, 5, 2, 9, 0};
-        // 10万个数测试
-        int[] array = new int[100000];
-        for (int i = 0; i < 100000; i++) {
+        // 10万个数测试,  96ms
+        // 100万, 323ms
+        // 1000万, 3733ms
+        int[] array = new int[10000000];
+        for (int i = 0; i < 10000000; i++) {
             array[i] = (int) (Math.random() * 8000000);
         }
         long startTime = System.currentTimeMillis();
@@ -57,15 +59,12 @@ public class ShellSort {
             for (int i = gap; i < array.length; i++) {
                 int j = i; // 从当前索引开始处理
                 int temp = array[i]; // 存储当前索引位置值进行比较
-                if (temp < array[j - gap]) {
-                    for (;j - gap >= 0 && temp < array[j - gap]; j -= gap) {
-                        array[j] = array[j - gap];
-                    }
-                    array[j] = temp;
+                for (;j - gap >= 0 && temp < array[j - gap]; j -= gap) {
+                    array[j] = array[j - gap];
                 }
+                array[j] = temp;
             }
         }
     }
-
 
 }
