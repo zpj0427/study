@@ -2529,7 +2529,7 @@ public class QuickSort {
 
 ### 7.9.1，归并排序概述
 
-* 归并排序就是利用归并的思想实现的排序方式，采用了经典的分治策略；分治法就是先将问题分成一些小的问题然后递归求解，治阶段就是将分阶段得到的各答案补在一起，即分而治之
+* 归并排序就是利用归并的思想实现的排序方式，采用了经典的分治策略；分治法就是先将问题分成一些小的问题然后递归求解，治阶段就是将分阶段得到的各答案补在一起，即分而治之；归并排序处理次数 = 元素个数 - 1
 * 归并排序基本思想
   * 归并排序为分和治两个部分，其中分部分是对数组元素完全拆分，拆无可拆时开始治；治就是对已经拆散的数据按顺序依次重组起来；此外，归并排序需要一个额外空间进行有序数据重组
   * 首先拆，归并排序拆的目的是将数组中的每一 元素都拆分出来
@@ -2638,3 +2638,341 @@ public class MergeSort {
 
 ```
 
+
+
+## 7.10，基数排序
+
+### 7.10.1，技术排序基本介绍
+
+* 基数排序（Radix Sort）属于**分配式排序**，又称**桶子法**或者**Bin Sort**，它是通过键值的各个位的值，将要排序的数组分配到对应桶中，达到排序的左右
+* 基数排序属于稳定性排序，同时也是效率较高的稳定性排序，基数排序是对桶排序的扩展
+* 基数排序基本思想：将所有待比较的数值统一为同样的数位长度（长度不足前位补零）；然后，从低位开始，依次进行一次排序。按照基本排序规则，等所有位数全部比较完成后，数据就是一个有序数列
+* 基数排序基本流程：
+  * 首先初始化一个二维数组，第一维表示桶的个数，从0-9共有10个桶，第二维表示落到桶中的数据
+  * 其次初始化一个长度为10的一维数组，索引表示0-9的9个桶，值表示落到桶中的数据数量，用于计数
+  * 从这一步开始真正进行基数排序处理，对要处理的数组元素依次截取个位数，并按照个位数数字对应落到二维数组初始化的0-9的对应桶中，并用一维数据进行计数
+  * 这一轮处理完成后，依次从二维数组中获取所有数据，对原数组进行覆盖，此时即完成第一轮循环，**这一步处理完成后记得对一维数据组清零**
+  * 依次类推，个位数处理完成后处理十位，百位，直到处理到数组中最大元素的最高位，最高位处理完成后，覆盖原数组，此时数组有序
+* **注意**：*基数排序理论上来讲只能对正数进行排序；存在负数的数组中，可以先对整个数组`+`最小负数，此时数组最小为0，然后再对该数组进行基数排序，排序完成后再对全数组`-`最小负数，则完成对数组排序*
+
+### 7.10.2，基数排序示意图
+
+* 将数组`{53，3，542，748，14，214}`进行基数排序，因为最大数 748 的最高位数为三位，则需要进行三轮处理，流程如下：
+* 第一轮处理：对个位数进行处理
+
+![1584081679642](E:\gitrepository\study\note\image\dataStructure\1584081679642.png)
+
+* 第二轮处理：对十位数进行处理
+
+![1584081847534](E:\gitrepository\study\note\image\dataStructure\1584081847534.png)
+
+* 第三轮处理：对百位数进行处理
+
+![1584081856931](E:\gitrepository\study\note\image\dataStructure\1584081856931.png)
+
+### 7.10.3，基数排序代码实现
+
+```java
+package com.self.datastructure.sort;
+
+/**
+ * 基数排序
+ *
+ * @author PJ_ZHANG
+ * @create 2020-03-13 10:24
+ **/
+public class RadixSort {
+
+    public static void main(String[] args) {
+//        int[] array = {45, 832, 456, 76, 32, 17, 89, 456, 56};
+        // 10万个数测试, 52ms
+        // 100万测试, 208ms
+        // 1000万测试, 1265ms
+        // 1E测试, 8609ms, -Xmx9000m(4096M没够用)
+        int[] array = new int[100000000];
+        for (int i = 0; i < 100000000; i++) {
+            array[i] = (int) (Math.random() * 8000000);
+        }
+        long startTime = System.currentTimeMillis();
+        radixSort(array);
+//        System.out.println(Arrays.toString(array));
+        System.out.println("cast time : " + (System.currentTimeMillis() - startTime));
+    }
+
+    /**
+     * 基数排序基本流程
+     * * 初始化一个二维数组, 第一维表示0-9的10个元素桶, 第二维表示落到桶中的数据
+     * * 初始化一个一维数组, 下标表示0-9是个数字, 值表示落到桶中数据的数量
+     * * 对要排序的数组依次从个位开始截取处理, 按个位数据落到对应的二维桶中, 并用一维数组进行计数
+     * * 一轮位数处理完成后, 从二维数据中依次取出所有数据, 对原数据进行覆盖
+     * * 每一轮处理完成后, 记得对一维数据进行置空
+     * @param array
+     */
+    private static void radixSort(int[] array) {
+
+        // 二维数组存储数据
+        int[][] dataArray = new int[10][array.length];
+        // 一维数据计数
+        int[] countArray = new int[10];
+
+        int maxCount = 0;
+        for (int i = 0; i < array.length; i++) {
+            if (array[i] > maxCount) {
+                maxCount = array[i];
+            }
+        }
+
+        for (int i = 0, round = 1; i < (maxCount + "").length(); i++, round *= 10) {
+            for (int j = 0; j < array.length; j++) {
+                // 获取位数值
+                int data = array[j] / round  % 10;
+                // 存储当前值到二维数据
+                // 并对一维数据数据统计值递增
+                dataArray[data][countArray[data]++] = array[j];
+            }
+            int index = 0;
+            // 先从一维数据中获取到存在有效数据的二维数据部分
+            for (int countIndex = 0; countIndex < countArray.length; countIndex++) {
+                if (countArray[countIndex] == 0) continue;
+                // 从二维数据获取到有效数据, 存储到原数组中
+                for (int dataIndex = 0; dataIndex < countArray[countIndex]; dataIndex++) {
+                    array[index++] = dataArray[countIndex][dataIndex];
+                }
+                // 统计数组处理完成后, 对统计数量置空
+                countArray[countIndex] = 0;
+            }
+        }
+
+
+    }
+
+}
+```
+
+
+
+## 7.11，常用堆排序总结和对比
+
+## 7.11.1，排序算法比较图
+
+![1584083501789](E:\gitrepository\study\note\image\dataStructure\1584083501789.png)
+
+## 7.11.2，相关术语解释
+
+* 稳定：如果元素a原本在元素b前面，且a=b，排序后，a应该仍然在b前面
+* 不稳定：如果a原本在b前面，且a=b，排序后，b可能在a前面
+* 内排序：所有排序都在内存中完成
+* 外排序：由于数据太大，因此把数据放在硬盘中，通过磁盘和内存数据传输完成
+* 时间复杂度：一个算法执行所耗费的时间
+* 空间复杂度：运行完成一个程序所需要的内存空间
+* n：数据规模
+* k：桶的个数，只在桶排序相关中出现
+* In-place：不占用额外内存，不需要额外定义数组
+* Out-place：占用额外内存
+
+
+
+# 8，查找算法
+
+## 8.1，线性查找
+
+### 8.1.1，线性查找基本介绍
+
+* 线性查找就是基本的循环查找，遍历每一个元素进行比对，返回匹配结果
+
+## 8.1.2， 代码实现
+
+```java
+package com.self.datastructure.search;
+
+/**
+ * 线性查找
+ *
+ * @author PJ_ZHANG
+ * @create 2020-03-13 15:18
+ **/
+public class SeqSearch {
+
+    public static void main(String[] args) {
+        int[] array = {45, 832, 456, 76, 32, 17, 89, 456, 56};
+        System.out.println(seqSearch(array, 56));
+    }
+
+    public static int seqSearch(int[] array, int target) {
+        for (int i = 0; i < array.length; i++) {
+            if (array[i] == target) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+}
+```
+
+## 8.2，二分查找/折半查找
+
+### 8.2.1，二分查找基本介绍
+
+* 二分查找的前提条件是目标数组为有序数组
+* 在进行数据查找时，首先确定数组的中间下标`（left + right）/ 2`
+* 用数组中间下标时与目标数据进行匹配，如果匹配到直接返回；如果中间值大于目标值，则以中间下标的左侧数组作为新数组再次进行二分查找；如果中间值小于目标值，则以中间下标的右侧数据作为新数据进行二分查找；**倒序数组相反**
+* 再二分递归查找时，如果找到元素，可以直接退出；如果没有找到元素，如果 left 值大于 right 值，则说明没有找到元素，直接退出
+
+### 8.2.2，二分查找代码实现
+
+```java
+package com.self.datastructure.search;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 二分查找
+ *
+ * @author PJ_ZHANG
+ * @create 2020-03-13 15:37
+ **/
+public class BinarySearch {
+
+    public static void main(String[] args) {
+        int[] array = {1, 12, 55, 55, 55, 78, 156, 765, 873, 987};
+        System.out.println(binarySearchWitAll(array, 0, array.length - 1, 55));
+    }
+
+    public static List<Integer> binarySearchWitAll(int[] array, int left, int right, int target) {
+        if (left > right) {
+            return null;
+        }
+        int middle = (left + right) / 2;
+        if (target > array[middle]) {
+            return binarySearchWitAll(array, middle + 1, right, target);
+        } else if (target < array[middle]) {
+            return binarySearchWitAll(array, left, middle - 1, target);
+        } else {
+            List<Integer> lstIndex = new ArrayList<>(10);
+            // 获取到目标数据
+            lstIndex.add(middle);
+            // 向右扫描所有数据
+            for (int i = middle + 1; i < array.length; i++) {
+                if (array[i] == target) {
+                    lstIndex.add(i);
+                } else {
+                    break;
+                }
+            }
+            // 向左扫描所有数据
+            for (int i = middle - 1; i >= 0; i--) {
+                if (array[i] == target) {
+                    lstIndex.add(i);
+                } else {
+                    break;
+                }
+            }
+            return lstIndex;
+        }
+    }
+
+    /**
+     * 二分查找获取到对应值索引
+     * @param array 目标数组
+     * @param left 左索引
+     * @param right 右索引
+     * @param target 目标值
+     * @return
+     */
+    public static int binarySearch(int[] array, int left, int right, int target) {
+        if (left > right) {
+            return -1;
+        }
+        // 二分, 获取到中间索引
+        int middle = (left + right) / 2;
+        // 大于 向右查找
+        if (target > array[middle]) {
+            return binarySearch(array, middle + 1, right, target);
+        } else if (target < array[middle]) { // 小于, 向左查找
+            return binarySearch(array, left, middle - 1, target);
+        } else {
+            return middle;
+        }
+    }
+
+}
+```
+
+## 8.3，插值查找
+
+### 8.3.1，插值查找基本介绍
+
+* 插值查找类似于二分查找，不同的是插值查找每次从自适应middle索引开始查找
+
+* 插值查找其实就是对二分查找middle索引求值的优化，求值公式为：
+
+  ```
+  int middle = left + (right - left) * (target - arr[left]) / (arr[right] - arr[left])
+  ```
+
+* 二分查找到插值查找的公式演进如下：
+
+  ![1584093888334](E:\gitrepository\study\note\image\dataStructure\1584093888334.png)
+
+* 举例说明：如果存在一个长度为20， 值为1-20的顺序一维数组，需要查找到1所在的索引。二分查找基本需要查找4次才能查找到；而通过插值查找索引在0位置的数据，只需要一次，即:
+
+  ```
+  middle = 0 + (19 - 0) * (1 - 1) / (20 - 1) = 0;
+  arr[0] = 1;
+  ```
+
+### 8.3.2，代码实现
+
+```java
+package com.self.datastructure.search;
+
+
+/**
+ * 插入查找
+ *
+ * @author PJ_ZHANG
+ * @create 2020-03-13 15:37
+ **/
+public class InsertValueSearch {
+
+    public static void main(String[] args) {
+        int[] array = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        System.out.println(insertValueSearch(array, 0, array.length - 1, 10));
+    }
+
+    /**
+     * 插入查找获取到对应值索引
+     * @param array 目标数组
+     * @param left 左索引
+     * @param right 右索引
+     * @param target 目标值
+     * @return
+     */
+    public static int insertValueSearch(int[] array, int left, int right, int target) {
+        if (left > right) {
+            return -1;
+        }
+        // 插入查找, 获取到自适应middle索引
+        int middle = left + (right - left) * (target - array[left]) / (array[right] - array[left]);
+        System.out.println("middle: " + middle);
+        // 大于 向右查找
+        if (target > array[middle]) {
+            return insertValueSearch(array, middle + 1, right, target);
+        } else if (target < array[middle]) { // 小于, 向左查找
+            return insertValueSearch(array, left, middle - 1, target);
+        } else {
+            return middle;
+        }
+    }
+
+}
+```
+
+### 8.3.3，注意事项
+
+* 对于数据量较大，关键字分布比较均匀的查找表来说，采用插值查找，速度较快
+* 关键字不均匀的情况下，该方法不一定比二分查找速度快
+
+## 8.4，斐波那契查找
