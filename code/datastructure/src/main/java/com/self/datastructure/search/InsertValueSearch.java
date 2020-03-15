@@ -10,8 +10,8 @@ package com.self.datastructure.search;
 public class InsertValueSearch {
 
     public static void main(String[] args) {
-        int[] array = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-        System.out.println(insertValueSearch(array, 0, array.length - 1, 10));
+        int[] array = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 15};
+        System.out.println(insertValueSearch(array, 0, array.length - 1, 12));
     }
 
     /**
@@ -23,7 +23,7 @@ public class InsertValueSearch {
      * @return
      */
     public static int insertValueSearch(int[] array, int left, int right, int target) {
-        if (left > right) {
+        if (left > right || target < array[left] || target > array[right]) {
             return -1;
         }
         // 插入查找, 获取到自适应middle索引
