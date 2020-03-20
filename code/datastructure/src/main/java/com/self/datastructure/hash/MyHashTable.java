@@ -1,12 +1,14 @@
 package com.self.datastructure.hash;
 
 import lombok.Data;
+import lombok.ToString;
 
+import java.util.Scanner;
 import java.util.UUID;
 
 /**
  * 自定义哈希表进行数据存储和查找
- * 也就是写一个简单的HashMap
+ * 也就是写一个简单的HashMap, 没有扩容和树转换逻辑
  *
  * @author PJ_ZHANG
  * @create 2020-03-18 17:53
@@ -14,7 +16,19 @@ import java.util.UUID;
 public class MyHashTable {
 
     public static void main(String[] args) {
-
+        SelfHash selfHash = new SelfHash();
+        for (int i = 0; i < 100; i++) {
+            selfHash.put(i + "", new Employee(i + "name", i + ""));
+        }
+        System.out.println("总数: " + selfHash.size());
+        for (;;) {
+            System.out.println("输入要删除的元素编号");
+            Scanner scanner = new Scanner(System.in);
+            String inputId = scanner.nextLine();
+            System.out.println(selfHash.get(inputId));
+            System.out.println(selfHash.remove(inputId));
+            System.out.println(selfHash.get(inputId));
+        }
     }
 
     /**
@@ -23,24 +37,28 @@ public class MyHashTable {
      * Node自身为链表
      * 整体数据结构为数组+链表
      */
-    class SelfHash {
+    static class SelfHash {
 
         // 默认长度
-        private int DEFAULT_SIZE = 16;
+        private static int DEFAULT_SIZE = 16;
 
         // 初始化长度
-        private int size = DEFAULT_SIZE;
+        private static int length = DEFAULT_SIZE;
 
+        // 元素数量
+        private static int size;
+
+        // 数组
+        // 数组中的每一个元素为链表
         private Node[] nodeArray;
 
         public SelfHash() {
-            this.size = DEFAULT_SIZE;
-            nodeArray = new Node[this.size];
+            this(length);
         }
 
         public SelfHash(int size) {
-            this.size = size;
-            nodeArray = new Node[this.size];
+            this.length = size;
+            nodeArray = new Node[this.length];
         }
 
         /**
@@ -49,23 +67,99 @@ public class MyHashTable {
          * @param value
          */
         public void put(String key, Employee value) {
-
+            if (nodeArray == null) nodeArray = new Node[DEFAULT_SIZE];
+            // 获取对应存储下标
+            int targetIndex = key.hashCode() % length;
+            // 为空, 说明元素不存在
+            if (null == nodeArray[targetIndex]) {
+                nodeArray[targetIndex] = new Node(key, value);
+                size++;
+            } else {
+                // 获取到当前链表, 并获取链表最后一个元素
+                Node node = nodeArray[targetIndex];
+                Node preNode = node;
+                for (;node != null;) {
+                    if (node.getKey().equals(key)) {
+                        node.setValue(value);
+                        return;
+                    }
+                    preNode = node;
+                    node = node.getNextNode();
+                }
+                // node为空, preNode表示最后一个元素
+                // 将当前元素挂到该位置
+                preNode.setNextNode(new Node(key, value));
+                size++;
+            }
         }
 
         /**
          * 取数据
          * @param key
          */
-        public void get(String key) {
-
+        public Employee get(String key) {
+            int targetIndex = key.hashCode() % length;
+            Node node = nodeArray[targetIndex];
+            for (;null != node;) {
+                if (key.equals(node.getKey())) {
+                    return node.getValue();
+                }
+                node = node.getNextNode();
+            }
+            return null;
         }
 
         /**
          * 移除数据
          * @param key
          */
-        public void remove(String key) {
+        public boolean remove(String key) {
+            int targetIndex = key.hashCode() % length;
+            Node node = nodeArray[targetIndex];
+            Node preNode = node;
+            for (;null != node;) {
+                if (key.equals(node.getKey())) {
+                    // 头结点, 当数组元素设置为下一个节点
+                    if (preNode == node) {
+                        nodeArray[targetIndex] = node.getNextNode();
+                    } else { // 非头节点, 挂空当前节点
+                        preNode.setNextNode(node.getNextNode());
+                    }
+                    return true;
+                }
+                preNode = node;
+                node = node.getNextNode();
+            }
+            return false; // 移除失败
+        }
 
+        /**
+         * 列表展示
+         */
+        public void showArray() {
+            if (size == 0) {
+                System.out.println("数据为空...");
+                return;
+            }
+            for (int i = 0; i < length; i++) {
+                Node node = nodeArray[i];
+                for (;null != node;) {
+                    System.out.println("Node: INDEX: " + i + ", " + node.getValue());
+                    node = node.getNextNode();
+                }
+            }
+        }
+
+        public int size() {
+            return size;
+        }
+
+        /**
+         * 获取数组长度
+         * @return
+         */
+        public int length() {
+            return length;
         }
 
     }
@@ -75,7 +169,8 @@ public class MyHashTable {
      * 存储键值对信息,
      * 存储链表信心
      */
-    class Node {
+    @Data
+    static class Node {
 
         private String key;
 
@@ -95,7 +190,6 @@ public class MyHashTable {
             this.nextNode = nextNode;
         }
 
-
     }
 
     /**
@@ -103,7 +197,8 @@ public class MyHashTable {
      * 存储到数据表时, 基本格式为{id, Employee}
      */
     @Data
-    class Employee {
+    @ToString
+    static class Employee {
 
         String id;
 
