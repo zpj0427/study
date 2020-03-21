@@ -3388,6 +3388,408 @@ public class MyHashTable {
 
 ### 10.1.3，树存储方式分析
 
-* 能同时数据的存储和读取效率
+* 能同时提升数据的存储和读取效率
+
+### 10.1.4，树基本示意图及常用术语
+
+![1584804381124](E:\gitrepository\study\note\image\dataStructure\1584804381124.png)
+
+* **节点**：同结点，表示书上的每一个元素点
+* **根节点**：即上图的A节点，树的顶层节点
+* **父节点**：只存在左右子节点的节点
+* **子节点**：与父节点相对应，除过根节点，所有节点都是其他节点的子节点
+* **叶子节点**：没有子节点的节点
+* **节点的权**：也就是节点的值
+* **路径**：从root节点找到该节点的路径节点
+* **层**：root节点表示第一层，依次往下层数递增
+* **树高度**：指当前树的最大层数
+
+
 
 ## 10.2，二叉树
+
+### 10.2.1，二叉树基本概念
+
+* 树分为很多种，其中每一个节点最多有两个节点的树形式称之为二叉树
+
+* 二叉树的子节点分为左节点和父节点；对于一个父节点来说，可以单独存在左子节点或者右子节点，也可以同时存在左右子节点
+
+  ![1584804957454](E:\gitrepository\study\note\image\dataStructure\1584804957454.png)
+
+* 如果二叉树的所有叶子节点都在最后一层，并且`节点总数 = 2 ^ n - 1`，n为最大层数，则该二叉树可以称之为**满二叉树**
+
+  ![1584805027306](E:\gitrepository\study\note\image\dataStructure\1584805027306.png)
+
+* 如果二叉树的所有叶子节点都在最后一层或者倒数第二层，且最后一层的叶子节点在左边连续，倒数第二层的叶子节点在右边连续，则称之为**完全二叉树**
+
+  ![1584805039750](E:\gitrepository\study\note\image\dataStructure\1584805039750.png)
+
+### 10.2.2，二叉树遍历
+
+* **前序遍历**
+  * 先输出当前节点（初始为叶子节点）
+  * 如果左子节点不为空，再递归前序遍历输出左子节点
+  * 如果右子节点不为空，最后递归前序遍历输出右子节点
+* 中序遍历
+  * 如果左子节点不为空，先递归中序遍历输出左子节点
+  * 再输出当前节点
+  * 如果右子节点不为空，最后递归中序遍历输出右子节点
+* **后续遍历**
+  * 如果左子节点不为空，先递归后序遍历输出左子节点
+  * 如果右子节点不为空，再递归后序遍历输出右子节点
+  * 最后输出当前节点
+* **遍历代码**
+
+```java
+package com.self.datastructure.tree;
+
+import lombok.Data;
+import lombok.ToString;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 二叉树
+ *
+ * @author pj_zhang
+ * @create 2020-03-21 22:02
+ **/
+public class BinaryTree {
+
+    public static void main(String[] args) {
+        MyBinaryTree binaryTree = new MyBinaryTree();
+        binaryTree.addNode(5);
+        binaryTree.addNode(1);
+        binaryTree.addNode(4);
+        binaryTree.addNode(6);
+        binaryTree.addNode(3);
+        binaryTree.addNode(2);
+        binaryTree.addNode(7);
+        binaryTree.addNode(8);
+        binaryTree.addNode(8);
+        binaryTree.postShowDetails(binaryTree.getNode());
+    }
+
+    static class MyBinaryTree {
+
+        private Node node;
+
+        // 添加二叉树节点
+        public void addNode(Integer data) {
+            if (null == node) {
+                node = new Node(data);
+            } else {
+                addNode(data, node);
+            }
+        }
+
+        private void addNode(Integer data, Node node) {
+            if (null == node) {
+                throw new RuntimeException("Node 节点为空");
+            }
+            if (data > node.getData()) {
+                Node rightNode = node.getRightNode();
+                if (null == rightNode) {
+                    node.setRightNode(new Node(data));
+                } else {
+                    addNode(data, node.getRightNode());
+                }
+            } else if (data < node.getData()) {
+                Node leftNode = node.getLeftNode();
+                if (null == leftNode) {
+                    node.setLeftNode(new Node(data));
+                } else {
+                    addNode(data, node.getLeftNode());
+                }
+            } else {
+                System.out.println("数据节点已经存在");
+            }
+        }
+
+        // 获取整体树节点
+        public Node getNode() {
+            return node;
+        }
+
+        // 前序遍历,
+        // 先输出当前节点值
+        // 再输出左侧节点值
+        // 最后输出右侧节点值
+        public void preShowDetails() {
+            doPreShowDetails(node);
+        }
+
+        private void doPreShowDetails(Node node) {
+            if (null == node) {
+                return;
+            }
+            System.out.println("Node: " + node.getData());
+            if (null != node.getLeftNode()) {
+                doPreShowDetails(node.getLeftNode());
+            }
+            if (null != node.getRightNode()) {
+                doPreShowDetails(node.getRightNode());
+            }
+        }
+
+        // 中序输入
+        // 先输出左侧节点值
+        // 再输出当前节点值
+        // 最后输出中间节点值
+        // 中序输出结果为有序数组
+        public void middleShowDetails() {
+            doMiddleShowDetails(node);
+        }
+
+        public void doMiddleShowDetails(Node node) {
+            if (null == node) {
+                return;
+            }
+            if (null != node.getLeftNode()) {
+                doMiddleShowDetails(node.getLeftNode());
+            }
+            System.out.println("Node: " + node.getData());
+            if (null != node.getRightNode()) {
+                doMiddleShowDetails(node.getRightNode());
+            }
+        }
+
+        // 后续输出
+        // 先输出左侧数据
+        // 再输出右侧数据
+        // 最后输出当前数据
+        public void postShowDetails() {
+            doPostShowDetails(node);
+        }
+
+        public void doPostShowDetails(Node node) {
+            if (null == node) {
+                return;
+            }
+            if (null != node.getLeftNode()) {
+                doPostShowDetails(node.getLeftNode());
+            }
+            if (null != node.getRightNode()) {
+                doPostShowDetails(node.getRightNode());
+            }
+            System.out.println("Node: " + node.getData());
+        }
+
+    }
+
+    @Data
+    @ToString
+    static class Node {
+
+        private Integer data;
+
+        private Node leftNode;
+
+        private Node rightNode;
+
+        public Node() {}
+
+        public Node(Integer data) {
+            this(data, null, null);
+        }
+
+        public Node(Integer data, Node leftNode, Node rightNode) {
+            this.data = data;
+            this.leftNode = leftNode;
+            this.rightNode = rightNode;
+        }
+
+    }
+}
+
+```
+
+### 10.2.3，二叉树查找
+
+* 二叉树查找与二叉树遍历的前中后序逻辑基本一致
+
+* **前序查找**
+
+  * 先比较当前节点，当前节点匹配到直接返回
+  * 再匹配左侧节点，并递归前序查找进行匹配，匹配到直接返回
+  * 最后匹配右侧节点，并递归前序查找进行匹配，匹配到直接返回
+  * 以上几步没有匹配到，则返回null，表示没有匹配到
+
+* **中序查找**
+
+  * 先匹配左侧节点，并递归中序查找进行匹配，匹配到直接返回
+  * 再比较当前节点，当前节点匹配到直接返回
+  * 最后匹配右侧节点，并递归中序查找进行匹配，匹配到直接返回
+  * 以上几步没有匹配到，则返回null，表示没有匹配到
+
+* **后序查找**
+
+  * 先匹配左侧节点，并递归后序查找进行匹配，匹配到直接返回
+  * 再匹配右侧节点，并递归后序查找进行匹配，匹配到直接返回
+  * 再比较当前节点，当前节点匹配到直接返回
+  * 以上几步没有匹配到，则返回null，表示没有匹配到
+
+* 代码演示基于二叉树插入的左小右大原则进行匹配查找
+
+* **代码演示**
+
+  ```java
+  package com.self.datastructure.tree;
+  
+  import lombok.Data;
+  import lombok.ToString;
+  
+  import java.util.ArrayList;
+  import java.util.List;
+  
+  /**
+   * 二叉树
+   *
+   * @author pj_zhang
+   * @create 2020-03-21 22:02
+   **/
+  public class BinaryTree {
+  
+      public static void main(String[] args) {
+          MyBinaryTree binaryTree = new MyBinaryTree();
+          binaryTree.addNode(5);
+          binaryTree.addNode(1);
+          binaryTree.addNode(4);
+          binaryTree.addNode(6);
+          binaryTree.addNode(3);
+          binaryTree.addNode(2);
+          binaryTree.addNode(7);
+          binaryTree.addNode(8);
+          System.out.println(binaryTree.preFindNode(50));
+      }
+  
+      static class MyBinaryTree {
+  
+          private Node node;
+  
+          // 添加二叉树节点
+          public void addNode(Integer data) {
+              if (null == node) {
+                  node = new Node(data);
+              } else {
+                  addNode(data, node);
+              }
+          }
+  
+          private void addNode(Integer data, Node node) {
+              if (null == node) {
+                  throw new RuntimeException("Node 节点为空");
+              }
+              if (data > node.getData()) {
+                  Node rightNode = node.getRightNode();
+                  if (null == rightNode) {
+                      node.setRightNode(new Node(data));
+                  } else {
+                      addNode(data, node.getRightNode());
+                  }
+              } else if (data < node.getData()) {
+                  Node leftNode = node.getLeftNode();
+                  if (null == leftNode) {
+                      node.setLeftNode(new Node(data));
+                  } else {
+                      addNode(data, node.getLeftNode());
+                  }
+              } else {
+                  System.out.println("数据节点已经存在");
+              }
+          }
+  
+          // 前序查找
+          public Integer preFindNode(Integer targetData) {
+              return doPreFindNode(targetData, node);
+          }
+  
+          public Integer doPreFindNode(Integer targetData, Node node) {
+              if (null == node) {
+                  return null;
+              }
+              if (targetData == node.getData()) {
+                  return node.getData();
+              } else if (targetData < node.getData()) {
+                  return doPreFindNode(targetData, node.getLeftNode());
+              } else if (targetData > node.getData()) {
+                  return doPreFindNode(targetData, node.getRightNode());
+              }
+              return null;
+          }
+  
+          // 中序查找
+          public Integer middleFindNode(Integer targetData) {
+              return doMiddleFindNode(targetData, node);
+          }
+  
+          public Integer doMiddleFindNode(Integer targetData, Node node) {
+              if (null == node) {
+                  return null;
+              }
+              if (targetData < node.getData()) {
+                  return doMiddleFindNode(targetData, node.getLeftNode());
+              } else if (targetData == node.getData()) {
+                  return node.getData();
+              } else if (targetData > node.getData()) {
+                  return doMiddleFindNode(targetData, node.getRightNode());
+              }
+              return null;
+          }
+  
+          // 后序查找
+          public Integer postFindNode(Integer targetData) {
+              return doPostFindNode(targetData, node);
+          }
+  
+          public Integer doPostFindNode(Integer targetData, Node node) {
+              if (null == node) {
+                  return null;
+              }
+              if (targetData < node.getData()) {
+                  return doPostFindNode(targetData, node.getLeftNode());
+              } else if (targetData > node.getData()) {
+                  return doPostFindNode(targetData, node.getRightNode());
+              } else if (targetData == node.getData()) {
+                  return node.getData();
+              }
+              return null;
+          }
+  
+      @Data
+      @ToString
+      static class Node {
+  
+          private Integer data;
+  
+          private Node leftNode;
+  
+          private Node rightNode;
+  
+          public Node() {}
+  
+          public Node(Integer data) {
+              this(data, null, null);
+          }
+  
+          public Node(Integer data, Node leftNode, Node rightNode) {
+              this.data = data;
+              this.leftNode = leftNode;
+              this.rightNode = rightNode;
+          }
+  
+      }
+  }
+  
+  ```
+
+### 10.2.4，二叉树删除
+
+### 10.2.5，二叉树增加
+
+
+
+#### 10.2.2.2，中序遍历
+
+#### 10.2.2.3，
