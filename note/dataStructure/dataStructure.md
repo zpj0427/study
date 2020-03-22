@@ -3632,7 +3632,7 @@ public class BinaryTree {
 
 * 代码演示基于二叉树插入的左小右大原则进行匹配查找
 
-* **代码演示**
+* **代码演示**，此处有序二叉树演示
 
   ```java
   package com.self.datastructure.tree;
@@ -3786,10 +3786,345 @@ public class BinaryTree {
 
 ### 10.2.4，二叉树删除
 
-### 10.2.5，二叉树增加
+* **删除规则**
 
+  * 如果删除的节点是叶子节点，则直接删除
+  * 如果删除的是非叶子节点，则需要对删除节点的子节点进行处理
+  * 首先，用删除节点的右侧节点代替该节点
+  * 然后，将删除节点的左侧节点，重新挂到删除节点右侧节点的左子节点
+  * 如果右侧节点已经存在左子节点，则按顺序递归到最后一个节点，并挂为左子节点
 
+* **代码实现**
 
-#### 10.2.2.2，中序遍历
+  ```java
+  package com.self.datastructure.tree;
+  
+  import lombok.Data;
+  import lombok.ToString;
+  
+  import java.util.ArrayList;
+  import java.util.List;
+  
+  /**
+   * 二叉树
+   *
+   * @author pj_zhang
+   * @create 2020-03-21 22:02
+   **/
+  public class BinaryTree {
+  
+      public static void main(String[] args) {
+          MyBinaryTree binaryTree = new MyBinaryTree();
+          binaryTree.addNode(5);
+          binaryTree.addNode(2);
+          binaryTree.addNode(1);
+          binaryTree.addNode(4);
+          binaryTree.addNode(3);
+          binaryTree.addNode(8);
+          binaryTree.addNode(6);
+          binaryTree.addNode(9);
+          binaryTree.addNode(10);
+          binaryTree.middleShowDetails();
+          System.out.println(binaryTree.delNode(1));;
+          binaryTree.middleShowDetails();
+      }
+  
+      static class MyBinaryTree {
+  
+          private Node node;
+  
+          // 添加二叉树节点
+          public void addNode(Integer data) {
+              if (null == node) {
+                  node = new Node(data);
+              } else {
+                  addNode(data, node);
+              }
+          }
+  
+          private void addNode(Integer data, Node node) {
+              if (null == node) {
+                  throw new RuntimeException("Node 节点为空");
+              }
+              if (data > node.getData()) {
+                  Node rightNode = node.getRightNode();
+                  if (null == rightNode) {
+                      node.setRightNode(new Node(data));
+                  } else {
+                      addNode(data, node.getRightNode());
+                  }
+              } else if (data < node.getData()) {
+                  Node leftNode = node.getLeftNode();
+                  if (null == leftNode) {
+                      node.setLeftNode(new Node(data));
+                  } else {
+                      addNode(data, node.getLeftNode());
+                  }
+              } else {
+                  System.out.println("数据节点已经存在");
+              }
+          }
+  
+          /**
+           * 二叉树节点删除
+           * * 如果删除节点为叶子节点, 则直接删除
+           * * 如果删除节点为非叶子节点, 且只有左节点或者有节点其中一个节点, 将子节点设置为该节点
+           * * 如果删除节点为非叶子节点, 则子节点完整, 则让右子节点代替该节点, 左子节点按顺序挂在右子节点的左侧位置
+           *
+           * @param targetData
+           * @return
+           */
+          public boolean delNode(Integer targetData) {
+              if (null == node) {
+                  return false;
+              }
+              // 根节点为目标节点, 直接右旋处理
+              if (targetData == node.getData()) {
+                  Node leftNode = node.getLeftNode();
+                  node = node.getRightNode();
+                  if (null == node) {
+                      node = leftNode;
+                      return true;
+                  }
+                  fillLeftNode(node, leftNode);
+                  return true;
+              }
+              return doDelNode(targetData, node);
+          }
+  
+          public boolean doDelNode(Integer targetData, Node parentNode) {
+              if (null == node) {
+                  return false;
+              }
+              if (targetData < parentNode.getData()) {
+                  Node leftNode = parentNode.getLeftNode();
+                  // 为空说明没有找到
+                  if (null == leftNode) {
+                      return false;
+                  }
+                  // 匹配到, 则删除该节点, 同时旋转子节点
+                  if (targetData == leftNode.getData()) {
+                      rightRevolve(parentNode, leftNode);
+                      return true;
+                  } else {
+                      return doDelNode(targetData, leftNode);
+                  }
+              } else if (targetData > parentNode.getData()) {
+                  Node rightNode = parentNode.getRightNode();
+                  if (null == rightNode) {
+                      return false;
+                  }
+                  if (targetData == rightNode.getData()) {
+                      rightRevolve(parentNode, rightNode);
+                      return true;
+                  } else {
+                      return doDelNode(targetData, rightNode);
+                  }
+              }
+              return false;
+          }
+  
+          /**
+           * 右旋
+           * 删除当前节点, 则把
+           * @param node 根节点表示根节点, 其他节点表示删除节点的父节点
+           * @param delNode 要删除的节点
+           */
+          private void rightRevolve(Node parentNode, Node delNode) {
+              if (delNode == parentNode.getLeftNode()) {
+                  // 删除节点的右节点为空, 直接用左节点代替原来位置
+                  if (null == delNode.getRightNode()) {
+                      parentNode.setLeftNode(delNode.getLeftNode());
+                      return;
+                  }
+                  parentNode.setLeftNode(delNode.getRightNode());
+              } else if (delNode == parentNode.getRightNode()) {
+                  if (null == delNode.getRightNode()) {
+                      parentNode.setRightNode(delNode.getLeftNode());
+                      return;
+                  }
+                  parentNode.setRightNode(delNode.getRightNode());
+              }
+              // 重新放置删除节点的左侧节点, 到右侧节点的左侧
+              // 如果右侧节点存在左侧节点, 则对右侧节点
+              fillLeftNode(delNode.getRightNode(), delNode.getLeftNode());
+          }
+  
+          /**
+           * 填充左侧节点
+           * @param node 右旋上来的节点
+           * @param leftNode 左子节点
+           */
+          private void fillLeftNode(Node node, Node leftNode) {
+              if (null == leftNode) {
+                  return;
+              }
+              // 右旋节点的左子节点为空, 直接填充
+              if (null == node.getLeftNode()) {
+                  node.setLeftNode(leftNode);
+              } else {
+                  // 右旋节点存在左子节点, 则递归处理
+                  fillLeftNode(node.getLeftNode(), leftNode);
+              }
+          }
+  
+          // 中序输入
+          // 先输出左侧节点值
+          // 再输出当前节点值
+          // 最后输出中间节点值
+          // 中序输出结果为有序数组
+          public void middleShowDetails() {
+              doMiddleShowDetails(node);
+          }
+  
+          public void doMiddleShowDetails(Node node) {
+              if (null == node) {
+                  return;
+              }
+              if (null != node.getLeftNode()) {
+                  doMiddleShowDetails(node.getLeftNode());
+              }
+              System.out.println("Node: " + node.getData());
+              if (null != node.getRightNode()) {
+                  doMiddleShowDetails(node.getRightNode());
+              }
+          }
+  
+      }
+  
+      @Data
+      @ToString
+      static class Node {
+  
+          private Integer data;
+  
+          private Node leftNode;
+  
+          private Node rightNode;
+  
+          public Node() {}
+  
+          public Node(Integer data) {
+              this(data, null, null);
+          }
+  
+          public Node(Integer data, Node leftNode, Node rightNode) {
+              this.data = data;
+              this.leftNode = leftNode;
+              this.rightNode = rightNode;
+          }
+  
+      }
+  }
+  
+  ```
 
-#### 10.2.2.3，
+### 10.2.5，顺序存储二叉树
+
+* ***顺序存储二叉树是堆排序的基本思想***
+
+* 从数据存储来看，数组存储方式和数的存储方式可以相互转换，即数组可以转换为树，树也可以转换为数组，如下图所示
+
+  ![1584875608743](E:\gitrepository\study\note\image\dataStructure\1584875608743.png)
+
+* 顺序存储二叉树**通常只考虑完全二叉树**，并且元素间存在函数对应关系
+
+  * 第n个元素的左子节点为：`index = 2 * n + 1`
+  * 第n个元素的右子节点为：`index = 2 * n + 2`
+  * 第n个元素的父节点为：`index = （2 - 1）/ n`
+  * 其中n表示在完全二叉树中的第几个元素，同时也表示数组中的索引下标，**从0开始**
+
+* 通过上面的函数关系，可以直接通过数组，实现数组转换为树后的前序，中序，后续遍历，具体代码如下
+
+  ```java
+  package com.self.datastructure.tree;
+  
+  /**
+   * 顺序存储二叉树
+   * 只对完全二叉树有效
+   *
+   * @author pj_zhang
+   * @create 2020-03-22 18:40
+   **/
+  public class ArrayBinaryTree {
+  
+      private static int[] array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+  
+      /**
+       * 讲一个二叉树的节点, 以数组的顺序按层依次存放, 则该二叉树肯定是一个完全二叉树
+       * 在生成的完全二叉树中:
+       * 第n个元素的左子节点 index = 2 * n + 1
+       * 第n个元素的右子节点 index = 2 * n + 2
+       * 第n个元素的父节点为 index = (n - 1) / 2
+       * @param args
+       */
+      public static void main(String[] args) {
+          System.out.println("前序输出");
+          preShowDetails(0);
+          System.out.println("中序输出");
+          middleShowDetails(0);
+          System.out.println("后序输出");
+          postShowDetails(0);
+      }
+  
+      /**
+       * 前序遍历
+       * 输出结果: 0, 1, 3, 7, 8, 5, 9, 2, 5, 6
+       *
+       * @param index 开始索引
+       */
+      public static void preShowDetails(int index) {
+          // 先输出当前节点
+          System.out.println("前序输出: " + array[index]);
+          // 再输出左侧节点
+          if ((index * 2 + 1) < array.length) {
+              preShowDetails(index * 2 + 1);
+          }
+          // 再输出右侧节点
+          if ((index * 2 + 2) < array.length) {
+              preShowDetails(index * 2 + 2);
+          }
+      }
+  
+      /**
+       * 中序遍历
+       * 输出结果: 7, 3, 8, 1, 9, 4, 0, 5, 2, 6
+       *
+       * @param index 开始索引
+       */
+      public static void middleShowDetails(int index) {
+          // 先输出左侧节点
+          if ((index * 2 + 1) < array.length) {
+              middleShowDetails(index * 2 + 1);
+          }
+          // 再输出当前节点
+          System.out.println("中序输出: " + array[index]);
+          // 最后输出右侧节点
+          if ((index * 2 + 2) < array.length) {
+              middleShowDetails(index * 2 + 2);
+          }
+      }
+  
+      /**
+       * 后序遍历
+       * 输出结构: 7, 8, 3, 9, 4, 1, 5, 6, 2, 0
+       *
+       * @param index 开始索引
+       */
+      public static void postShowDetails(int index) {
+          // 先输出左侧节点
+          if ((index * 2 + 1) < array.length) {
+              postShowDetails(index * 2 + 1);
+          }
+          // 再输出右侧节点
+          if ((index * 2 + 2) < array.length) {
+              postShowDetails(index * 2 + 2);
+          }
+          // 最后输出当前节点
+          System.out.println("后序输出: " + array[index]);
+      }
+  
+  }
+  
+  ```
+
