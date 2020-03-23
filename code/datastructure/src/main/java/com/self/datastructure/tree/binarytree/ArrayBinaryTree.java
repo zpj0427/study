@@ -1,4 +1,4 @@
-package com.self.datastructure.tree;
+package com.self.datastructure.tree.binarytree;
 
 /**
  * 顺序存储二叉树

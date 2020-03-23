@@ -4128,3 +4128,7 @@ public class BinaryTree {
   
   ```
 
+## 10.3，线索化二叉树
+
+![1584977646317](E:\gitrepository\study\note\image\dataStructure\1584977646317.png)
+

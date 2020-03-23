@@ -1,4 +1,4 @@
-package com.self.datastructure.tree;
+package com.self.datastructure.tree.binarytree;
 
 import lombok.Data;
 import lombok.ToString;
