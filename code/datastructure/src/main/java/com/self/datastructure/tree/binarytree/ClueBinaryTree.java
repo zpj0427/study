@@ -38,6 +38,16 @@ public class ClueBinaryTree {
         binaryTree.middleClueBinaryTree();
         System.out.println("\r\n中序遍历线索化二叉树...");
         binaryTree.middleShowDetails();
+        // 前序生成线索二叉树
+//        System.out.println("\r\n前序生成线索化二叉树");
+//        binaryTree.preClueBinaryTree();
+//        System.out.println("\r\n前序遍历线索化二叉树");
+//        binaryTree.preShowDetails();
+        // 后续生成线索二叉树
+//        System.out.println("\r\n后续生成线索化二叉树");
+//        binaryTree.postClueBinaryTree();
+//        System.out.println("\r\n后续遍历线索化二叉树");
+//        binaryTree.postShowDetails();
     }
 
     static class MyBinaryTree {
@@ -71,7 +81,9 @@ public class ClueBinaryTree {
                 return;
             }
             // 左侧递归处理
-            doMiddleClueBinaryTree(node.getLeftNode());
+            if (node.getLeftFlag() == 0) {
+                doMiddleClueBinaryTree(node.getLeftNode());
+            }
 
             // 直接输出当前节点
             System.out.print(node.getData() + "  ");
@@ -94,7 +106,9 @@ public class ClueBinaryTree {
             preNode = node;
 
             // 右侧递归处理
-            doMiddleClueBinaryTree(node.getRightNode());
+            if (node.getRightFlag() == 0) {
+                doMiddleClueBinaryTree(node.getRightNode());
+            }
         }
 
         // 中序遍历线索二叉树
@@ -111,13 +125,143 @@ public class ClueBinaryTree {
                 }
                 // 先打印该节点
                 System.out.print(node.getData() + "  ");
-                // 右侧节点状态为1, 说明表示下一个节点, 直接打印
+                // 右侧节点状态为1, 说明是下一个节点, 直接打印
                 for (;node.getRightFlag() == 1;) {
                     node = node.getRightNode();
                     System.out.print(node.getData() + "  ");
                 }
                 // 走到此处说明找到有效的右侧节点, 替换掉该节点
                 node = node.getRightNode();
+            }
+        }
+
+        // 前序生成线索化二叉树
+        // 规则参考中序
+        public void preClueBinaryTree() {
+            doPreClueBinaryTree(node);
+        }
+
+        public void doPreClueBinaryTree(Node node) {
+            if (null == node) {
+                return;
+            }
+            // 先处理当前节点
+            // 先输出当前节点
+            System.out.print(node.getData() + "  ");
+            // 左侧节点为空, 填充为上一个节点
+            if (null == node.getLeftNode()) {
+                node.setLeftNode(preNode);
+                node.setLeftFlag(1);
+            }
+            // 右侧节点为空, 填充为下一个节点
+            if (null != preNode && null == preNode.getRightNode()) {
+                preNode.setRightNode(node);
+                preNode.setRightFlag(1);
+            }
+            preNode = node;
+
+            // 再处理左侧节点
+            // 注意一定要加leftFlag判断, 不然容易死递归
+            if (node.getLeftFlag() == 0) {
+                doPreClueBinaryTree(node.getLeftNode());
+            }
+
+            // 最后处理右侧节点
+            if (node.getRightFlag() == 0) {
+                doPreClueBinaryTree(node.getRightNode());
+            }
+        }
+
+        /**
+         * 前序遍历
+         */
+        public void preShowDetails() {
+            doPreShowDetails(node);
+        }
+
+        public void doPreShowDetails(Node node) {
+            for (;null != node;) {
+                // 左侧节点为有效节点, 直接输出
+                for (;0 == node.getLeftFlag();) {
+                    System.out.print(node.getData() + "  ");
+                    node = node.getLeftNode();
+                }
+                // 输出最后一个左侧有效节点
+                System.out.print(node.getData() + "  ");
+                // 该节点右侧节点指向下一个节点
+                node = node.getRightNode();
+            }
+        }
+
+        /**
+         * 后续生成线索化二叉树
+         */
+        public void postClueBinaryTree() {
+            doPostClueBinaryTree(node, null);
+        }
+
+        public void doPostClueBinaryTree(Node node, Node parentNode) {
+            if (null == node) {
+                return;
+            }
+            // 先处理左侧节点
+            doPostClueBinaryTree(node.getLeftNode(), node);
+
+            // 在处理右侧节点
+            doPostClueBinaryTree(node.getRightNode(), node);
+
+            // 最后处理当前节点
+            // 先输出当前节点
+            System.out.print(node.getData() + "  ");
+            // 左侧节点为空, 填充为上一个节点
+            if (null == node.getLeftNode()) {
+                node.setLeftNode(preNode);
+                node.setLeftFlag(1);
+            }
+            // 右侧节点为空, 填充为下一个节点
+            if (null != preNode && null == preNode.getRightNode()) {
+                preNode.setRightNode(node);
+                preNode.setRightFlag(1);
+            }
+            node.setParentNode(parentNode);
+            preNode = node;
+        }
+
+        /**
+         * 后续遍历线索化二叉树
+         */
+        public void postShowDetails() {
+            doPostShowDetails(node);
+        }
+
+        public void doPostShowDetails(Node node) {
+            for (;null != node;) {
+                // 获取到最左侧数据
+                for (;0 == node.getLeftFlag();) {
+                    node = node.getLeftNode();
+                }
+                // 判断节点是否存在右侧节点
+                if (0 == node.getRightFlag()) {
+                    node = node.getRightNode();
+                    continue;
+                }
+                // 打印当前节点
+                System.out.print(node.getData() + "  ");
+                // 顺序打印下一个节点
+                for (;1 == node.getRightFlag();) {
+                    node = node.getRightNode();
+                    System.out.print(node.getData() + "  ");
+                }
+                // 上述步骤走完后, 后续打印, 最后打印父节点
+                // 则此时node表示这一波打印的顶层节点, 需要找到他的右侧分支
+                // 如果父节点已经表示为根节点, 并且当前处理的节点为根节点的右侧节点, 则处理完成
+                if (this.node == node.getParentNode() && node == this.node.getRightNode()) {
+                    System.out.print(node.getParentNode().getData() + "  ");
+                    node = null;
+                } else {
+                    // 如果不是根节点是, 或者是根节点的左侧节点, 则继续处理
+                    node = node.getParentNode().getRightNode();
+                }
             }
         }
 
@@ -164,6 +308,11 @@ public class ClueBinaryTree {
         private Node leftNode;
 
         private Node rightNode;
+
+        /**
+         * 后续序列化使用
+         */
+        private Node parentNode;
 
         /**
          * 左侧节点标志位,

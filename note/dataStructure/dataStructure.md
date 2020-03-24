@@ -4130,5 +4130,205 @@ public class BinaryTree {
 
 ## 10.3，线索化二叉树
 
-![1584977646317](E:\gitrepository\study\note\image\dataStructure\1584977646317.png)
+### 10.3.1，线索化二叉树概述
+
+* 线索化二叉树是对普通二叉树的扩展，对于普通二叉树而言，一个节点会包含一个数据域以及指向左右子节点的位置索引；但是对于叶子节点来讲，左右子节点的位置索引并没有被利用到，线索二叉树充分利用该部分节点，普通二叉树如下：
+
+![1585020436548](E:\gitrepository\study\note\image\dataStructure\1585020436548.png)
+
+* 在n个节点的二叉树中总共含有`n - 1`（*类似5指向2表示一个位置指向*）个位置指向，即`2n`（*每一个节点有左右两个指针域*）个指针域，这样对于一个二叉树来讲，共有`2n - (n - 1) = n + 1`个空指针域。利用二叉树的空指针域，根据前/中/后序不同遍历方式存储前驱节点（左子节点）和后继节点（右子节点），这种附加的指针称为线索，二叉树转线索化二叉树，后续会分别具体分析：
+* 根据线索性质的不同，线索二叉树可以分为前序线索二叉树，中序线索二叉树，后续线索二叉树；分别对应前序遍历方式，中序遍历方式，后续遍历方式，部分方式的线索二叉树必须对应不同的遍历方式，不然会遍历失败，甚至栈溢出
+* 二叉树转换为线索化二叉树后，`leftNode`指向的可能是左子树，也可能是前驱节点；同样，`rightNode`指向的可能是右子树，也可能是后继节点；具体区分，会在`Node`节点对象中分别维护`leftFlag`和`rightFlag`属性，对应不同的标志位标识是线索节点还是真实节点
+
+### 10.3.2，二叉树转换规则
+
+- 线索化二叉树是在原二叉树的基础上，将每一个节点抽象为存在上下指针的节点
+- 在将二叉树转换为线索化二叉树时，
+- 如果节点的左右节点存在，则该节点不变，
+- 如果节点的左侧节点为空, 则将左侧节点填充为前驱节点；中序方式的遍历方式为：**左中右**，可以通过不同位置对应前驱节点
+- 如果节点的右侧节点为空，则将右侧节点填充为后继节点，选择同上
+- 另外，在Node节点中除过`leftNode`，`rightNode`左右节点数据外，另外维护`leftFlag`，`rightFlag`两个标志位，说明当前左/右侧数据指示的是树数据，还是后继节点数据
+- 对于前序/中序/后序方式生成的线索化二叉树，必须对应的使用前序/中序/后序方式进行遍历
+- **遍历结果的第一个元素和最后一个元素，分别没有前驱节点和后继节点**，所以在线索化二叉树中对应的指向Node为空，但Flag指示为前驱/后继节点
+
+### 10.3.3，中序线索化二叉树
+
+#### 10.3.3.1，中序线索化二叉树转换规则
+
+* 中序输出规则为先输出左侧节点，再输出当前节点，最后输出右侧节点
+* 如果左侧节点为空，递归左侧进行处理
+* 处理当前节点
+  * 如果左侧节点为空，填充为前驱节点，即 preNode，此时如果该节点是第一个需要遍历的节点，则`preNode`为空，单`leftFlag`会被修改为前驱节点
+  * 如果右侧节点为空，填充为后继节点，同样，如果该节点是最后一个节点，则值为空，标志位为后继节点
+  * 因为当前节点拿不到下一个树节点，所以填充右侧后继节点需要遍历到下一个节点后进行处理，等到遍历到下一个节点时, 此时当前节点为 preNode
+  * 当前节点(preNode)的后继节点即下一个节点，也就是当前遍历到的节点，此时设置后继节点, 即把当前遍历到的节点设置为preNode的右侧节点
+* 如果右侧节点不为空，递归右侧进行处理
+
+#### 10.3.3.2，中序线索化二叉树示意图
+
+![1585035725868](E:\gitrepository\study\note\image\dataStructure\1585035725868.png)
+
+* 上图表示二叉树转换为线索化二叉树后的节点关系，即前驱后继节点关联关系
+* 其中蓝色数字表示数节点，红色数组表示前驱/后继节点
+* 实线表示左右节点的连线关系，虚线表示节点的前驱后继关联关系
+
+#### 10.3.3.3，中序线索化二叉树遍历规则
+
+* 首先一直向左循环拿到`leftFlag`标志为前驱节点的节点，表示最左侧节点，也就是中序遍历需要遍历到的第一个节点
+* 中序遍历方式的节点打印顺序为：**左中右**
+* 此时先打印该节点，表示遍历到的第一个节点
+* 打印完成后，循环向右找后继节点的右侧节点并顺序打印
+* 直接循环到有效树节点，则以该节点为顶层节点，继续第一步处理
+
+#### 10.3.3.4，线索化二叉树代码示例
+
+```java
+package com.self.datastructure.tree.binarytree;
+
+import lombok.Data;
+import lombok.ToString;
+
+/**
+ * 线索化二叉树
+ *
+ * @author pj_zhang
+ * @create 2020-03-23 22:12
+ **/
+public class ClueBinaryTree {
+
+    public static void main(String[] args) {
+        MyBinaryTree binaryTree = new MyBinaryTree();
+        binaryTree.addNode(5);
+        binaryTree.addNode(2);
+        binaryTree.addNode(1);
+        binaryTree.addNode(4);
+        binaryTree.addNode(3);
+        binaryTree.addNode(8);
+        binaryTree.addNode(6);
+        binaryTree.addNode(9);
+        binaryTree.addNode(7);
+        // 中序生成线索化二叉树
+        System.out.println("中序生成线索化二叉树...");
+        binaryTree.middleClueBinaryTree();
+        System.out.println("\r\n中序遍历线索化二叉树...");
+        binaryTree.middleShowDetails();
+        binaryTree.postShowDetails();
+    }
+
+    static class MyBinaryTree {
+
+        private Node node;
+
+        /**
+         * 指向前一个节点, 用于下一个节点时的上一个节点操作
+         * 上一个节点的右节点为空时, 需要指向下一个节点,
+         * 此时设置该节点的右节点信息, 需要等操作到下一个节点, 用preNode节点作为该节点设置
+         */
+        private Node preNode;
+
+        // 中序生成线索二叉树
+        public void middleClueBinaryTree() {
+            doMiddleClueBinaryTree(node);
+        }
+
+        public void doMiddleClueBinaryTree(Node node) {
+            if (null == node) {
+                return;
+            }
+            // 左侧递归处理
+            if (node.getLeftFlag() == 0) {
+                doMiddleClueBinaryTree(node.getLeftNode());
+            }
+
+            // 直接输出当前节点
+            System.out.print(node.getData() + "  ");
+            // 填充左侧节点
+            // 左侧节点为空, 填充为前驱节点
+            if (null == node.getLeftNode()) {
+                // 中序: 第一个输出的节点的左侧节点必定为空
+                node.setLeftNode(preNode);
+                node.setLeftFlag(1);
+            }
+            // 填充右侧节点
+            // 右侧节点为空, 填充为后继节点
+            // 填充下一个节点是, 需要遍历到下一个节点进行填充
+            // 则此时当前节点表示为上一个节点, 即preNode
+            if (null != preNode && null == preNode.getRightNode()) {
+                preNode.setRightNode(node);
+                preNode.setRightFlag(1);
+            }
+            // 将当前节点设置为上一个节点
+            preNode = node;
+
+            // 右侧递归处理
+            if (node.getRightFlag() == 0) {
+                doMiddleClueBinaryTree(node.getRightNode());
+            }
+        }
+
+        // 中序遍历线索二叉树
+        public void middleShowDetails() {
+            doMiddleShowDetails(node);
+        }
+
+        public void doMiddleShowDetails(Node node) {
+            for (;null != node;) {
+                // 首先循环找到leftFlag为1的节点
+                // 表示左侧的叶子节点
+                for (;node.getLeftFlag() == 0;) {
+                    node = node.getLeftNode();
+                }
+                // 先打印该节点
+                System.out.print(node.getData() + "  ");
+                // 右侧节点状态为1, 说明是下一个节点, 直接打印
+                for (;node.getRightFlag() == 1;) {
+                    node = node.getRightNode();
+                    System.out.print(node.getData() + "  ");
+                }
+                // 走到此处说明找到有效的右侧节点, 替换掉该节点
+                node = node.getRightNode();
+            }
+        }
+
+    }
+
+    @Data
+    @ToString
+    static class Node {
+
+        private Integer data;
+
+        private Node leftNode;
+
+        private Node rightNode;
+
+        /**
+         * 左侧节点标志位,
+         * 0表示存在左侧节点, 1表示左侧节点为前继节点
+         */
+        private int leftFlag;
+
+        /**
+         * 右侧节点标志位
+         * 0表示存在右侧节点, 1表示右侧节点为后续节点
+         */
+        private int rightFlag;
+
+        public Node() {}
+
+        public Node(Integer data) {
+            this(data, null, null);
+        }
+
+        public Node(Integer data, Node leftNode, Node rightNode) {
+            this.data = data;
+            this.leftNode = leftNode;
+            this.rightNode = rightNode;
+        }
+
+    }
+
+}
+
+```
 
