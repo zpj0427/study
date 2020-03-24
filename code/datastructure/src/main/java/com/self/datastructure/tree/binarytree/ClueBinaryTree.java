@@ -34,20 +34,20 @@ public class ClueBinaryTree {
         binaryTree.addNode(9);
         binaryTree.addNode(7);
         // 中序生成线索化二叉树
-        System.out.println("中序生成线索化二叉树...");
-        binaryTree.middleClueBinaryTree();
-        System.out.println("\r\n中序遍历线索化二叉树...");
-        binaryTree.middleShowDetails();
-        // 前序生成线索二叉树
+//        System.out.println("中序生成线索化二叉树...");
+//        binaryTree.middleClueBinaryTree();
+//        System.out.println("\r\n中序遍历线索化二叉树...");
+//        binaryTree.middleShowDetails();
+//        // 前序生成线索二叉树
 //        System.out.println("\r\n前序生成线索化二叉树");
 //        binaryTree.preClueBinaryTree();
 //        System.out.println("\r\n前序遍历线索化二叉树");
 //        binaryTree.preShowDetails();
         // 后续生成线索二叉树
-//        System.out.println("\r\n后续生成线索化二叉树");
-//        binaryTree.postClueBinaryTree();
-//        System.out.println("\r\n后续遍历线索化二叉树");
-//        binaryTree.postShowDetails();
+        System.out.println("\r\n后续生成线索化二叉树");
+        binaryTree.postClueBinaryTree();
+        System.out.println("\r\n后续遍历线索化二叉树");
+        binaryTree.postShowDetails();
     }
 
     static class MyBinaryTree {
@@ -235,33 +235,42 @@ public class ClueBinaryTree {
         }
 
         public void doPostShowDetails(Node node) {
+            Node preNode = null;
             for (;null != node;) {
                 // 获取到最左侧数据
                 for (;0 == node.getLeftFlag();) {
                     node = node.getLeftNode();
                 }
-                // 判断节点是否存在右侧节点
-                if (0 == node.getRightFlag()) {
-                    node = node.getRightNode();
-                    continue;
-                }
-                // 打印当前节点
-                System.out.print(node.getData() + "  ");
-                // 顺序打印下一个节点
+                // 首先判断右侧节点是否是后继节点
+                // 右侧节点为后继节点, 直接打印该节点
                 for (;1 == node.getRightFlag();) {
-                    node = node.getRightNode();
                     System.out.print(node.getData() + "  ");
+                    // 设置上一个节点为当前节点
+                    preNode = node;
+                    // 并将遍历节点指向后继节点
+                    node = node.getRightNode();
                 }
-                // 上述步骤走完后, 后续打印, 最后打印父节点
-                // 则此时node表示这一波打印的顶层节点, 需要找到他的右侧分支
-                // 如果父节点已经表示为根节点, 并且当前处理的节点为根节点的右侧节点, 则处理完成
-                if (this.node == node.getParentNode() && node == this.node.getRightNode()) {
-                    System.out.print(node.getParentNode().getData() + "  ");
-                    node = null;
-                } else {
-                    // 如果不是根节点是, 或者是根节点的左侧节点, 则继续处理
-                    node = node.getParentNode().getRightNode();
+
+                // 能走到这一步说明右侧节点不是后继节点
+                // 并且上一个操作的节点一定是当前节点的子节点(无论是单左子节点还是单右子节点, 或者左右子节点都有, 都会最终指向该节点)
+                // 此时对上一个操作节点进行判断:
+                // 如果上一个节点是当前节点的右子节点, 说明以该节点为顶点的子树已经遍历完成, 打印该节点后, 继续回退到父节点进行处理
+                // 或者说如果上一个节点时当前节点的左子节点, 但当前节点不存在右子节点, 依旧回退到父节点进行继续处理
+                // 如果上一个节点是当前节点的左子节点, 则直接继续处理右子树
+                for (;preNode == node.getRightNode() || (1 == node.getRightFlag() && preNode == node.getLeftNode());) {
+                    System.out.print(node.getData() + "  ");
+                    // 如果当前节点是根节点, 直接退出
+                    if (this.node == node) {
+                        return;
+                    }
+                    // 当前节点不是根节点, 继续往下走
+                    preNode = node;
+                    node = node.getParentNode();
                 }
+                // 上一个节点不是右侧节点
+                // 则必定是左侧节点, 处理右子树
+                node = node.getRightNode();
+
             }
         }
 
