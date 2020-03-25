@@ -6,3 +6,4 @@
 .porject
 .settings
 *.iml
+.idea/*.xml
