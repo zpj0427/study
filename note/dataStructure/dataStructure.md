@@ -4815,7 +4815,39 @@ public class ClueBinaryTree {
 
 ### 10.4.3，堆排序图解说明
 
+* 首先，初始化一个数组 `{4，6，8，5，9}`，并将其转换为顺序存储二叉树
 
+  ![1585141686773](E:\gitrepository\study\note\image\dataStructure\1585141686773.png)
+
+* 然后，找到它的最后一个叶子节点索引`index = length / 2 - 1 = 4 / 2 - 1 = 1`，并以该索引为数据与它的左右节点进行比较，如果左右节点存在大于它的数据，则下沉交换；此处可以看到，`6 < 9`交换位置，此处注意，6到9的位置后，如果还存在子节点，则需要递归处理，紧跟着会看到
+
+  ![1585141798323](E:\gitrepository\study\note\image\dataStructure\1585141798323.png)
+
+* 索引1处理完成后，继续往前找，找到下一个非叶子节点索引0，用值4和值9比较，肯定`9 > 4`，继续替换；此时替换后注意，节点4存在两个子节点5和6，而4小于子节点，不满足大顶堆
+
+  ![1585141998776](E:\gitrepository\study\note\image\dataStructure\1585141998776.png)
+
+* 因为以4为顶点的子树不满足大顶堆，则递归进行处理，让4下沉
+
+  ![1585142045584](E:\gitrepository\study\note\image\dataStructure\1585142045584.png)
+
+* 到此为止，由无需数组转为大顶堆数组已经构建完成，*例子简单但可以说明问题*
+
+* 现在可以开始进行排序了，构造成大顶堆数据后，root节点即0索引位置数据肯定是最大数据，与选择排序算法基本一致，将该数据与最后一个数据互换位置
+
+  ![1585142144943](E:\gitrepository\study\note\image\dataStructure\1585142144943.png)
+
+* 互换后可以发现，将数组分为了左侧数据和右侧数据两部分，左侧数据为待排数组，右侧数据为有序数组，当左侧数组全部归到右侧后，则整个排序完成，那继续往下走；下一步需要排序的数组，就只需要对左侧数组排序，然后替换底层节点，依次类推
+
+* 交换位置后，最下层的节点4取代了最上层的节点9的位置，此时大顶堆树混乱；但需要注意的是，此时的混乱是在规则基础上的混乱，也就是只存在顶层节点这一个点是混乱，只需要将该点下沉到合适的位置，并在下沉过程中，将较大的值上浮，等有序后，顶层节点依旧为该数据部分的最大值，则再次与原数组的倒数第二个值替换
+
+  ![1585142401755](E:\gitrepository\study\note\image\dataStructure\1585142401755.png)
+
+  ![1585142417877](E:\gitrepository\study\note\image\dataStructure\1585142417877.png)
+
+* 按照此逻辑继续，知道数组有序
+
+  ![1585142445486](E:\gitrepository\study\note\image\dataStructure\1585142445486.png)
 
 ### 10.4.4，代码实现
 
@@ -4873,6 +4905,7 @@ public class HeapSort {
     public static void heapSort(int[] array) {
         // 构造初始化的大顶堆
         // int i = array.length / 2 - 1: 表示拿到最后一个有效非子节点
+        // 处理完成后，向前一直获取非子节点进行大顶堆构造，知道获取到顶层节点
         for (int i = array.length / 2 - 1; i >= 0; i--) {
             adjustHeap(array, i, array.length);
         }
