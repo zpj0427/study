@@ -4958,3 +4958,149 @@ public class HeapSort {
 
 ```
 
+## 10.5，赫夫曼树
+
+### 10.5.1，赫夫曼树基本介绍及相关概念
+
+* 给定n个权值作为n个叶子节点，构造一颗二叉树，若该树的**带权路径长度(WPL)**达到最小，称这样的的二叉树为最优二叉树，也称为赫夫曼树，或者哈夫曼树、霍夫曼树
+
+* 赫夫曼树是带权路径长度最短的数，权值较大的节点离根较近
+
+* **路径和路径长度**：在一棵树中，从一个节点往下可以达到的孩子和孙子节点之间的通路，称为路径；通路中分支的数量称为路径长度；若规定根节点的层数为1，则从根节点到第L层节点的路径长度为`L - 1`
+
+* **节点的权及带权路径长度**：若将树中的节点赋给一个有意义的值，则该值称为节点的权；从根节点到该节点的路径长度与该权值的乘积称为该节点的带权路径长度
+
+* **树的带权路径长度**：树的带权路径长度规定为*所有**叶子节点**的带权路径长度之和*，记为**WPL（Weighted path length）**，权值越大的节点离根节点越近的二叉树才是最优二叉树，如图：
+
+  ![1585396018711](E:\gitrepository\study\note\image\dataStructure\1585396018711.png)
+
+### 10.5.2，赫夫曼树基本思想及示意图
+
+* 首先对要处理的数组从小到大进行排序，每一个数据都可以转换为一个节点，每一个节点都可以看为一个最简单的二叉树（不带左右子节点的二叉树）
+
+* 从转换好的有序节点集合中，取出两个最小的节点组成一颗二叉树
+
+* 在这颗新二叉树中，左右子节点分别为取出的两个节点，父节点为这两个子节点的带权路径和
+
+* 二叉树生成完成后，从节点集合中移除两个最小子节点，并将生成的二叉树父节点加入到集合中
+
+* 之后再次对集合排序并重复以上操作，直到集合中只有一个元素，这样说明赫夫曼树已经生成完成，可以对该树进行输出查看
+
+* 对一个数组`{13，7，8，3，29，6，1}`生成的赫夫曼树如图：
+
+  ![1585396300684](E:\gitrepository\study\note\image\dataStructure\1585396300684.png)
+
+  * 先对数组进行排序：`{1，3，6，7，8，13，29}`
+  * 取出前两个元素：`{1，3}`，生成一个新的二叉树，父节点为两个节点的带权路径和即：`data = 1 * 1 + 3 * 1 = 4`
+  * 将两个节点从数组中移除，并添加父节点到数组中后重新排序，则新的数组元素为：`{4，6，7，8，13，29}`，其中节点4存在`{1，3}`两个子节点
+  * 以此类推，最终会生成上面的赫夫曼树
+
+### 10.5.3，赫夫曼树代码实现
+
+```java
+package com.self.datastructure.tree.huffman;
+
+import lombok.Data;
+import lombok.ToString;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * 赫夫曼树
+ *
+ * @author PJ_ZHANG
+ * @create 2020-03-26 10:36
+ **/
+public class HuffmanTree {
+
+    public static void main(String[] args) {
+        int[] array = {13, 7, 8, 3, 29, 6, 1};
+        Node root = huffmanTree(array);
+        preShowDetails(root);
+    }
+
+    /**
+     * 生成赫夫曼树基本规则:
+     * * 将数组的每个元素封装为Node, 并添加到集合中
+     * * 对集合元素进行排序, 注意此处需要实现Comparable类, 并重写compareTo()
+     * * 取前两个元素作为一个最简单的二叉树(不带子节点的)
+     * * 以这两个元素作为一节点的左右两个子元素, 且该节点的权为这两个节点带权路径长度之和
+     * * 将该父节点添加到集合中, 并对集合重新排序, 继续循环执行, 依次类推
+     *
+     * @param array
+     */
+    public static Node huffmanTree(int[] array) {
+        // 转换为一个list
+        List<Node> lstData = new ArrayList<>(10);
+        for (int data : array) {
+            lstData.add(new Node(data));
+        }
+        // 循环处理
+        for (;lstData.size() > 1;) {
+            // 对数组进行排序
+            Collections.sort(lstData);
+            // 获取前两个节点
+            Node leftNode = lstData.get(0);
+            Node rightNode = lstData.get(1);
+            // 根据前两个节点带权路径构建第三个节点
+            Node parentNode = new Node(leftNode.getData() + rightNode.getData());
+            // 构建左右节点
+            parentNode.setLeftNode(leftNode);
+            parentNode.setRightNode(rightNode);
+            // 移除前两个节点
+            lstData.remove(leftNode);
+            lstData.remove(rightNode);
+            // 添加新构建的节点到集合中
+            lstData.add(parentNode);
+        }
+        return lstData.get(0);
+    }
+
+    public static void preShowDetails(Node node) {
+        if (null == node) {
+            return;
+        }
+        System.out.print(node.getData() + "  ");
+        if (null != node.getLeftNode()) {
+            preShowDetails(node.getLeftNode());
+        }
+        if (null != node.getRightNode()) {
+            preShowDetails(node.getRightNode());
+        }
+    }
+
+    @Data
+    static class Node implements Comparable<Node> {
+
+        private int data;
+
+        private Node leftNode;
+
+        private Node rightNode;
+
+        public Node(int data) {
+            this.data = data;
+        }
+
+        @Override
+        public String toString() {
+            return "Node: [data = " + data;
+        }
+
+        /**
+         * 进行数据比较, 满足数据升序排序
+         * @param node
+         * @return
+         */
+        @Override
+        public int compareTo(Node node) {
+            return this.data - node.getData();
+        }
+    }
+
+}
+
+```
+
