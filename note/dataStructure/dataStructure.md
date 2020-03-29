@@ -5104,3 +5104,5 @@ public class HuffmanTree {
 
 ```
 
+## 10.6，赫夫曼编码
+
