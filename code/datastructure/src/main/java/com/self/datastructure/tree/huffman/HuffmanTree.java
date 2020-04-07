@@ -1,7 +1,6 @@
 package com.self.datastructure.tree.huffman;
 
 import lombok.Data;
-import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.Collections;
