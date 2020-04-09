@@ -105,7 +105,7 @@ public class BinaryTree {
                 }
                 // 匹配到, 则删除该节点, 同时旋转子节点
                 if (targetData == leftNode.getData()) {
-                    rightRevolve(parentNode, leftNode);
+                    leftRevolve(parentNode, leftNode);
                     return true;
                 } else {
                     return doDelNode(targetData, leftNode);
@@ -116,7 +116,7 @@ public class BinaryTree {
                     return false;
                 }
                 if (targetData == rightNode.getData()) {
-                    rightRevolve(parentNode, rightNode);
+                    leftRevolve(parentNode, rightNode);
                     return true;
                 } else {
                     return doDelNode(targetData, rightNode);
@@ -126,12 +126,12 @@ public class BinaryTree {
         }
 
         /**
-         * 右旋
+         * 左旋
          * 删除当前节点, 则把
-         * @param node 根节点表示根节点, 其他节点表示删除节点的父节点
+         * @param parentNode 根节点表示根节点, 其他节点表示删除节点的父节点
          * @param delNode 要删除的节点
          */
-        private void rightRevolve(Node parentNode, Node delNode) {
+        private void leftRevolve(Node parentNode, Node delNode) {
             if (delNode == parentNode.getLeftNode()) {
                 // 删除节点的右节点为空, 直接用左节点代替原来位置
                 if (null == delNode.getRightNode()) {
@@ -156,17 +156,16 @@ public class BinaryTree {
          * @param node 右旋上来的节点
          * @param leftNode 左子节点
          */
-        private void fillLeftNode(Node node, Node leftNode) {
+         private void fillLeftNode(Node node, Node leftNode) {
             if (null == leftNode) {
                 return;
             }
-            // 右旋节点的左子节点为空, 直接填充
-            if (null == node.getLeftNode()) {
-                node.setLeftNode(leftNode);
-            } else {
-                // 右旋节点存在左子节点, 则递归处理
-                fillLeftNode(node.getLeftNode(), leftNode);
+            // 删除节点右侧节点的左侧节点不为空, 则一直遍历到最后
+            // 将删除节点的左侧节点挂到最后
+            for (;null != node.getLeftNode();) {
+                node = node.getLeftNode();
             }
+            node.setLeftNode(leftNode);
         }
 
         // 前序查找

@@ -11,7 +11,7 @@ import java.util.*;
  * @author PJ_ZHANG
  * @create 2020-04-07 15:16
  **/
-public class HuffmanCode {
+public class ContentHuffmanCode {
 
     public static void main(String[] args) {
         String content = "i like like like java do you like a java";
@@ -25,7 +25,7 @@ public class HuffmanCode {
         Map<Byte, String> pathMap = new HashMap<>(16);
         // 最终获取到的结果如下
         // [-88, -65, -56, -65, -56, -65, -55, 77, -57, 6, -24, -14, -117, -4, -60, -90, 28]
-        byte[] encodeBytes = encode(content, pathMap);
+        byte[] encodeBytes = encode(content.getBytes(), pathMap);
         System.out.println("最终生成的十进制传输数据: " + Arrays.toString(encodeBytes));
         // 数据解压
         // 将传递的byte[]数组, 转换为赫夫曼编码的二进制数字串
@@ -42,7 +42,7 @@ public class HuffmanCode {
      * @param pathMap 字符到频次映射
      * @return
      */
-    private static byte[] decode(byte[] encodeBytes, Map<Byte, String> pathMap) {
+    public static byte[] decode(byte[] encodeBytes, Map<Byte, String> pathMap) {
         // 首先转换十进制传递数组为二进制数字串
         // 反编译的二进制串: 1010100010111111110010001011111111001000101111111100100101001101110001110000011011101000111100101000101111111100110001001010011011100
         String binaryStr = decodeBinaryStr(encodeBytes);
@@ -79,6 +79,9 @@ public class HuffmanCode {
         for (int i = 0; i < binaryStr.length();) {
             int count = 1;
             for (;;) {
+                if (binaryStr.length() < i + count) {
+                    break;
+                }
                 // 以count作为一个标识位, 一直向后移动, 多括进一个字符
                 // 如果路径到字符映射中, 包含该路径, 则匹配成功, 并添加该字符到集合
                 String currStr = binaryStr.substring(i, i + count);
@@ -87,6 +90,7 @@ public class HuffmanCode {
                     lstBytes.add(path2ByteMap.get(currStr));
                     break;
                 }
+
                 count++;
             }
             // 匹配成功后, i直接进count位, 进行下一组数据处理
@@ -159,29 +163,27 @@ public class HuffmanCode {
     /**
      * 编译文本内容
      *
-     * @param content 文本内容
+     * @param bytes 文本内容字节码
      * @param pathMap 字符Byte到赫夫曼码的映射
      * @return
      */
-    private static byte[] encode(String content, Map<Byte, String> pathMap) {
-        // 获取到字节码
-        byte[] bytes = content.getBytes();
+    public static byte[] encode(byte[] bytes, Map<Byte, String> pathMap) {
         // 统计频次, 以频次作为构建赫夫曼节点的权值
         Map<Byte, Integer> timeMap = new HashMap<>(16);
         statisticsTime(bytes, timeMap);
         // 转换频次映射Map为List
         List<Node> lstNode = transformMap2List(timeMap);
         // 转换为赫夫曼树
-        Node huffmanTree = transformHuffmanTree(lstNode);
+        Node huffmanTree = encodeHuffmanTree(lstNode);
         // 根据赫夫曼树, 生成字符的映射路径
-        generateByte2Path(huffmanTree, pathMap);
+        encodeByte2Path(huffmanTree, pathMap);
         // 根据传递内容, 拼接赫夫曼编码的二进制串, 按照上面传递的字符, 长度应该为133
         // 另外不同方式方式构建的赫夫曼树, 获得的串不一致
         // 比如形同time值的不同数据, 放在list的不同位置, 拼出来的树不一样, 但带权路径一样
-        String binaryStr = transformBinaryStr(bytes, pathMap);
+        String binaryStr = encodeBinaryStr(bytes, pathMap);
         // 构建完成二进制串后, 对二进制串每8位生成一个十进制数据进行传递, 并转换为byte
         // 此处主要为了减少传递数据
-        byte[] resultData = transformResultData(binaryStr);
+        byte[] resultData = encodeResultData(binaryStr);
         return resultData;
     }
 
@@ -192,7 +194,7 @@ public class HuffmanCode {
      * @param binaryStr
      * @return
      */
-    private static byte[] transformResultData(String binaryStr) {
+    private static byte[] encodeResultData(String binaryStr) {
         // 获取长度
         int length = (binaryStr.length() + 7) / 8;
         int count = 0;
@@ -220,7 +222,7 @@ public class HuffmanCode {
      * @param pathMap byte到二进制路径的映射
      * @return
      */
-    private static String transformBinaryStr(byte[] bytes, Map<Byte, String> pathMap) {
+    private static String encodeBinaryStr(byte[] bytes, Map<Byte, String> pathMap) {
         StringBuilder sb = new StringBuilder();
         for (byte b : bytes) {
             sb.append(pathMap.get(b));
@@ -234,7 +236,7 @@ public class HuffmanCode {
      * @param huffmanTree 赫夫曼树
      * @param pathMap 路径映射
      */
-    private static void generateByte2Path(Node huffmanTree, Map<Byte, String> pathMap) {
+    private static void encodeByte2Path(Node huffmanTree, Map<Byte, String> pathMap) {
         StringBuilder sb = new StringBuilder();
         if (null != huffmanTree.getLeftNode()) {
             // 左侧拼接0
@@ -275,7 +277,7 @@ public class HuffmanCode {
      * @param lstNode 构造的字符节点集合
      * @return 赫夫曼树根节点
      */
-    private static Node transformHuffmanTree(List<Node> lstNode) {
+    private static Node encodeHuffmanTree(List<Node> lstNode) {
         for (;CollectionUtils.isNotEmpty(lstNode) && lstNode.size() > 1;) {
             // 每一次循环排序一次, 保证取到的前两个二叉树为最小数据
             Collections.sort(lstNode);
@@ -283,7 +285,7 @@ public class HuffmanCode {
             Node leftNode = lstNode.get(0);
             Node rightNode = lstNode.get(1);
             Node parentNode = new Node();
-            parentNode.setTime((byte) (leftNode.getTime() + rightNode.getTime()));
+            parentNode.setTime(leftNode.getTime() + rightNode.getTime());
             parentNode.setLeftNode(leftNode);
             parentNode.setRightNode(rightNode);
             // 从集合中移除前两个节点
@@ -325,7 +327,7 @@ public class HuffmanCode {
     }
 
     @Data
-    static class Node implements Comparable<HuffmanCode.Node> {
+    static class Node implements Comparable<ContentHuffmanCode.Node> {
 
         private Byte data; // 字符
 
