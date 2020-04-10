@@ -14,15 +14,7 @@ public class AVLTree {
         MyAVLTree myAVLTree = new MyAVLTree();
         myAVLTree.addNode(100);
         myAVLTree.addNode(110);
-        myAVLTree.addNode(70);
-        myAVLTree.addNode(60);
-        myAVLTree.addNode(80);
-        myAVLTree.addNode(90);
-        myAVLTree.addNode(50);
-        myAVLTree.addNode(65);
-        myAVLTree.addNode(45);
-        myAVLTree.addNode(55);
-        myAVLTree.delNode(60);
+        myAVLTree.delNode(100);
     }
 
     static class MyAVLTree {
