@@ -16,15 +16,16 @@ public class BinaryTree {
 
     public static void main(String[] args) {
         MyBinaryTree binaryTree = new MyBinaryTree();
-        binaryTree.addNode(5);
-        binaryTree.addNode(2);
-        binaryTree.addNode(1);
-        binaryTree.addNode(4);
-        binaryTree.addNode(3);
-        binaryTree.addNode(8);
-        binaryTree.addNode(6);
-        binaryTree.addNode(9);
+        binaryTree.addNode(50);
+        binaryTree.addNode(20);
+        binaryTree.addNode(80);
         binaryTree.addNode(10);
+        binaryTree.addNode(60);
+        binaryTree.addNode(90);
+        binaryTree.addNode(55);
+        binaryTree.addNode(65);
+        binaryTree.addNode(85);
+        binaryTree.addNode(95);
         binaryTree.middleShowDetails();
         System.out.println(binaryTree.delNode(1));;
         binaryTree.middleShowDetails();

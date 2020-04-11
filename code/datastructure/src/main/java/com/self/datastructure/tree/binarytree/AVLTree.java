@@ -12,9 +12,9 @@ public class AVLTree {
 
     public static void main(String[] args) {
         MyAVLTree myAVLTree = new MyAVLTree();
-        myAVLTree.addNode(100);
-        myAVLTree.addNode(110);
-        myAVLTree.delNode(100);
+        // 增加节点
+        // 删除节点
+        // 遍历树
     }
 
     static class MyAVLTree {
@@ -40,24 +40,51 @@ public class AVLTree {
             if (null == root) {
                 return;
             }
+            // 删除根节点
+            if (root.getValue() == value && null == root.getLeftNode() && null == root.getRightNode()) {
+                root = null;
+                return;
+            }
             doDelNode(null, root, value);
         }
 
         private void doDelNode(Node parentNode, Node node, int value) {
             // 删除节点
-            if (root == node && node.getValue() == value && null == node.getLeftNode() && null == node.getRightNode()) {
-                root = null;
-                return;
-            }
-            delelteNode(parentNode, node, value);
-            // 重整AVL树
+            deleteNode(parentNode, node, value);
+            // 节点删除完成后, 刷新AVL树
+            // 删除不同于添加, 添加肯定添加打叶子节点, 所以可以直接进行树旋转处理
+            // 删除可能在中间节点删除, 需要重新构造一次, 从根节点开始构造
+            refreshAVLTree(root);
         }
 
-        private void delelteNode(Node parentNode, Node node, int value) {
+        /**
+         * 重构AVL树
+         * @param node 当前递归到的节点
+         */
+        private void refreshAVLTree(Node node) {
+            if (null == node) {
+                return;
+            }
+            // 先处理左边
+            refreshAVLTree(node.getLeftNode());
+            // 再处理右边
+            refreshAVLTree(node.getRightNode());
+            // 进行旋转
+            rotate(node);
+        }
+
+        /**
+         * 删除节点
+         *
+         * @param parentNode 父节点
+         * @param node 当前递归到的节点
+         * @param value 要删除的值
+         */
+        private void deleteNode(Node parentNode, Node node, int value) {
             if (node.getValue() < value) {
-                delelteNode(node, node.getRightNode(), value);
+                deleteNode(node, node.getRightNode(), value);
             } else if (node.getValue() > value) {
-                delelteNode(node, node.getLeftNode(), value);
+                deleteNode(node, node.getLeftNode(), value);
             } else {
                 // 找到节点, 进行节点删除
                 // 对当前节点的权值进行替换, 用左侧节点的最右侧节点进行替换
@@ -68,6 +95,7 @@ public class AVLTree {
                     } else if (parentNode.getLeftNode() == node) {
                         parentNode.setLeftNode(null);
                     }
+                    node = parentNode;
                 } else if (null == node.getLeftNode() || null == node.getRightNode()) {
                     // 当前节点为父节点, 单只有单子节点
                     // 因为AVL树的平衡属性, 节点如果只有单子节点, 则该子节点下不可能再有子节点, 如果往这部分加节点, 则会触发旋转
@@ -111,7 +139,7 @@ public class AVLTree {
         /**
          * 添加节点
          *
-         * @param addNode 要添加的节点
+         * @param value 要添加的节点
          */
         public void addNode(int value) {
             if (null == root) {
@@ -142,21 +170,31 @@ public class AVLTree {
 
             // 节点添加完成后, 进行左旋右旋处理
             // 因为添加节点是递归加的, 所以对于添加节点路径上的每一个节点都会进行该步操作
+            // 节点旋转, 构建平衡树
+            rotate(parentNode);
+        }
+
+        /**
+         * 进行左旋右旋处理,
+         * 添加和删除节点都涉及该步
+         * @param currNode
+         */
+        private void rotate(Node currNode) {
             // 如果左侧树比右侧树的高度差大于1, 则右旋
-            if (getLeftHeight(parentNode) - getRightHeight(parentNode) > 1) {
+            if (getLeftHeight(currNode) - getRightHeight(currNode) > 1) {
                 // 如果左侧树的右侧节点层数比左侧树的左侧节点层数高, 则先进行一次左旋
-                if (null != parentNode.getLeftNode() && getLeftHeight(parentNode.getLeftNode()) < getRightHeight(parentNode.getLeftNode())) {
-                    leftRotate(parentNode.getLeftNode());
+                if (null != currNode.getLeftNode() && getLeftHeight(currNode.getLeftNode()) < getRightHeight(currNode.getLeftNode())) {
+                    leftRotate(currNode.getLeftNode());
                 }
-                rightRotate(parentNode);
+                rightRotate(currNode);
             }
             // 如果右侧树比左侧树的高度小于1, 则左旋
-            else if (getRightHeight(parentNode) - getLeftHeight(parentNode) > 1) {
+            else if (getRightHeight(currNode) - getLeftHeight(currNode) > 1) {
                 // 如果右侧数的左侧子节点层数比右侧子节点层数大, 则先进行一次右旋
-                if (null != parentNode.getRightNode() && getRightHeight(parentNode.getRightNode()) < getLeftHeight(parentNode.getRightNode())) {
-                    rightRotate(parentNode.getLeftNode());
+                if (null != currNode.getRightNode() && getRightHeight(currNode.getRightNode()) < getLeftHeight(currNode.getRightNode())) {
+                    rightRotate(currNode.getLeftNode());
                 }
-                leftRotate(parentNode);
+                leftRotate(currNode);
             }
         }
 
