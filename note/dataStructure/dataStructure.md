@@ -5711,9 +5711,412 @@ public class FileHuffmanCode {
 
 ```
 
-## 10.7，顺序二叉树
+## 10.7，[顺序二叉树](https://www.cs.usfca.edu/~galles/visualization/BST.html)
 
 * 参考[10.2，二叉树（此处以二叉排序树演示）](#10.2，二叉树（此处以二叉排序树演示）)
 
-## 10.8，平衡二叉树
+## 10.8，[平衡二叉树](https://www.cs.usfca.edu/~galles/visualization/AVLtree.html)
 
+### 10.8.1，二叉排序树问题
+
+* 对于一个有序数组`{1, 2, 3, 4, 5}`，其生成的二叉排序树如下；由图可见，最终形成一个类似单链表形式的二叉树，对插入速度没有影响，但是对于查询速度明显减低，不能通过BST进行查询，时间复杂度为`O(n)`；需要对二叉排序树这种现象进行优化，则引入平衡二叉树(AVL)
+
+  ![1586595505421](E:\gitrepository\study\note\image\dataStructure\1586595505421.png)
+
+### 10.8.2，基本介绍
+
+* 平衡二叉树也叫平衡二叉搜索树(self-balancing binary search tree)，又被称为AVL树，可以保证较高的二分查找效率
+
+* 平衡二叉树特点：是一颗空树或者左右子树的高度差绝对值小于1的树，并且左右子树都是平衡二叉树；平衡二叉树的实现有红黑树，AVL，替罪羊树，Treap，伸展树等
+
+* 平衡二叉树的平衡保证通过单旋转（左旋转，右旋转）和双旋转完成
+
+* 左旋流程：
+
+  * 左旋触发条件：当前节点的左树高度与右树高度差值大于1，进行左旋，重新保证树的平衡
+
+  * 将当前节点重新初始化为一个新节点`newNode`
+
+  * 将`newNode`的右侧节点，设置为当前节点的右侧节点
+
+  * 将`newNode`的左侧节点，设置为当前节点左侧节点的右侧节点
+
+  * 将当前节点的权值设置为当前节点左侧节点的权值，**此时完成左侧节点上浮**
+
+  * 将当前节点的左侧节点设置为左侧节点的左侧节点，**当前节点的原始左侧节点已经上浮，挂空后等待GC回收**
+
+  * 将当前节点的右侧节点设置为`newNode`
+
+  * 此时完成左旋，示意图如下，节点40表示当前节点
+
+    ![1586597439611](E:\gitrepository\study\note\image\dataStructure\1586597439611.png)
+
+* 右旋流程：
+
+  - 右旋触发条件：当前节点的右树高度与左树高度差值大于1，进行右旋，重新保证树的平衡
+
+  - 将当前节点重新初始化为一个新节点`newNode`
+
+  - 将`newNode`的左侧节点，设置为当前节点的左侧节点
+
+  - 将`newNode`的右侧节点，设置为当前节点右侧节点的左侧节点
+
+  - 将当前节点的权值设置为当前节点右侧节点的权值，**此时完成右侧节点上浮**
+
+  - 将当前节点的右侧节点设置为右侧节点的右侧节点，**当前节点的原始右侧节点已经上浮，挂空后等待GC回收**
+
+  - 将当前节点的左侧节点设置为`newNode`
+
+  - 此时完成右旋，示意图如下，节点40表示当前节点
+
+    ![1586597375283](E:\gitrepository\study\note\image\dataStructure\1586597375283.png)
+
+* 双旋转流程：
+
+  * 双旋转触发条件：双旋转是先左旋转，后右旋转（或者相反）。以基本旋转为右旋转分析，左旋转相反
+
+  * 当前节点为根节点的二叉树已经满足右旋转标准，但是其左侧子节点的右侧子树高度高于左侧子树；因为在右旋时需要将左侧子节点的右侧子树挂到新建节点的左侧，直接右旋完成后，会发现高度差依然是2，不过是右侧比左侧高2，又符合左旋标准，进入死循环，如图：
+
+    ![1586598189044](E:\gitrepository\study\note\image\dataStructure\1586598189044.png)
+
+  * 因为左侧子节点在右旋时高度会升高1，其左侧节点如果比其右侧节点高度高1，则旋转后叶子节点高度相同；如果其左侧节点比其右侧节点高度少1，则旋转后，其左侧节点再高一层，右侧高度不变，高差依旧为2，有需要左旋，进入死循环
+
+  * 此时处理办法是，先对子树进行旋转；基本旋转为右旋时，如果当前节点左侧子节点的右子树高度高于左子树，则以该左侧节点为根节点，首先进行一次左旋，保证在该子树上，左子树节点高度高于右子树节点；
+
+    ![1586598859909](E:\gitrepository\study\note\image\dataStructure\1586598859909.png)
+
+  * 此时再进行基本的右侧旋转，则最终获取到的AVL树就是标准的AVL树
+
+    ![1586598939950](E:\gitrepository\study\note\image\dataStructure\1586598939950.png)
+
+### 10.8.3，AVL树代码实现
+
+```java
+package com.self.datastructure.tree.binarytree;
+
+import lombok.Data;
+
+/**
+ * 平衡二叉树
+ *
+ * @author PJ_ZHANG
+ * @create 2020-04-09 9:11
+ **/
+public class AVLTree {
+
+    public static void main(String[] args) {
+        MyAVLTree myAVLTree = new MyAVLTree();
+        // 增加节点
+        // 删除节点
+        // 遍历树
+    }
+
+    static class MyAVLTree {
+        // 根节点
+        private Node root;
+
+        /**
+         * 获取根节点
+         *
+         * @return 根节点
+         */
+        public Node getRoot() {
+            return root;
+        }
+
+        /**
+         * 删除节点
+         * 删除节点是在
+         *
+         * @param value
+         */
+        public void delNode(int value) {
+            if (null == root) {
+                return;
+            }
+            // 删除根节点
+            if (root.getValue() == value && null == root.getLeftNode() && null == root.getRightNode()) {
+                root = null;
+                return;
+            }
+            doDelNode(null, root, value);
+        }
+
+        private void doDelNode(Node parentNode, Node node, int value) {
+            // 删除节点
+            deleteNode(parentNode, node, value);
+            // 节点删除完成后, 刷新AVL树
+            // 删除不同于添加, 添加肯定添加打叶子节点, 所以可以直接进行树旋转处理
+            // 删除可能在中间节点删除, 需要重新构造一次, 从根节点开始构造
+            refreshAVLTree(root);
+        }
+
+        /**
+         * 重构AVL树
+         * @param node 当前递归到的节点
+         */
+        private void refreshAVLTree(Node node) {
+            if (null == node) {
+                return;
+            }
+            // 先处理左边
+            refreshAVLTree(node.getLeftNode());
+            // 再处理右边
+            refreshAVLTree(node.getRightNode());
+            // 进行旋转
+            rotate(node);
+        }
+
+        /**
+         * 删除节点
+         *
+         * @param parentNode 父节点
+         * @param node 当前递归到的节点
+         * @param value 要删除的值
+         */
+        private void deleteNode(Node parentNode, Node node, int value) {
+            if (node.getValue() < value) {
+                deleteNode(node, node.getRightNode(), value);
+            } else if (node.getValue() > value) {
+                deleteNode(node, node.getLeftNode(), value);
+            } else {
+                // 找到节点, 进行节点删除
+                // 对当前节点的权值进行替换, 用左侧节点的最右侧节点进行替换
+                if (null == node.getLeftNode() && null == node.getRightNode()) {
+                    // 当前节点为叶子节点
+                    if (parentNode.getRightNode() == node) {
+                        parentNode.setRightNode(null);
+                    } else if (parentNode.getLeftNode() == node) {
+                        parentNode.setLeftNode(null);
+                    }
+                    node = parentNode;
+                } else if (null == node.getLeftNode() || null == node.getRightNode()) {
+                    // 当前节点为父节点, 单只有单子节点
+                    // 因为AVL树的平衡属性, 节点如果只有单子节点, 则该子节点下不可能再有子节点, 如果往这部分加节点, 则会触发旋转
+                    // 如果左侧节点为空, 则将右侧节点的权值赋给该节点, 并将该节点的右侧节点断开
+                    // 如果右侧节点为空, 则将左侧节点的权值赋给该节点, 并将该节点的左侧节点断开
+                    if (null == node.getLeftNode()) {
+                        node.setValue(node.getRightNode().getValue());
+                        node.setRightNode(null);
+                    } else if (null == node.getRightNode()) {
+                        node.setValue(node.getLeftNode().getValue());
+                        node.setLeftNode(null);
+                    }
+                } else {
+                    // 当前节点为父节点, 并且直接子节点完整
+                    // 取左子节点的最右侧节点替换该节点
+                    // 取左侧节点为临时节点
+                    // 取当前节点为父节点
+                    Node tmpNode = node.getLeftNode();
+                    parentNode = node;
+                    // 一直取左侧节点的右侧节点, 知道右侧节点为空, 说明已经获取到左树的最大值
+                    for (;null != tmpNode.getRightNode();) {
+                        parentNode = tmpNode;
+                        tmpNode = tmpNode.getRightNode();
+                    }
+                    // 将Node的值设置为左树最大节点值
+                    node.setValue(tmpNode.getValue());
+                    // 接着需要将该节点断开
+                    // 该节点可能是父节点的左侧节点, 也可能是右侧节点, 需要分支处理
+                    // 同样, 该节点可能存在左侧节点, 需要重新连接
+                    // 如果节点是左侧节点, 并且存在左侧节点, 则直接将该节点的左侧节点设置为父节点的左侧节点
+                    // 如果节点是右侧节点, 并且存在左侧节点, 则直接将该节点的左侧节点设置为父节点的右侧节点
+                    if (tmpNode == parentNode.getLeftNode()) {
+                        parentNode.setLeftNode(tmpNode.getLeftNode());
+                    } else if (tmpNode == parentNode.getRightNode()) {
+                        parentNode.setRightNode(tmpNode.getLeftNode());
+                    }
+                }
+            }
+        }
+
+        /**
+         * 添加节点
+         *
+         * @param value 要添加的节点
+         */
+        public void addNode(int value) {
+            if (null == root) {
+                root = new Node(value);
+                return;
+            }
+            doAddNode(root, value);
+        }
+
+        private void doAddNode(Node parentNode, int value) {
+            if (null == parentNode) {
+                return;
+            }
+            // 添加节点
+            if (parentNode.getValue() < value) {
+                if (null == parentNode.getRightNode()) {
+                    parentNode.setRightNode(new Node(value));
+                } else {
+                    doAddNode(parentNode.getRightNode(), value);
+                }
+            } else if (parentNode.getValue() > value) {
+                if (null == parentNode.getLeftNode()) {
+                    parentNode.setLeftNode(new Node(value));
+                } else {
+                    doAddNode(parentNode.getLeftNode(), value);
+                }
+            } // 等于不添加
+
+            // 节点添加完成后, 进行左旋右旋处理
+            // 因为添加节点是递归加的, 所以对于添加节点路径上的每一个节点都会进行该步操作
+            // 节点旋转, 构建平衡树
+            rotate(parentNode);
+        }
+
+        /**
+         * 进行左旋右旋处理,
+         * 添加和删除节点都涉及该步
+         * @param currNode
+         */
+        private void rotate(Node currNode) {
+            // 如果左侧树比右侧树的高度差大于1, 则右旋
+            if (getLeftHeight(currNode) - getRightHeight(currNode) > 1) {
+                // 如果左侧树的右侧节点层数比左侧树的左侧节点层数高, 则先进行一次左旋
+                if (null != currNode.getLeftNode() && getLeftHeight(currNode.getLeftNode()) < getRightHeight(currNode.getLeftNode())) {
+                    leftRotate(currNode.getLeftNode());
+                }
+                rightRotate(currNode);
+            }
+            // 如果右侧树比左侧树的高度小于1, 则左旋
+            else if (getRightHeight(currNode) - getLeftHeight(currNode) > 1) {
+                // 如果右侧数的左侧子节点层数比右侧子节点层数大, 则先进行一次右旋
+                if (null != currNode.getRightNode() && getRightHeight(currNode.getRightNode()) < getLeftHeight(currNode.getRightNode())) {
+                    rightRotate(currNode.getLeftNode());
+                }
+                leftRotate(currNode);
+            }
+        }
+
+        /**
+         * 右旋
+         * 重新构造当前节点为新节点
+         * 将新节点的右侧节点设置为当前节点的右侧节点
+         * 将新节点的左侧节点设置为当前节点的左侧节点的右侧节点
+         * 将当前节点的权值设置为左侧节点的权值
+         * 将当前节点的左侧节点设置为左侧节点的左侧节点
+         * 将当前节点的右侧节点设置为新节点
+         *
+         * @param node
+         */
+        public void rightRotate(Node node) {
+            Node newNode = new Node(node.getValue());
+            newNode.setRightNode(node.getRightNode());
+            newNode.setLeftNode(node.getLeftNode().getRightNode());
+            node.setValue(node.getLeftNode().getValue());
+            node.setLeftNode(node.getLeftNode().getLeftNode());
+            node.setRightNode(newNode);
+        }
+
+        /**
+         * 左旋
+         * 重新构造当前节点为新节点
+         * 将新节点的左侧节点设置为当前节点的左侧节点
+         * 将新节点的右侧节点设置为当前节点的右侧节点的左侧节点
+         * 将当前节点的权值设置为右侧节点的权值
+         * 将当前节点的右侧节点设置为右侧节点的右侧节点
+         * 将当前节点的左侧节点设置为新节点
+         * @param node 需要处理的子树根节点
+         */
+        public void leftRotate(Node node) {
+            Node newNode = new Node(node.getValue());
+            newNode.setLeftNode(node.getLeftNode());
+            newNode.setRightNode(node.getRightNode().getLeftNode());
+            node.setValue(node.getRightNode().getValue());
+            node.setRightNode(node.getRightNode().getRightNode());
+            node.setLeftNode(newNode);
+        }
+
+        /**
+         * 获取左侧树高度
+         * @param node
+         * @return
+         */
+        public int getRightHeight(Node node) {
+            if (null == node.getRightNode()) {
+                return 0;
+            }
+            return getHeight(node.getRightNode());
+        }
+
+        /**
+         * 获取右侧树高度
+         * @param node
+         * @return
+         */
+        private int getLeftHeight(Node node) {
+            if (null == node.getLeftNode()) {
+                return 0;
+            }
+            return getHeight(node.getLeftNode());
+        }
+
+        /**
+         * 获取树高度
+         * @param node
+         * @return
+         */
+        public int getHeight(Node node) {
+            int height = 0;
+            int leftHeight = 0;
+            int rightHeight = 0;
+            if (null != node.getLeftNode()) {
+                leftHeight += getHeight(node.getLeftNode());
+            }
+            if (null != node.getRightNode()) {
+                rightHeight = getHeight(node.getRightNode());
+            }
+            height = Math.max(leftHeight, rightHeight);
+            return height + 1;
+        }
+
+        /**
+         * 中序遍历
+         */
+        public void middleShowDetails() {
+            doMiddleShowDetails(root);
+        }
+
+        private void doMiddleShowDetails(Node node) {
+            if (null == node) {
+                return;
+            }
+            doMiddleShowDetails(node.getLeftNode());
+            System.out.println(node);
+            doMiddleShowDetails(node.getRightNode());
+        }
+
+    }
+
+    @Data
+    static class Node {
+
+        // 节点权值
+        private int value;
+
+        // 左节点
+        private Node leftNode;
+
+        // 右节点
+        private Node rightNode;
+
+        public Node() {}
+
+        public Node(int value) {
+            this.value = value;
+        }
+
+        public String toString() {
+            return "Node: [value = " + value + "]";
+        }
+
+    }
+
+}
+```
+
+## 10.9，
