@@ -12,7 +12,15 @@ public class RedBlackTree {
 
     public static void main(String[] args) {
         SelfRedBlackTree selfRedBlackTree = new SelfRedBlackTree();
-        // 添加数据
+        // 添加数据层
+        selfRedBlackTree.add(10);
+        selfRedBlackTree.add(20);
+        selfRedBlackTree.add(30);
+        selfRedBlackTree.add(40);
+        selfRedBlackTree.add(50);
+        selfRedBlackTree.add(60);
+        selfRedBlackTree.add(70);
+        selfRedBlackTree.add(80);
     }
 
     static class SelfRedBlackTree {
@@ -144,26 +152,7 @@ public class RedBlackTree {
             parentNode.setRed(false);
             grandpaNode.setRed(true);
             // 左旋
-            // 构造祖父节点为新节点
-            Node newNode = new Node(grandpaNode.getValue());
-            // 祖父节点左侧节点不变
-            newNode.setLeftNode(grandpaNode.getLeftNode());
-            // 祖父节点右侧节点为父节点的左侧节点
-            newNode.setRightNode(parentNode.getLeftNode());
-            // 父节点的左侧节点为新节点
-            parentNode.setLeftNode(newNode);
-            // 祖父节点的父节点, 更新为父节点
-            newNode.setParentNode(parentNode);
-            // 父节点的父节点, 为祖父节点的父节点
-            parentNode.setParentNode(grandpaNode.getParentNode());
-            // 如果祖父节点为根节点, 则替换根节点为父节点
-            if (root == grandpaNode) {
-                root = parentNode;
-            }
-            // 如果祖父节点不为根节点, 则替换祖父父节点的右子节点为父节点
-            else {
-                grandpaNode.getParentNode().setRightNode(parentNode);
-            }
+            leftRotateWithoutChange(parentNode, grandpaNode);
         }
 
         /**
@@ -180,25 +169,7 @@ public class RedBlackTree {
             parentNode.setRed(false);
             grandpaNode.setRed(true);
             // 右旋
-            // 构造祖父为新节点
-            Node newNode = new Node(grandpaNode.getValue());
-            // 祖父节点右侧节点不变
-            newNode.setRightNode(grandpaNode.getRightNode());
-            // 祖父节点左侧节点为父节点的右侧节点
-            newNode.setLeftNode(parentNode.getRightNode());
-            // 父节点的右侧节点为新节点
-            parentNode.setRightNode(newNode);
-            newNode.setParentNode(parentNode);
-            // 父节点的父节点, 为祖父节点的父节点
-            parentNode.setParentNode(grandpaNode.getParentNode());
-            // 如果祖父节点为根节点, 则替换根节点为父节点
-            if (root == grandpaNode) {
-                root = parentNode;
-            }
-            // 如果祖父节点不为根节点, 则替换祖父父节点的左子节点为父节点
-            else {
-                grandpaNode.getParentNode().setLeftNode(parentNode);
-            }
+            rightRotateWithoutChange(parentNode, grandpaNode);
         }
 
         /**
@@ -213,8 +184,6 @@ public class RedBlackTree {
          * @param parentNode 父节点
          */
         private void rightRotateWithoutChange(Node currNode, Node parentNode) {
-            // 获取祖父节点
-            Node grandpaNode = parentNode.getParentNode();
             // 构造父节点为节点
             Node newNode = new Node(parentNode.getValue());
             // 父节点的右子节点不变
@@ -226,8 +195,14 @@ public class RedBlackTree {
             newNode.setParentNode(currNode);
             // 当前节点的父节点, 为父节点的父节点
             currNode.setParentNode(parentNode.getParentNode());
-            // 祖父节点的右子节点为当前节点
-            grandpaNode.setRightNode(currNode);
+            // 如果祖父节点为根节点, 则替换根节点为父节点
+            if (root == parentNode) {
+                root = currNode;
+            }
+            // 如果祖父节点不为根节点, 则替换祖父父节点的左子节点为父节点
+            else {
+                parentNode.getParentNode().setLeftNode(currNode);
+            }
             // 这样会直接将原来的parentNode挂空, 等待GC回收
         }
 
@@ -243,8 +218,6 @@ public class RedBlackTree {
          * @param parentNode 父节点
          */
         private void leftRotateWithoutChange(Node currNode, Node parentNode) {
-            // 获取祖父节点
-            Node grandpaNode = parentNode.getParentNode();
             // 构造父节点为节点
             Node newNode = new Node(parentNode.getValue());
             // 父节点的左子节点不变
@@ -256,8 +229,13 @@ public class RedBlackTree {
             newNode.setParentNode(currNode);
             // 当前节点的父节点, 为父节点的父节点
             currNode.setParentNode(parentNode.getParentNode());
-            // 祖父节点的左子节点为当前节点
-            grandpaNode.setLeftNode(currNode);
+            if (root == parentNode) {
+                root = currNode;
+            }
+            // 如果祖父节点不为根节点, 则替换祖父父节点的右子节点为父节点
+            else {
+                parentNode.getParentNode().setRightNode(currNode);
+            }
             // 这样会直接将原来的parentNode挂空, 等待GC回收
         }
     }
