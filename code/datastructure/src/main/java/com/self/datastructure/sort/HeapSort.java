@@ -29,7 +29,7 @@ public class HeapSort {
      * 堆排序:
      * 堆排序基本思想为顺序存储二叉树
      * 对某一个存在字节点的节点来说, index从0开始
-     *  * k = 2 * index + 1
+     *  * leftIndex = 2 * index + 1
      *  * rightIndex = 2 * index + 2
      * 同样, 对某一个存在父节点的节点来说
      *  * parentIndex = (index - 1) / 2

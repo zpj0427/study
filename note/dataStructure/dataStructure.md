@@ -6493,8 +6493,319 @@ public class BTree {
 ### 10.11.5，红黑树代码
 
 ```java
+package com.self.datastructure.tree.redblacktree;
+
+import lombok.Data;
+
+/**
+ * 红黑树
+ *
+ * @author PJ_ZHANG
+ * @create 2020-04-17 9:15
+ **/
+public class RedBlackTree {
+
+    public static void main(String[] args) {
+        SelfRedBlackTree selfRedBlackTree = new SelfRedBlackTree();
+        // 添加数据层
+        selfRedBlackTree.add(10);
+        selfRedBlackTree.add(20);
+        selfRedBlackTree.add(30);
+        selfRedBlackTree.add(40);
+        selfRedBlackTree.add(50);
+        selfRedBlackTree.add(60);
+        selfRedBlackTree.add(70);
+        selfRedBlackTree.add(80);
+    }
+
+    static class SelfRedBlackTree {
+        private Node root = null;
+
+        /**
+         * 添加数据
+         * @param value 数据值
+         */
+        public void add(Integer value) {
+            // 根节点为空, 初始化根节点, 并设置颜色为黑色
+            if (null == root) {
+                root = new Node(value);
+                root.setRed(false);
+                return;
+            }
+            // 根节点不为空, 添加节点
+            doAdd(root, value);
+        }
+
+        /**
+         * 添加红黑树节点数据
+         * @param parentNode 父节点
+         * @param value 插入数据
+         */
+        private void doAdd(Node parentNode, Integer value) {
+            if (null == parentNode) {
+                return;
+            }
+            // 先添加节点
+            if (parentNode.getValue() > value) {
+                if (null != parentNode.getLeftNode()) {
+                    doAdd(parentNode.getLeftNode(), value);
+                } else {
+                    Node newNode = new Node(value);
+                    newNode.setParentNode(parentNode);
+                    parentNode.setLeftNode(newNode);
+                    balanceTree(newNode, parentNode);
+                }
+            } else if (parentNode.getValue() < value) {
+                if (null != parentNode.getRightNode()) {
+                    doAdd(parentNode.getRightNode(), value);
+                } else {
+                    Node newNode = new Node(value);
+                    newNode.setParentNode(parentNode);
+                    parentNode.setRightNode(newNode);
+                    balanceTree(newNode, parentNode);
+                }
+            }
+        }
+
+        /**
+         * 平衡红黑树
+         *
+         * @param currNode 当前节点
+         * @param parentNode 父节点
+         */
+        private void balanceTree(Node currNode, Node parentNode) {
+            // 当前节点是红节点, 父节点是黑节点
+            // 直接插入, 不需要变色和旋转
+            if (currNode.isRed() && !parentNode.isRed()) {
+                return;
+            }
+            // 当前节点是红节点, 父节点是红节点
+            // 此时一定存在祖父节点是黑节点
+            // 需要分情况进行处理
+            if (currNode.isRed() && parentNode.isRed()) {
+                // 如果存在叔叔节点并且叔叔节点为红色
+                // 将祖父节点变红, 父节点和叔叔节点变黑
+                Node uncleNode = parentNode == parentNode.getParentNode().getLeftNode()
+                        ? parentNode.getParentNode().getRightNode() : parentNode.getParentNode().getLeftNode();
+                if (null != uncleNode && uncleNode.isRed()) {
+                    parentNode.getParentNode().setRed(true);
+                    parentNode.setRed(false);
+                    uncleNode.setRed(false);
+                    // 如果祖父节点是根节点, 则直接染黑
+                    if (root == parentNode.getParentNode()) {
+                        parentNode.getParentNode().setRed(false);
+                    } else { // 祖父节点不是根节点, 以祖父节点作为当前节点继续往上处理
+                        balanceTree(parentNode.getParentNode(), parentNode.getParentNode().getParentNode());
+                    }
+                } else { // 表示叔叔节点不存在, 或者叔叔节点为黑
+                    // 如果插入节点的父节点是祖父节点的左子节点
+                    if (parentNode == parentNode.getParentNode().getLeftNode()) {
+                        // 如果当前节点是父节点左子节点, 则构成LL双红
+                        // LL双红, 直接右旋处理
+                        if (currNode == parentNode.getLeftNode()) {
+                            rightRotate(parentNode, parentNode.getParentNode());
+                        }
+                        // 如果当前节点是父节点的右子节点, 则构成LR双红
+                        // LR双红, 先左旋, 再右旋
+                        else if (currNode == parentNode.getRightNode()) {
+                            leftRotateWithoutChange(currNode, parentNode);
+                            // 左旋后, 当前节点已经变为父节点, 父节点为当前节点的左子节点
+                            rightRotate(currNode, currNode.getParentNode());
+                        }
+                    }
+                    // 如果插入节点的父节点是祖父节点的右子节点
+                    else if (parentNode == parentNode.getParentNode().getRightNode()) {
+                        // 如果当前节点是父节点的右子节点, 则构成RR双红
+                        // RR双红, 直接左旋处理
+                        if (currNode == parentNode.getRightNode()) {
+                            leftRotate(parentNode, parentNode.getParentNode());
+                        }
+                        // 如果当前节点是父节点的左子节点, 则构成RL双红
+                        // RL双红, 先左旋, 再右旋
+                        else if (currNode == parentNode.getLeftNode()) {
+                            rightRotateWithoutChange(currNode, parentNode);
+                            // 右旋后, 当前节点表示父节点, 父节点为当前节点右子节点
+                            leftRotate(currNode, currNode.getParentNode());
+                        }
+                    }
+                }
+
+            }
+        }
+
+        /**
+         * 变色左旋
+         * 对于RR双红结构, 需要先变色再左旋, 保证树的完美黑平衡
+         * 变色: 将父节点变为黑色, 祖父节点变为红色(祖父节点必定为黑色)
+         * 左旋: 将父节点上浮, 祖父节点下沉
+         *
+         * @param parentNode 父节点
+         * @param grandpaNode 祖父节点
+         */
+        private void leftRotate(Node parentNode, Node grandpaNode) {
+            // 变色, 父节点变为黑色, 祖父节点变为红色
+            parentNode.setRed(false);
+            grandpaNode.setRed(true);
+            // 左旋
+            leftRotateWithoutChange(parentNode, grandpaNode);
+        }
+
+        /**
+         * 变色右旋
+         * 对于LL双红结构, 需要先变色再右旋, 保证树的完美黑平衡
+         * 变色: 将父节点变为黑色, 祖父节点变为红色(此时祖父节点必定为黑色)
+         * 右旋: 将父节点上浮, 祖父节点下沉,
+         *
+         * @param parentNode 父节点
+         * @param grandpaNode 祖父节点
+         */
+        private void rightRotate(Node parentNode, Node grandpaNode) {
+            // 变色, 父节点变黑, 祖父节点变红
+            parentNode.setRed(false);
+            grandpaNode.setRed(true);
+            // 右旋
+            rightRotateWithoutChange(parentNode, grandpaNode);
+        }
+
+        /**
+         * 不变色右旋
+         * 对于RL双红, 需要先将树结构转换为RR双红
+         * 该部分转换只旋转不变色
+         * 将父节点下沉, 变为当前节点的右子节点
+         * 将当前节点上浮, 变为祖父节点的右子节点
+         * 将当前节点的右子节点变为父节点的左子节点
+         *
+         * @param currNode 当前节点
+         * @param parentNode 父节点
+         */
+        private void rightRotateWithoutChange(Node currNode, Node parentNode) {
+            // 构造父节点为节点
+            Node newNode = new Node(parentNode.getValue());
+            // 父节点的右子节点不变
+            newNode.setRightNode(parentNode.getRightNode());
+            // 父节点的左子节点为当前节点的右子节点
+            newNode.setLeftNode(currNode.getRightNode());
+            // 当前节点的右子节点为新节点, 当前节点的左子节点不变
+            currNode.setRightNode(newNode);
+            newNode.setParentNode(currNode);
+            // 当前节点的父节点, 为父节点的父节点
+            currNode.setParentNode(parentNode.getParentNode());
+            // 如果祖父节点为根节点, 则替换根节点为父节点
+            if (root == parentNode) {
+                root = currNode;
+            }
+            // 如果祖父节点不为根节点, 则替换祖父父节点的左子节点为父节点
+            else {
+                parentNode.getParentNode().setLeftNode(currNode);
+            }
+            // 这样会直接将原来的parentNode挂空, 等待GC回收
+        }
+
+        /**
+         * 不变色左旋
+         * 对于LR双红, 需要先将树结构转换为LL双红
+         * 该部分转换只旋转不变色
+         * 将父节点下沉, 变为当前节点的左子节点
+         * 将当前节点上浮, 变为祖父节点的左子节点
+         * 将当前节点的左子节点变为父节点的右子节点
+         *
+         * @param currNode 当前节点
+         * @param parentNode 父节点
+         */
+        private void leftRotateWithoutChange(Node currNode, Node parentNode) {
+            // 构造父节点为节点
+            Node newNode = new Node(parentNode.getValue());
+            // 父节点的左子节点不变
+            newNode.setLeftNode(parentNode.getLeftNode());
+            // 父节点的右子节点为当前节点的左子节点
+            newNode.setRightNode(currNode.getLeftNode());
+            // 当前节点的左子节点为新节点, 当前节点的右子节点不变
+            currNode.setLeftNode(newNode);
+            newNode.setParentNode(currNode);
+            // 当前节点的父节点, 为父节点的父节点
+            currNode.setParentNode(parentNode.getParentNode());
+            if (root == parentNode) {
+                root = currNode;
+            }
+            // 如果祖父节点不为根节点, 则替换祖父父节点的右子节点为父节点
+            else {
+                parentNode.getParentNode().setRightNode(currNode);
+            }
+            // 这样会直接将原来的parentNode挂空, 等待GC回收
+        }
+    }
+
+    @Data
+    static class Node {
+
+        // 数据
+        private Integer value;
+
+        // 左子节点
+        private Node leftNode;
+
+        // 右子节点
+        private Node rightNode;
+
+        // 父节点
+        private Node parentNode;
+
+        // 是否红色节点
+        private boolean isRed = true;
+
+        Node(Integer value) {
+            this.value = value;
+        }
+
+    }
+}
 
 ```
 
 # 11，图
+
+## 11.1，图的基本概念
+
+### 11.1.1，图的基本介绍
+
+* 线性表局限于一个直接前驱和一个直接后继的关系
+* 树也只能有一个直接前驱也就是父节点
+* 当需要多对多的关系的时候，就应该用到图
+
+### 11.1.2，图的常用概念
+
+* **顶点**（Vertex）
+
+* **边（Edge）**
+
+* 路径
+
+* 无向图
+
+  ![1587190668812](E:\gitrepository\study\note\image\dataStructure\1587190668812.png)
+
+* 有向图
+
+* 带权图
+
+  ![1587190681185](E:\gitrepository\study\note\image\dataStructure\1587190681185.png)
+
+### 11.1.3，图的表示方式
+
+* 图的表示方式有两张：二维数组表示（邻接矩阵），链表表示（邻接表）
+
+* 邻接矩阵：是表示图形中顶点之间相邻关系的矩阵，对于N个顶点的图而言，矩阵的`row`和`column`分别表示n个点
+
+  ![1587193943842](E:\gitrepository\study\note\image\dataStructure\1587193943842.png)
+
+* 邻接表
+
+  * 邻接矩阵需要为每个顶点分配n个边的空间，但是其实很多边在图中不存在，会造成额外的空间浪费
+  * 邻接表的实现只关心存在的边，不关心不存在的边，不存在空间浪费，邻接表由数组和链表组成
+
+  ![1587194053253](E:\gitrepository\study\note\image\dataStructure\1587194053253.png)
+
+## 11.2.，图的深度优先遍历（Depth First Search - DFS）
+
+
 
