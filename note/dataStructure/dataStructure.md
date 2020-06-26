@@ -1,4 +1,4 @@
-# <1，概述
+# 1，概述
 
 ## 1.1，数据结构和算法的介绍
 
@@ -2427,7 +2427,7 @@ public class ShellSort {
   * 如果left取到的数据大于基准数据, right取到的数据小于基准数据, 则进行交换
   * 交换完成后, 对两侧数据分别与参考值比较, 如果与参考值相等, 则对侧进1
   * 一次遍历完成后, 以参考值为中点, 左侧数据小于该值, 右侧数据大于该值
-  * 继续递归左右两边进行同样处理, 直到左右两侧数据数量足够下, 则数组有序
+  * 继续递归左右两边进行同样处理, 直到左右两侧数据数量足够小, 则数组有序
 
 ### 7.8.2，快速排序示意图
 
@@ -7320,4 +7320,107 @@ public class QuickStartChart {
 }
 
 ```
+
+# 12，程序员常用的十种算法
+
+## 12.1，非递归方式实现二分查找
+
+```java
+package com.self.datastructure.algorithm;
+
+/**
+ * 非递归方式实现二分查找
+ * @author pj_zhang
+ * @create 2020-06-26 16:13
+ **/
+public class BinarySearchWithoutRecursion {
+
+    public static void main(String[] args) {
+        int[] arr = {1, 2, 3, 4, 5, 6, 7, 8};
+        System.out.println(binarySearchWithoutRecursion(arr, 10));
+    }
+
+    public static int binarySearchWithoutRecursion (int[] arr, int target) {
+        int left = 0;
+        int right = arr.length - 1;
+        // 只要left的位置不超过right, 说明有效, 可以继续查找
+        for (;left <= right;) {
+            int middle = (left + right) / 2;
+            // 找到了, 直接返回
+            if (arr[middle] == target) {
+                return middle;
+            } else if (arr[middle] < target) {
+                // 中值小于目标值, 向右找
+                left = middle + 1;
+            } else if (arr[middle] > target) {
+                // 中值大于目标值, 向左找
+                right = middle - 1;
+            }
+        }
+        // 未找到, 返回-1
+        return -1;
+    }
+
+}
+
+```
+
+## 12.2，分治算法
+
+### 12.2.1，基本介绍
+
+* 分治算法是一种重要的算法。基本思想就是“分而治之”，将一个复杂的问题分为多个相似的子问题，然后再把子问题分为更小的子问题，直到最后子问题可以以一种最简单的方式直接求解，原问题的解即为子问题解的合并。分治算法的一些经典算法如：二分搜索，棋盘模型，合并排序，快速排序，**汉诺塔**等，以下将用汉诺塔举例
+
+### 12.2.2，分治算法的基本步骤
+
+* 分解：将原问题分解为若干个规模较小，相互独立，与原问题形式相同的子问题
+* 解决：如果子问题规模较小，则直接求解；如果规模较大，则递归求解
+* 合并：将各个子问题的解合并为主问题的解
+
+### 12.2.3，汉诺塔代码实现
+
+* 如果问题规模足够小，只有一个塔片，则直接从A塔移动到C塔
+* 如果A塔上有多个塔盘，则对问题进行分解，将最后一个塔盘上面的所有塔盘移动到B塔，将最后一个塔盘移动到C塔，最后将B塔的所有塔盘移动到C塔
+* 如果最后一个塔盘上面的塔盘规模不够小，则继续递归处理，直至问题解决
+
+```java
+package com.self.datastructure.algorithm.dac;
+
+/**
+ * 分治算法实现之_汉诺塔
+ * @author pj_zhang
+ * @create 2020-06-26 17:55
+ **/
+public class HanoiTower {
+
+    public static void main(String[] args) {
+        hanoiTower(3, 'A', 'B', 'C');
+    }
+
+    /**
+     * 汉诺塔实现
+     * @param num 汉诺塔数量
+     * @param a 处理中的第一个塔柱
+     * @param b 处理中的第二个塔柱
+     * @param c 处理中的第三个塔柱
+     */
+    private static void hanoiTower(int num, char a, char b, char c) {
+        if (num == 1) {
+            // 如果数量为1, 则直接从A移动到C
+            System.out.println("将第 " + num + " 个塔片从 " + a + " 移动到 " + c);
+        } else {
+            // 如果有多个塔片, 则分开处理
+            // 首先最下层塔片上面的所有塔片从A移动到B
+            hanoiTower(num - 1, a, c, b);
+            // 然后将最下面的盘从A移动到C
+            System.out.println("将第 " + num + " 个塔片从 " + a + " 移动到 " + c);
+            // 最后将移动到B的盘统一移动到C
+            hanoiTower(num - 1, b, a, c);
+        }
+    }
+
+}
+```
+
+## 12.3，动态规划算法
 
