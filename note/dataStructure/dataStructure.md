@@ -7768,37 +7768,37 @@ public class ViolenceMatch {
 
 2. 首先进行第一个字符比对，`str.charAt(0) = B`比对`childStr.charAt(0) = A`，匹配不成功，`str`索引后移，继续比对，直到`str.charAt(4) = A`比对`childStr.charAt(0) = A`成功，开始后续字符匹配
 
-   ![1594175473072](E:\gitrepository\study\note\dataStructure\image\dataStructure\1594175473072.png)
+   ![1594175473072](E:\gitrepository\study\note\image\dataStructure\1594175473072.png)
 
 3. 后续字符顺序匹配，在`ABCDAB`段是匹配正常，可以继续匹配到，直到`str.charAt(10) = 空格`比对`childStr.charAt(6) = D`失败
 
-   ![1594175567572](E:\gitrepository\study\note\dataStructure\image\dataStructure\1594175567572.png)
+   ![1594175567572](E:\gitrepository\study\note\image\dataStructure\1594175567572.png)
 
 4. 此时，按照暴力匹配算法的原则，会回溯到初始匹配位置的下一位，即`str.charAt(5) = B`，与模式串的第一个字符串，即`childStr.charAt(0) = A`进行比对，如图；此处问题在于之前的`ABCDAB`是已经匹配过的，已知的字符串，并且`ABCDAB`的后缀两位与前缀两位是一致的，也就是部分匹配值为2，是不需要再次进行匹配，可直接用`AB`的下一位匹配模式串的第三的；如果进行后缀两位的识别及初始匹配索引的推进，就是KMP算法接下来要处理的问题
 
-   ![1594175672361](E:\gitrepository\study\note\dataStructure\image\dataStructure\1594175672361.png)
+   ![1594175672361](E:\gitrepository\study\note\image\dataStructure\1594175672361.png)
 
 5. 在[部分匹配表](#12.4.2.2，部分匹配表)部分，我们已经算出字符串`ABCDABD`的部分匹配表为`int[] arr = [0, 0, 0, 0, 1, 2, 0]`，其中索引对应的是字符串中各个字符的索引位置，值代表以该字符及之前的字符组成一个完整串时，对应的部分匹配值，如在索引5处，对应的字符串是`ABCDAB`，其前后缀最长匹配串为`AB`，长度为2
 
-   ![1594176101057](E:\gitrepository\study\note\dataStructure\image\dataStructure\1594176101057.png)
+   ![1594176101057](E:\gitrepository\study\note\image\dataStructure\1594176101057.png)
 
 6. 继续回到第三步，已知D不匹配，则前面`ABCDAB`六个字符是匹配的，从部分匹配表的对应索引5处寻找该字符的部分匹配值2位，说明前两个字符是与模式串的前两个字符相匹配的，即`AB`，那此时初始匹配位置需要移动到这个`A`的位置，即`str[8]`；又因为AB已经匹配过，则直接从第三位开始匹配，即`str.charAt(10) = 空格`比对`childStr.charAt(2) = C`
 
    > 移动位数 = 当前已匹配位数 - 部分匹配值 = 6 - 2 = 4位
 
-![1594176605116](E:\gitrepository\study\note\dataStructure\image\dataStructure\1594176605116.png)
+![1594176605116](E:\gitrepository\study\note\image\dataStructure\1594176605116.png)
 
 7. 因为空格与C不匹配，继续部分匹配表中找C所在索引2对应的部分匹配值`arr[2] = 0`，则`移动位数 = 2 - 0 = 2`，继续后续两位
 
-   ![1594176746985](E:\gitrepository\study\note\dataStructure\image\dataStructure\1594176746985.png)
+   ![1594176746985](E:\gitrepository\study\note\image\dataStructure\1594176746985.png)
 
 8. 后移两位后，空格与A不匹配，直接后移一位，注意此处不存在匹配，不考虑部分匹配规则；后移一位后A与A匹配，并继续后续匹配到`str.charAt(17) = C`比对`childStr.charAt(6) = D`失败
 
-![1594176883878](E:\gitrepository\study\note\dataStructure\image\dataStructure\1594176883878.png)
+![1594176883878](E:\gitrepository\study\note\image\dataStructure\1594176883878.png)
 
 9. 比对失败后，因为已匹配字符是6个，对应的部分匹配值是`arr[5] = 2`，则后移4位，继续从第三位开始进行匹配，直至匹配结束，全部7位匹配完成后，算匹配成功，返回当前匹配阶段的主串初始索引`index = 主串当前索引 - 匹配个数 + 1 = 21 - 7 + 1 = 15`，至此全部匹配完成
 
-   ![1594177014643](E:\gitrepository\study\note\dataStructure\image\dataStructure\1594177014643.png)
+   ![1594177014643](E:\gitrepository\study\note\image\dataStructure\1594177014643.png)
 
 #### 12.4.2.4，代码实现
 
