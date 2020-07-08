@@ -7365,7 +7365,7 @@ public class BinarySearchWithoutRecursion {
 
 ```
 
-## 12.2，分治算法
+## 12.2，分治算法 -- 汉诺塔问题
 
 ### 12.2.1，基本介绍
 
@@ -7422,7 +7422,7 @@ public class HanoiTower {
 }
 ```
 
-## 12.3，动态规划算法
+## 12.3，动态规划算法 -- 背包问题
 
 ### 12.3.1，应用场景，背包问题
 
@@ -7659,7 +7659,7 @@ public class KnapsackProblem {
 
 
 
-## 12.4，KMP算法
+## 12.4，KMP算法 -- 字符串匹配问题
 
 ### 12.4.1，暴力匹配算法
 
@@ -7671,6 +7671,7 @@ public class KnapsackProblem {
 * 此时如果不匹配，说明`i = 0`处起始匹配是匹配不到的，则进行回溯，重新从`i = 1`处开始重复以上逻辑进行匹配
 * 但是此时会存在一个问题，`i`已经经过了多次的递增，不过`i`的递增和`j`的递增是同步的，所以需要回溯到`i`后的一个索引位置，需要进行计算`i = i - j + 1`
 * 在过程中可以进行优化，比如字符串`str`的后续长度不足子串`childStr`的长度，则直接可推出
+* `java.lang.String.indexOf(..)`就是使用的暴力匹配算法
 * <font color=red>暴力匹配算法有一个天然劣势，就是在每一次回溯时是回溯到初始匹配的下一个位置进行下一轮匹配，这样会导致这个回溯时间很长，所以有了KMP算法改进</font>
 
 #### 12.4.1.2，暴力匹配算法代码实现
@@ -7738,4 +7739,172 @@ public class ViolenceMatch {
 ```
 
 ### 12.4.2，KMP算法
+
+#### 12.4.2.1，KMP算法介绍
+
+* Knuth-Morries-Pratt字符串查找算法，简称**KMP算法**，常用于在一个文本串中查找一个模式串的出现位置，这个算法有Donald Knuth，Vaughan Pratt，James H. Morries三人于1977年联合发标，故取三个人姓氏命名，是最早出现的位置匹配的经典算法
+* 暴力匹配算法在经过一段匹配后，如果遇到匹配不成功的字符，则完全回溯，从开始匹配的下一个位置再进行字符匹配，过程中会有很多的无用功且耗时；
+* KMP算法就是利用之前判断过的信息，通过一个`next数组`，即部分匹配表，保存模式串中前后最长公共子序列的长度，每次回溯时，通过已经匹配到的位置，从部分匹配表中查找，确定已经匹配过的重合部分，直接移动主串的索引偏移到该位置，减少回溯，节省大量时间
+
+#### 12.4.2.2，部分匹配表
+
+* 在部分匹配表之前，先看看字符串的前缀字符串和后缀字符串：入`bread`
+  * 前缀字符串是必须存在第一个字符的所有可能连续字符，且不包含字符串本身：如`b, br, bre, brea`
+  * 后缀字符串是必须存在最后一个字符的所有可能连续字符，且不包含字符串本身：如`d, ad, ead, read`
+* 部分匹配表是**部分匹配值**的数组，部分匹配值是前缀和后缀的最长共有元素的长度，下以`ABCDABD`举例
+  * 对应索引0位置来讲，字符串是`A`，前后缀都为空，则共有元素长度为0，*第一位默认为0*
+  * 对于索引1位置，字符串是`AB`，前缀是`[A]`，后缀是`[B]`，共有元素长度0
+  * 对于索引2位置，字符串是`ABC`，前缀是`[A, AB]`，后缀是`[C, BC]`，共有元素长度为0
+  * 对于索引3位置，字符串是`ABCD`，前缀是`[A, AB, ABC]`，后缀是`[D, CD, BCD]`，共有元素长度为0
+  * 对于索引4位置，字符串是`ABCDA`，前缀是`[A, AB, ABC, ABCD]`，后缀是`[A, DA, CDA, BCDA]`，共有元素为`[A]`，最大长度为1
+  * 对于索引5位置，字符串是`ABCDAB`，前缀是`[A, AB, ABC, ABCD, ABCDA]`，后缀是`[B, AB, DAB, CDAB, BCDAB]`，共有元素是`[AB]`，最大长度为2
+  * 对于索引6位置，字符串是`ABCDABD`，前缀是`[A, AB, ABC, ABCD, ABCDA, ABCDAB]`，后缀是`[D, BD, ABD, DABD, CDABD, BCDABD]`，最大长度为0
+  * 所以综上，模式串`ABCDABD`对应的部分匹配值分别为`[0, 0, 0, 0, 1, 2, 0]`，也是该字符串对应的部分匹配表，
+* 至于部分匹配表的真正价值何在，下一步继续分析
+
+#### 12.4.2.3，KMP算法匹配演示
+
+1. 在字符串`String str = "BBC ABCDAB ABCDABCDABD"` 中匹配模式串`String childStr = "ABCDABD"`
+
+2. 首先进行第一个字符比对，`str.charAt(0) = B`比对`childStr.charAt(0) = A`，匹配不成功，`str`索引后移，继续比对，直到`str.charAt(4) = A`比对`childStr.charAt(0) = A`成功，开始后续字符匹配
+
+   ![1594175473072](E:\gitrepository\study\note\dataStructure\image\dataStructure\1594175473072.png)
+
+3. 后续字符顺序匹配，在`ABCDAB`段是匹配正常，可以继续匹配到，直到`str.charAt(10) = 空格`比对`childStr.charAt(6) = D`失败
+
+   ![1594175567572](E:\gitrepository\study\note\dataStructure\image\dataStructure\1594175567572.png)
+
+4. 此时，按照暴力匹配算法的原则，会回溯到初始匹配位置的下一位，即`str.charAt(5) = B`，与模式串的第一个字符串，即`childStr.charAt(0) = A`进行比对，如图；此处问题在于之前的`ABCDAB`是已经匹配过的，已知的字符串，并且`ABCDAB`的后缀两位与前缀两位是一致的，也就是部分匹配值为2，是不需要再次进行匹配，可直接用`AB`的下一位匹配模式串的第三的；如果进行后缀两位的识别及初始匹配索引的推进，就是KMP算法接下来要处理的问题
+
+   ![1594175672361](E:\gitrepository\study\note\dataStructure\image\dataStructure\1594175672361.png)
+
+5. 在[部分匹配表](#12.4.2.2，部分匹配表)部分，我们已经算出字符串`ABCDABD`的部分匹配表为`int[] arr = [0, 0, 0, 0, 1, 2, 0]`，其中索引对应的是字符串中各个字符的索引位置，值代表以该字符及之前的字符组成一个完整串时，对应的部分匹配值，如在索引5处，对应的字符串是`ABCDAB`，其前后缀最长匹配串为`AB`，长度为2
+
+   ![1594176101057](E:\gitrepository\study\note\dataStructure\image\dataStructure\1594176101057.png)
+
+6. 继续回到第三步，已知D不匹配，则前面`ABCDAB`六个字符是匹配的，从部分匹配表的对应索引5处寻找该字符的部分匹配值2位，说明前两个字符是与模式串的前两个字符相匹配的，即`AB`，那此时初始匹配位置需要移动到这个`A`的位置，即`str[8]`；又因为AB已经匹配过，则直接从第三位开始匹配，即`str.charAt(10) = 空格`比对`childStr.charAt(2) = C`
+
+   > 移动位数 = 当前已匹配位数 - 部分匹配值 = 6 - 2 = 4位
+
+![1594176605116](E:\gitrepository\study\note\dataStructure\image\dataStructure\1594176605116.png)
+
+7. 因为空格与C不匹配，继续部分匹配表中找C所在索引2对应的部分匹配值`arr[2] = 0`，则`移动位数 = 2 - 0 = 2`，继续后续两位
+
+   ![1594176746985](E:\gitrepository\study\note\dataStructure\image\dataStructure\1594176746985.png)
+
+8. 后移两位后，空格与A不匹配，直接后移一位，注意此处不存在匹配，不考虑部分匹配规则；后移一位后A与A匹配，并继续后续匹配到`str.charAt(17) = C`比对`childStr.charAt(6) = D`失败
+
+![1594176883878](E:\gitrepository\study\note\dataStructure\image\dataStructure\1594176883878.png)
+
+9. 比对失败后，因为已匹配字符是6个，对应的部分匹配值是`arr[5] = 2`，则后移4位，继续从第三位开始进行匹配，直至匹配结束，全部7位匹配完成后，算匹配成功，返回当前匹配阶段的主串初始索引`index = 主串当前索引 - 匹配个数 + 1 = 21 - 7 + 1 = 15`，至此全部匹配完成
+
+   ![1594177014643](E:\gitrepository\study\note\dataStructure\image\dataStructure\1594177014643.png)
+
+#### 12.4.2.4，代码实现
+
+```java
+package com.self.datastructure.algorithm.kmp;
+
+/**
+ * KMP算法
+ * * 生成部分匹配表, 此处注意生成规则
+ * * 按照匹配字符依次向后匹配, 如果匹配后则继续匹配,
+ * * 如果没有匹配到, 按照已经匹配到的字符长度从部分匹配表中找到对应的部分匹配值, 即已匹配部分的前缀
+ * * 匹配的首字符后移位数 = 当前已经匹配位数 - 部分匹配表中以匹配部分对应的值
+ * * 后移完成后, 继续从上次匹配的断点与子串需要新对应位置匹配, 匹配到继续, 未匹配到重复步骤
+ * * 匹配完成后, 如果要进行所有子串匹配, 则后移子串位数, 继续匹配即可
+ * @author PJ_ZHANG
+ * @create 2020-07-07 17:35
+ **/
+public class KMP {
+
+    public static void main(String[] args) {
+        //String str = "ABCDABCABCDABCCABCDABCABCDABCD";
+        //String childStr = "ABCDABCABCDABCD";
+        String str = "BBC ABCDAB ABCDABCDABDE";
+        String childStr = "ABCDABD";
+        System.out.println(kmp(str, childStr));
+    }
+
+    /**
+     * 通过KMP算法进行匹配
+     * @param str 字符串
+     * @param childStr 子串
+     * @return 返回索引
+     */
+    private static int kmp(String str, String childStr) {
+        // 获取串的部分匹配值
+        int[] arr = partMachingValue(childStr);
+        // 进行KMP计算
+        // i: 主串的匹配索引位置
+        // j: 模式串的匹配索引位置
+        for (int i = 0, j = 0; i < str.length(); i++) {
+            // 如果存在匹配过的位数, 并且当前字符没有匹配到
+            // 则将模式串后移, 通过j减的方式实现
+            // 比如j已经匹配到了6位, 第7位没有匹配到
+            // 则取前6位的部分匹配值, 即arr[5]
+            // 如果前六位有三位是前后缀匹配的, 则继续从第四位开始匹配剩余的部分, 以此类推
+            // 如果不存在匹配过的位数, 则直接通过i++进行第一位的匹配
+            if (j > 0 && str.charAt(i) != childStr.charAt(j)) {
+                j = arr[j - 1];
+            }
+            // 如果匹配, 则j++ 继续向后比较
+            if (str.charAt(i) == childStr.charAt(j)) {
+                j++;
+            }
+            // 如果j的值等于childStr的长度, 则匹配完成
+            if (j == childStr.length()) {
+                return i - j + 1;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * 部分匹配值数组生成
+     * @param modelStr 字符串
+     * @return 部分匹配值数组
+     */
+    private static int[] partMachingValue(String modelStr) {
+        int[] arr = new int[modelStr.length()];
+        // 第一个空初始化为0, 此处不多余处理
+        // 将长字符串先按两个字符进行处理, 并依次添加字符, 知道匹配完成
+        for (int i = 1, j = 0; i < modelStr.length(); i++) {
+            // 如果对应的两个字符不相等
+            // 个人感觉此处基于的思想是:
+            // 首先, j > 0, 也就是说已经在前后缀有较长字符串匹配了, 再继续匹配该值
+            // 然后, 添加上该值后, 因为该值影响, 前后缀现有的长字符串匹配断开,
+            // 再然后, 虽然添加该值影响长匹配断开, 但不排除依旧有较短的前后缀字符串可以匹配, 如: ABCDABCABCDABCD
+            // 虽然 ABCDABC 的匹配因为前缀的 A 和后缀的 D匹配不到端口, 但是不影响 ABC 的后一个字符 D 的匹配
+            // 所以此处需要往前找, 找到的合适的位置与后缀的新匹配字符进行匹配, 如果匹配到则可关联上部分匹配
+            // 此时找的标准是, 先找前缀字符串(ABCDABC)最末索引(j - 1 = 7 - 1 = 6)对应的部分匹配值(arr[j - 1] = 3),
+            // 并以该部分匹配值作为索引获取到对应的字符(modelStr.charAt(j) = D)
+            //     此处注意, 一定是前缀再前缀, 如果前缀的后一个字符与当前字符能匹配到, 那就不可能走到这一步
+            //     继续注意: 前缀与后缀匹配, 前缀再前缀就相当于后缀再后缀, 所以前缀再前缀等于即将与当前字符关联的子串
+            // 所以, 判断前缀的后一个字符, 即索引出的字符与当前拼接字符是否相等, 如果相等, 则部分匹配值+1
+            // 如果不相等, 继续这部分循环, 直到匹配到或者遍历完前缀确定为0
+            while (j > 0 && modelStr.charAt(i) != modelStr.charAt(j)) {
+                j = arr[j - 1];
+            }
+            // 如果两个字符相等, 说明已经匹配到了
+            if (modelStr.charAt(i) == modelStr.charAt(j)) {
+                // j自增是将j一直向推
+                // 如果只有两个字符, 则i表示第一个, j表示第二个
+                // 此时如果对应的字符相等, 则匹配到一个
+                // 如果有三个字符, 在两个字符的基础上继续推进, i, j都有自增
+                // 此时如果对应的字符依旧相等, 则j=2, 表示匹配两个, 以此类推
+                j++;
+            }
+            arr[i] = j;
+        }
+
+        return arr;
+    }
+
+}
+```
+
+
+
+## 12.5，贪心算法 -- 电台覆盖问题
 
