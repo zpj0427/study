@@ -8038,3 +8038,202 @@ public class Greed {
 
 ## 12.6，普里姆算法—修路问题
 
+### 12.6.1，应用场景—修路问题
+
+![1594304853174](E:\gitrepository\study\note\image\dataStructure\1594304853174.png)
+
+* 如图，此时有7个村庄`['A', 'B', 'C', 'D', 'E', 'F', 'G']`，现在需要把这7个村庄连通
+* 村庄之间的连接线表示可能修路的图示，权值表示举例
+* 此时，如果想要把7个村庄连通，怎么才能让连接的路程最短？
+* <font color=red>此时应该尽可能的寻找少的线路，保证每条线路最短，最终达到整体线路最短（该部分有点类似贪心，但是贪心的最终结果不一定是最优解）</font>
+
+### 12.6.2，最小生成树问题
+
+* 修路问题本身就是**最小生成树（Minimum Cost Spanning Tree）**问题，简称**MST**：给定一个无向的带权连接图，如果选取一颗生成树，使树上所有边上全的总和最小，就叫最小生成树
+
+* 树中如果包含N个顶点，则一定包含N-1个边
+
+* 树中必须包含全部的顶点
+
+* N-1个边都必须在图的描述中
+
+* 最小生成树的算法主要是普里姆算法和克鲁斯卡算法
+
+  ![1594305228400](E:\gitrepository\study\note\image\dataStructure\1594305228400.png)
+
+* 如上图所示，表示一张完全图可能生成的生成树，在包含全部顶点的情况下，边的数量一定是N-1；最终最小生成树，就是所有生成树权值相加最小的一个
+
+### 12.6.3，普里姆算法介绍
+
+* 普里姆算法求最小生成树，每次从已访问的顶点集合和未访问的顶点集合中选出其中一个已访问顶点和未访问顶点的连接权值中最小的一个，并对连接点和权值进行记录，最终汇总形成最小生成树
+* 普里姆算法具体步骤如下
+
+1. 构建一个顶点集合，和顶点关联关系的二维数组集合，并假设顶点之间已经全部存在关联关系；<font color=red>没有建立关联关系的用一个最大值表示</font>
+
+2. 此时从顶点集合中选出任意一个顶点，并将该顶点标记为已读（通过一个外部数组完成）
+
+3. 将所有已读顶点和未读顶点的关联权值进行比较，<font color=red>注意，此处是用已读顶点和未读顶点比较， 同类不能直接比较</font>，取出权值最小的连接关系
+
+4. 此时该已读顶点和未读顶点的连接权值构成了当前场景下的最优连接权值（此处类似于贪心算法，每一步都期望最优解，普里姆算法最终结果也是最优解）
+
+5. 将该未读顶点标记为已读顶点，然后重复第三步动作，直到所有的路径构建完成
+
+6. 最终需要构建的路径数量 = 顶点数量 - 1条，该部分会在代码第一层循环中体现
+
+7. 图示：
+
+   ![1594305742429](E:\gitrepository\study\note\image\dataStructure\1594305742429.png)
+
+### 12.6.4，代码实现
+
+```java
+package com.self.datastructure.algorithm.prim;
+
+import java.util.Arrays;
+
+/**
+ * 普里姆算法
+ * * 假设顶点之前已经全部存在关联, 没有关联的用一个最大值表示
+ * * 从任意一个指定顶点开始, 并将该顶点标记为已读
+ * * 将所有已读顶点与所有未读顶点的关联权值进行比较, 取出最小的关联权值
+ * * 此时该已读顶点与该未读顶点构成了当前场景下的最优路径(此处类似于贪心算法, 每一步都要最优解, 都要最小路径)
+ * * 并将该未读顶点标记为已读顶点
+ * * 重复第三步, 直到所有路径都构建完成
+ * * 在N个顶点时, 路径有N-1条
+ * @author PJ_ZHANG
+ * @create 2020-07-09 15:01
+ **/
+public class Prim {
+
+    /**
+     * 表示顶点未连接
+     */
+    private static final int NOT_CONNECT = Integer.MAX_VALUE;
+
+    public static void main(String[] args) {
+        // 顶点列表
+        char[] vertexArr = {'A', 'B', 'C', 'D', 'E', 'F', 'G'};
+        // 顶点对应的与各个顶点的连接情况, 此处没有排除顶点自连接
+        // NOT_CONNECT表示没有连接, 且二维顺序与顶点列表顺序一致
+        int[][] vertexMap = {
+                {NOT_CONNECT, 5, 7, NOT_CONNECT, NOT_CONNECT, NOT_CONNECT, 2},
+                {5, NOT_CONNECT, NOT_CONNECT, 9, NOT_CONNECT, NOT_CONNECT, 3},
+                {7, NOT_CONNECT, NOT_CONNECT, NOT_CONNECT, 8, NOT_CONNECT, NOT_CONNECT},
+                {NOT_CONNECT, 9, NOT_CONNECT, NOT_CONNECT, NOT_CONNECT, 4, NOT_CONNECT},
+                {NOT_CONNECT, NOT_CONNECT, 8, NOT_CONNECT, NOT_CONNECT, 5, 4},
+                {NOT_CONNECT, NOT_CONNECT, NOT_CONNECT, 4, 5, NOT_CONNECT, 6},
+                {2, 3, NOT_CONNECT, NOT_CONNECT, 4, 6, NOT_CONNECT}};
+        MyGraph myGraph = new MyGraph(vertexArr.length);
+        myGraph.setVertexArr(vertexArr);
+        myGraph.setVertexMap(vertexMap);
+        // 从0索引开始进行连接
+        prim(myGraph, 1);
+    }
+
+    private static void prim(MyGraph myGraph, int startIndex) {
+        // 展示二维图
+        myGraph.showVertexMap();
+        // 初始化一个顶点访问情况的数组, 未访问为0, 访问为1
+        int[] visitArr = new int[myGraph.getVertexCount()];
+        // 默认当前节点已经访问
+        visitArr[startIndex] = 1;
+        // 定义最小长度
+        int minValue = NOT_CONNECT;
+        // 定义权值最小时, 已访问的顶点坐标和未访问的顶点坐标
+        int hasVisited = -1;
+        int notVisited = -1;
+        // 顶点有N个, 则顶点间的变肯定存在N-1个, 所以一定存在N-1个边
+        for (int i = 0; i < myGraph.getVertexCount() - 1; i++) {
+            // 下面循环, 从已经被访问的顶点和还没有被访问的顶点中
+            // 寻找出权值最小的路径作为下一步需要连接的路径
+            for (int x = 0; x < myGraph.getVertexCount(); x++) {
+                for (int y = 0; y < myGraph.getVertexCount(); y++) {
+                    // x对应值为1表示该顶点已经被访问过
+                    // y对应值为0, 表示该顶点还没有被访问过
+                    if (visitArr[x] == 1 && visitArr[y] == 0) {
+                        // 如果这两个顶点的连接值较小, 则进行记录
+                        if (myGraph.getVertexMap()[x][y] < minValue) {
+                            minValue = myGraph.getVertexMap()[x][y];
+                            hasVisited = x;
+                            notVisited = y;
+                        }
+                    }
+                }
+            }
+            // 一条边处理完成后, 对这条边进行记录
+            if (minValue != NOT_CONNECT) {
+                // 标记未访问的顶点未已访问
+                visitArr[notVisited] = 1;
+                // 表示最小长度为初始长度
+                minValue = NOT_CONNECT;
+                // 打印顶点连接情况
+                System.out.println("顶点 " + myGraph.getVertexArr()[hasVisited] + " 与顶点 "
+                    + myGraph.getVertexArr()[notVisited] + " 连接, 权值为: "
+                    + myGraph.getVertexMap()[hasVisited][notVisited]);
+            }
+        }
+    }
+
+
+    /**
+     * 图对象
+     */
+    static class MyGraph {
+
+        /**
+         * 顶点
+         */
+        private char[] vertexArr;
+
+        /**
+         * 顶点权值图
+         */
+        private int[][] vertexMap;
+
+        /**
+         * 顶点数量
+         */
+        private int vertexCount;
+
+        public MyGraph(int vertexCount) {
+            this.vertexCount = vertexCount;
+            this.vertexArr = new char[vertexCount];
+            this.vertexMap = new int[vertexCount][vertexCount];
+        }
+
+        public void showVertexMap() {
+            for (int[] curr : vertexMap) {
+                System.out.println(Arrays.toString(curr));
+            }
+        }
+
+        public char[] getVertexArr() {
+            return vertexArr;
+        }
+
+        public void setVertexArr(char[] vertexArr) {
+            if (vertexArr.length > this.vertexArr.length) {
+                throw new IndexOutOfBoundsException("顶点数组越界");
+            }
+            this.vertexArr = vertexArr;
+        }
+
+        public int[][] getVertexMap() {
+            return vertexMap;
+        }
+
+        public void setVertexMap(int[][] vertexMap) {
+            if (vertexMap.length > this.vertexMap.length) {
+                throw new IndexOutOfBoundsException("顶点连接线数组越界");
+            }
+            this.vertexMap = vertexMap;
+        }
+
+        public int getVertexCount() {
+            return vertexCount;
+        }
+    }
+
+}
+```
+
