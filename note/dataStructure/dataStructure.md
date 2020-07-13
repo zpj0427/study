@@ -7800,7 +7800,7 @@ public class ViolenceMatch {
 
    ![1594177014643](E:\gitrepository\study\note\image\dataStructure\1594177014643.png)
 
-#### 12.4.2.4，代码实现
+### 12.4.3，代码实现
 
 ```java
 package com.self.datastructure.algorithm.kmp;
@@ -8913,3 +8913,6 @@ public class Floyd {
 }
 ```
 
+
+
+## 12.10，骑士周游（马踏棋盘）问题
