@@ -1,0 +1,9 @@
+## ignore this file type
+/target
+/src/test
+.classpath
+.idea
+.porject
+.settings
+*.iml
+.idea/*.xml
