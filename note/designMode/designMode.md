@@ -170,3 +170,313 @@
 * 通常情况下，我们需要保持类的职责单一
   * 只有逻辑足够简单，才可以在代码级别违反单一职责原则
   * 只有类中方法数量足够少，才可以在方法维度保持单一职责原则
+
+## 1.4，接口隔离原则
+
+### 1.4.1，接口隔离原则基本介绍
+
+* 客户端不一定依赖它不需要的接口，即一个类对另一个类的依赖应该建立在最小接口之上
+
+  ![1594893273606](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1594893273606.png)
+
+* 在上图中，可以看到类A通过接口`Interface`依赖类B，类C通过接口`Interface`依赖类D，如果接口`Interface`对应类B和类D来说不是最小接口，那么类B和类D必须实现他们不需要的方法
+
+* 按照隔离原则：需要将接口`Interface`拆分为独立的几个接口，类B和类D分别实现对应的接口并只需要实现各自需要的方法，而类A和类C也分别于他们需要的接口建立依赖关系，也就是采用接口隔离原则
+
+  ![1594893493754](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1594893493754.png)
+
+### 1.4.2，应用示例
+
+1. 在第一张图中，没有采用接口隔离原则时，代码如下
+
+   ```java
+   package com.self.designmode.discipline.segregation;
+   
+   /**
+    * 设计模式七大基础原则_接口隔离原则
+    * @author LiYanBin
+    * @create 2020-07-16 17:42
+    **/
+   public class InterfaceSegregation1 {
+   
+       public static void main(String[] args) {
+           A a = new A();
+           a.depend1();
+           a.depend2();
+           a.depend3();
+   
+           C c = new C();
+           c.depend1();
+           c.depend4();
+           c.depend5();
+       }
+   
+       /**
+        * 外部调用类_C
+        * C依赖D
+        * C通过接口调用D的 1 4 5 接口
+        */
+       static class C {
+   
+           private Interface myInterface = new D();
+   
+           public void depend1() {
+               myInterface.method_1();
+           }
+   
+           public void depend4() {
+               myInterface.method_4();
+           }
+   
+           public void depend5() {
+               myInterface.method_5();
+           }
+   
+       }
+   
+       /**
+        * 外部调用类_A
+        * A依赖B
+        * A通过接口调用B的1 2 3接口
+        */
+       static class A {
+   
+           private Interface myInterface = new B();
+   
+           public void depend1() {
+               myInterface.method_1();
+           }
+   
+           public void depend2() {
+               myInterface.method_2();
+           }
+   
+           public void depend3() {
+               myInterface.method_3();
+           }
+   
+       }
+   
+       /**
+        * 对外接口
+        */
+       interface Interface {
+           void method_1();
+           void method_2();
+           void method_3();
+           void method_4();
+           void method_5();
+       }
+   
+       /**
+        * 接口实现类_B
+        */
+       static class B implements Interface {
+   
+           @Override
+           public void method_1() {
+               System.out.println(this.getClass().getSimpleName() + " 实现了 method_1");
+           }
+   
+           @Override
+           public void method_2() {
+               System.out.println(this.getClass().getSimpleName() + " 实现了 method_2");
+           }
+   
+           @Override
+           public void method_3() {
+               System.out.println(this.getClass().getSimpleName() + " 实现了 method_3");
+           }
+   
+           @Override
+           public void method_4() {
+               System.out.println(this.getClass().getSimpleName() + " 实现了 method_4");
+           }
+   
+           @Override
+           public void method_5() {
+               System.out.println(this.getClass().getSimpleName() + " 实现了 method_5");
+           }
+       }
+       /**
+        * 接口实现类_D
+        */
+       static class D implements Interface {
+   
+           @Override
+           public void method_1() {
+               System.out.println(this.getClass().getSimpleName() + " 实现了 method_1");
+           }
+   
+           @Override
+           public void method_2() {
+               System.out.println(this.getClass().getSimpleName() + " 实现了 method_2");
+           }
+   
+           @Override
+           public void method_3() {
+               System.out.println(this.getClass().getSimpleName() + " 实现了 method_3");
+           }
+   
+           @Override
+           public void method_4() {
+               System.out.println(this.getClass().getSimpleName() + " 实现了 method_4");
+           }
+   
+           @Override
+           public void method_5() {
+               System.out.println(this.getClass().getSimpleName() + " 实现了 method_5");
+           }
+       }
+   
+   }
+   
+   ```
+
+2. 从代码中可以看出，类B和类D都分别实现的自己不需要的方法，无效的方法容易给客户端调用产生调用混乱，此时通过接口隔离原则对整个结构进行重构，参考第二张图
+
+   * 在重构过程中，首先将接口`Interface`拆分为三部分，第一部分是公共部分，第二部分是B类需要实现的部分，第三部分是D类需要实现的部分；
+   * 接口拆分完成后，对应类B和类D来说，只需要实现公共部分和各自的接口部分即可，不会多实现没必要的接口
+
+   ```java
+   package com.self.designmode.discipline.segregation;
+   
+   /**
+    * 设计模式七大基础原则_接口隔离原则
+    * @author LiYanBin
+    * @create 2020-07-16 17:42
+    **/
+   public class InterfaceSegregation2 {
+   
+       public static void main(String[] args) {
+           A a = new A();
+           a.depend1();
+           a.depend2();
+           a.depend3();
+   
+           C c = new C();
+           c.depend1();
+           c.depend4();
+           c.depend5();
+       }
+       
+       /**
+        * 外部调用类_C
+        * C依赖D
+        * C通过接口调用D的 1 4 5 接口
+        */
+       static class C {
+   
+           private InterfaceD myInterface = new D();
+   
+           private InterfaceCommon interfaceCommon = new B();
+   
+           public void depend1() {
+               interfaceCommon.method_1();
+           }
+   
+           public void depend4() {
+               myInterface.method_4();
+           }
+   
+           public void depend5() {
+               myInterface.method_5();
+           }
+   
+       }
+   
+       /**
+        * 外部调用类_A
+        * A依赖B
+        * A通过接口调用B的1 2 3接口
+        */
+       static class A {
+   
+           private InterfaceB myInterface = new B();
+   
+           private InterfaceCommon interfaceCommon = new B();
+   
+           public void depend1() {
+               interfaceCommon.method_1();
+           }
+   
+           public void depend2() {
+               myInterface.method_2();
+           }
+   
+           public void depend3() {
+               myInterface.method_3();
+           }
+   
+       }
+   
+       /**
+        * 对外接口_公共部分
+        */
+       interface InterfaceCommon {
+           void method_1();
+       }
+   
+       /**
+        * 对外接口_B实现部分
+        */
+       interface InterfaceB {
+           void method_2();
+           void method_3();
+       }
+   
+       /**
+        * 对外接口_D实现部分
+        */
+       interface InterfaceD {
+           void method_4();
+           void method_5();
+       }
+   
+       /**
+        * 接口实现类_B
+        */
+       static class B implements InterfaceCommon, InterfaceB {
+   
+           @Override
+           public void method_1() {
+               System.out.println(this.getClass().getSimpleName() + " 实现了 method_1");
+           }
+   
+           @Override
+           public void method_2() {
+               System.out.println(this.getClass().getSimpleName() + " 实现了 method_2");
+           }
+   
+           @Override
+           public void method_3() {
+               System.out.println(this.getClass().getSimpleName() + " 实现了 method_3");
+           }
+   
+       }
+       /**
+        * 接口实现类_D
+        */
+       static class D implements InterfaceCommon, InterfaceD {
+   
+           @Override
+           public void method_1() {
+               System.out.println(this.getClass().getSimpleName() + " 实现了 method_1");
+           }
+   
+           @Override
+           public void method_4() {
+               System.out.println(this.getClass().getSimpleName() + " 实现了 method_4");
+           }
+   
+           @Override
+           public void method_5() {
+               System.out.println(this.getClass().getSimpleName() + " 实现了 method_5");
+           }
+       }
+   
+   }
+   ```
+
+## 1.5，依赖倒转原则
+

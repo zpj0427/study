@@ -1,4 +1,4 @@
-package com.self.designmode.discipline;
+package com.self.designmode.discipline.single;
 
 /**
  * 设计模式七大原则_单一职责原则
