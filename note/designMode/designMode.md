@@ -171,7 +171,7 @@
   * 只有逻辑足够简单，才可以在代码级别违反单一职责原则
   * 只有类中方法数量足够少，才可以在方法维度保持单一职责原则
 
-## 1.4，接口隔离原则
+## 1.4，接口隔离原则（Interface Segregation Principle）
 
 ### 1.4.1，接口隔离原则基本介绍
 
@@ -478,7 +478,7 @@
    }
    ```
 
-## 1.5，依赖倒转原则
+## 1.5，依赖倒转原则（Dependence Inversion Principle）
 
 ### 1.5.1，依赖倒转原则基本介绍
 
@@ -727,7 +727,7 @@
 * 变量的声明类型尽量使用抽象类和接口，这样在变量引用和实际对象间，就存在一个缓冲区，利于程序扩展和优化
 * 继承时遵循里式替换原则
 
-## 1.6，里式替换原则
+## 1.6，里式替换原则（Liskov Substitution Principle）
 
 ### 1.6.1，面向对象中继承的思考和说明
 
@@ -831,4 +831,313 @@ public class SimpleExtend {
   }
   ```
 
-## 1.7，开闭原则
+## 1.7，开闭原则（Open Closed Principle）
+
+### 1.7.1,开闭原则介绍
+
+* 开闭原则（Open Close Principle）是编程中最基本，最重要的原则
+* 一个软件实体类，其模块和功能应该是**对扩展开放（提供方），对修改关闭（使用方）**。用抽象构建框架，用实现构建细节
+* 当软件需要变化时，尽量通过**扩展**来实现功能变化，而不是通过**修改**
+* 编程中遵循其他原则，以及使用设计模式的目的就是遵循开闭原则
+
+### 1.7.2，应用示例
+
+1. 从一段代码开始
+
+   ```java
+   package com.self.designmode.discipline.ocp;
+   
+   /**
+    * 从一个普通的问题看问题所在
+    * @author LiYanBin
+    * @create 2020-07-17 14:50
+    **/
+   public class OrdinaryFun {
+   
+       public static void main(String[] args) {
+           Client client = new Client();
+           client.draw(new Circle().typeEnum);
+           client.draw(new Square().typeEnum);
+           client.draw(new Triangle().typeEnum);
+       }
+   
+       /**
+        * 客户端调用
+        */
+       static class Client {
+           public void draw(TypeEnum typeEnum) {
+               if (TypeEnum.CIRCLE == typeEnum) {
+                   System.out.println("绘制圆...");
+               } else if (TypeEnum.SQUARE == typeEnum) {
+                   System.out.println("绘制方形...");
+               } else if (TypeEnum.TRIANGLE == typeEnum) {
+                   System.out.println("绘制三角形...");
+               }
+           }
+       }
+   
+       enum TypeEnum {
+           // 圆, 正方形, 三角形
+           CIRCLE, SQUARE, TRIANGLE
+       }
+   
+       // 圆
+       static class Circle {
+           TypeEnum typeEnum;
+           public Circle() {
+               typeEnum = TypeEnum.CIRCLE;
+           }
+       }
+   
+       // 正方形
+       static class Square {
+           TypeEnum typeEnum;
+           public Square() {
+               typeEnum = TypeEnum.SQUARE;
+           }
+       }
+   
+       // 三角形
+       static class Triangle {
+           TypeEnum typeEnum;
+           public Triangle() {
+               typeEnum = TypeEnum.TRIANGLE;
+           }
+       }
+   
+   }
+   ```
+
+2. 优缺点分析
+
+   * 该方法是一个比较标准的顺序代码，逻辑清晰，容易理解，简单易操作
+   * 但事其明显违反了OCP原则，在后期需要添加实现方式，如绘制其他图形时，需要对各个部分进行修改
+   * 此时我们可以在客户端做一个统一的抽象（对修改关闭），在提供方进行不同的细节扩展（对扩展开放）
+
+3. 改进代码：将具体绘制方式向上抽取，抽取一个公共的父类，交给客户端进行引用，扩展部分根据引用的实际对象进行多态调用
+
+   ```java
+   package com.self.designmode.discipline.ocp;
+   
+   /**
+    * 设计模式七大原则_OCP原则
+    * @author PJ_ZHANG
+    * @create 2020-07-17 15:31
+    **/
+   public class OCP {
+   
+       public static void main(String[] args) {
+           Client client = new Client();
+           client.draw(new Circle());
+           client.draw(new Square());
+           client.draw(new Triangle());
+       }
+   
+       /**
+        * 客户端调用
+        */
+       static class Client {
+           public void draw(Shape shape) {
+               shape.draw();
+           }
+       }
+   
+       interface Shape {
+           void draw();
+       }
+   
+       // 圆
+       static class Circle implements Shape {
+           @Override
+           public void draw() {
+               System.out.println("绘制圆...");
+           }
+       }
+   
+       // 正方形
+       static class Square implements Shape {
+           @Override
+           public void draw() {
+               System.out.println("绘制正方形...");
+           }
+       }
+   
+       // 三角形
+       static class Triangle implements Shape {
+           @Override
+           public void draw() {
+               System.out.println("绘制三角形...");
+           }
+       }
+   
+   }
+   ```
+
+## 1.8，迪米特法则
+
+### 1.8.1，迪米特法则基本介绍
+
+* 一个对象应该对其他对象保持最少的了解
+
+* 类与类之间关系越大，耦合越大
+
+* 迪米特法则（Demeter Principle）又叫最少知道原则，即一个类对自己依赖的类知道的越少越好，也就是说，被依赖的类不管多么复杂，都应该尽量将逻辑封装在类内部，对外只提供公共调用接口
+
+* 迪米特法则还有一个更简单的定义：只与直接朋友沟通
+
+  > 直接朋友：每个对象都可能与其他对象存在耦合关系，只要存在关系，即说明这两个对象之间是朋友关系。耦合的方式很多，依赖、组合、聚合、关联等。其中，我们称出现在成员变量，方法参数，方法返回值中的类为直接朋友，出现在局部变量中的类不是直接朋友。也就是说，陌生的类最好不要以局部变量形式出现在类的内部
+
+### 1.8.2，应用示例
+
+1. 从一段代码开始分析
+
+   ```java
+   package com.self.designmode.discipline.demeter;
+   
+   import com.alibaba.fastjson.JSON;
+   import lombok.AllArgsConstructor;
+   import lombok.Data;
+   
+   import java.util.ArrayList;
+   import java.util.List;
+   
+   /**
+    * 没有使用迪米特法则的代码示例
+    * @author PJ_ZHANG
+    * @create 2020-07-17 17:12
+    **/
+   public class NotDemeterCode {
+   
+       public static void main(String[] args) {
+           TeacherManager teacherManager = new TeacherManager();
+           teacherManager.showDetails(new StudentManager());
+       }
+   
+       @Data
+       static class Student {
+           private String name;
+           public Student(String name) {this.name = name;}
+       }
+   
+       @Data
+       static class Teacher {
+           private String name;
+           public Teacher(String name) {this.name = name;}
+       }
+   
+       static class StudentManager {
+           public List<Student> allStudent() {
+               List<Student> lstData = new ArrayList<>(10);
+               for (int i = 0; i < 3; i++) {
+                   lstData.add(new Student("张三" + i));
+               }
+               return lstData;
+           }
+       }
+       static class TeacherManager {
+           public List<Teacher> allTeacher() {
+               List<Teacher> lstData = new ArrayList<>(10);
+               for (int i = 0; i < 3; i++) {
+                   lstData.add(new Teacher("李四" + i));
+               }
+               return lstData;
+           }
+   
+           public void showDetails(StudentManager studentManager) {
+               List<Student> lstStudent = studentManager.allStudent();
+               System.out.println(JSON.toJSON(lstStudent));
+               System.out.println(JSON.toJSON(this.allTeacher()));
+           }
+       }
+   }
+   ```
+
+2. 从上一段代码可以看出，在方法`showDetails`中，存在局部对象类`Student`与主类`TeacherManager`并不是直接朋友，但是在局部方法中出现。按照迪米特法则，应该避免这种出现非直接朋友关系的耦合，此时将代码进行改进，由类`StudentManager`提供对外的公共方法以供调用
+
+3. 改进代码如下
+
+   ```java
+   package com.self.designmode.discipline.demeter;
+   
+   import com.alibaba.fastjson.JSON;
+   import lombok.Data;
+   
+   import java.util.ArrayList;
+   import java.util.List;
+   
+   /**
+    * 设计模式七大基础原则_迪米特法则
+    * @author PJ_ZHANG
+    * @create 2020-07-17 17:12
+    **/
+   public class DemeterCode {
+   
+       public static void main(String[] args) {
+           TeacherManager teacherManager = new TeacherManager();
+           teacherManager.showDetails(new StudentManager());
+       }
+   
+       @Data
+       static class Student {
+           private String name;
+           public Student(String name) {this.name = name;}
+       }
+   
+       @Data
+       static class Teacher {
+           private String name;
+           public Teacher(String name) {this.name = name;}
+       }
+   
+       static class StudentManager {
+           public List<Student> allStudent() {
+               List<Student> lstData = new ArrayList<>(10);
+               for (int i = 0; i < 3; i++) {
+                   lstData.add(new Student("张三" + i));
+               }
+               return lstData;
+           }
+   
+           public void showDetails() {
+               System.out.println(JSON.toJSON(this.allStudent()));
+           }
+       }
+       static class TeacherManager {
+           public List<Teacher> allTeacher() {
+               List<Teacher> lstData = new ArrayList<>(10);
+               for (int i = 0; i < 3; i++) {
+                   lstData.add(new Teacher("李四" + i));
+               }
+               return lstData;
+           }
+   
+           public void showDetails(StudentManager studentManager) {
+               studentManager.showDetails();
+               System.out.println(JSON.toJSON(this.allTeacher()));
+           }
+       }
+   }
+   ```
+
+### 1.8.3，迪米特法则注意事项和细节
+
+* 迪米特法则旨在降低类之间的耦合关系
+* <font color=red>由于每个类存在减少不了的必要依赖，所以迪米特法则只是要求减低类之间的耦合，而不是完全没有依赖关系，这也做不到！</font>
+
+## 1.9，合成复用原则（Composite Reuse Principle）
+
+### 1.9.1，基本介绍
+
+* 原则上是尽量使用合成/集合/依赖等方式，而不是继承的方式
+
+  ![1594979908593](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1594979908593.png)
+
+## 1.10，设计原则核心思想
+
+* 找出应用中可能需要变化之处，把这部分进行独立，不要和不需要变化的代码混在一起
+* 针对接口编程，而不是针对实现编程
+* 为了交互对象之间的送耦合而努力
+
+
+
+# 2，UML类图
