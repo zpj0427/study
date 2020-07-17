@@ -5852,7 +5852,7 @@ public class AVLTree {
             // 删除节点
             deleteNode(parentNode, node, value);
             // 节点删除完成后, 刷新AVL树
-            // 删除不同于添加, 添加肯定添加打叶子节点, 所以可以直接进行树旋转处理
+            // 删除不同于添加, 添加肯定添加到叶子节点, 所以可以直接进行树旋转处理
             // 删除可能在中间节点删除, 需要重新构造一次, 从根节点开始构造
             refreshAVLTree(root);
         }
