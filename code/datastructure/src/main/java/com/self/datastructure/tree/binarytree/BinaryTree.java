@@ -18,17 +18,8 @@ public class BinaryTree {
         MyBinaryTree binaryTree = new MyBinaryTree();
         binaryTree.addNode(50);
         binaryTree.addNode(20);
-        binaryTree.addNode(80);
         binaryTree.addNode(10);
-        binaryTree.addNode(60);
-        binaryTree.addNode(90);
-        binaryTree.addNode(55);
-        binaryTree.addNode(65);
-        binaryTree.addNode(85);
-        binaryTree.addNode(95);
-        binaryTree.middleShowDetails();
-        System.out.println(binaryTree.delNode(1));;
-        binaryTree.middleShowDetails();
+        System.out.println(binaryTree.delNode(10));;
     }
 
     static class MyBinaryTree {
@@ -51,14 +42,18 @@ public class BinaryTree {
             if (data > node.getData()) {
                 Node rightNode = node.getRightNode();
                 if (null == rightNode) {
-                    node.setRightNode(new Node(data));
+                    Node newNode = new Node(data);
+                    node.setRightNode(newNode);
+                    newNode.setParentNode(node);
                 } else {
                     addNode(data, node.getRightNode());
                 }
             } else if (data < node.getData()) {
                 Node leftNode = node.getLeftNode();
                 if (null == leftNode) {
-                    node.setLeftNode(new Node(data));
+                    Node newNode = new Node(data);
+                    node.setLeftNode(newNode);
+                    newNode.setParentNode(node);
                 } else {
                     addNode(data, node.getLeftNode());
                 }
@@ -80,93 +75,75 @@ public class BinaryTree {
             if (null == node) {
                 return false;
             }
-            // 根节点为目标节点, 直接右旋处理
-            if (targetData == node.getData()) {
-                Node leftNode = node.getLeftNode();
-                node = node.getRightNode();
-                if (null == node) {
-                    node = leftNode;
-                    return true;
-                }
-                fillLeftNode(node, leftNode);
-                return true;
-            }
             return doDelNode(targetData, node);
         }
 
-        public boolean doDelNode(Integer targetData, Node parentNode) {
+        private boolean doDelNode(Integer targetData, Node node) {
             if (null == node) {
                 return false;
             }
-            if (targetData < parentNode.getData()) {
-                Node leftNode = parentNode.getLeftNode();
-                // 为空说明没有找到
-                if (null == leftNode) {
-                    return false;
-                }
-                // 匹配到, 则删除该节点, 同时旋转子节点
-                if (targetData == leftNode.getData()) {
-                    leftRevolve(parentNode, leftNode);
-                    return true;
+            if (targetData > node.getData()) {
+                // 删除值大于当前节点值, 向右查找
+                return doDelNode(targetData, node.getRightNode());
+            } else if (targetData < node.getData()) {
+                // 删除值小于当前节点值, 向左查找
+                return doDelNode(targetData, node.getLeftNode());
+            } else {
+                // 找到后, 进行处理
+                // 获取右侧节点的最左节点
+                Node nextNode = findNextNode(node);
+                // 说明存在右侧节点
+                if (null == nextNode) {
+                    // 直接用左侧节点替换该节点
+                    // 如果当前节点是根节点, 直接将根节点替换为其左侧节点
+                    if (this.node == node) {
+                        this.node = node.getLeftNode();
+                        this.node.setParentNode(null);
+                    } else {
+                        // 删除节点是中间节点, 如果是父节点的左侧节点, 则将父节点的左侧节点替换为其左侧节点
+                        if (node == node.getParentNode().getLeftNode()) {
+                            node.getParentNode().setLeftNode(node.getLeftNode());
+                        } else if (node == node.getParentNode().getRightNode()) {
+                            // 删除节点是中间节点, 如果是父节点的右侧节点, 则将父节点的右侧节点替换为其左侧节点
+                            node.getParentNode().setRightNode(node.getLeftNode());
+                        }
+                        if (null != node.getLeftNode()) {
+                            node.getLeftNode().setParentNode(node.getParentNode());
+                        }
+                    }
                 } else {
-                    return doDelNode(targetData, leftNode);
+                    // 存在后继节点
+                    // 将当前值替换为后继节点的值
+                    node.setData(nextNode.getData());
+                    // 将后继节点挂空, 后继节点可能存在右侧节点, 用右侧节点进行替换
+                    if (nextNode == nextNode.getParentNode().getLeftNode()) {
+                        nextNode.getParentNode().setLeftNode(nextNode.getRightNode());
+                    } else if (nextNode == nextNode.getParentNode().getRightNode()) {
+                        // 删除节点是中间节点, 如果是父节点的右侧节点, 则将父节点的右侧节点替换为其左侧节点
+                        nextNode.getParentNode().setRightNode(nextNode.getRightNode());
+                    }
+                    if (null != nextNode.getRightNode()) {
+                        nextNode.getRightNode().setParentNode(nextNode.getParentNode());
+                    }
                 }
-            } else if (targetData > parentNode.getData()) {
-                Node rightNode = parentNode.getRightNode();
-                if (null == rightNode) {
-                    return false;
-                }
-                if (targetData == rightNode.getData()) {
-                    leftRevolve(parentNode, rightNode);
-                    return true;
-                } else {
-                    return doDelNode(targetData, rightNode);
-                }
+                return true;
             }
-            return false;
         }
 
         /**
-         * 左旋
-         * 删除当前节点, 则把
-         * @param parentNode 根节点表示根节点, 其他节点表示删除节点的父节点
-         * @param delNode 要删除的节点
+         * 获取右侧节点的最左节点
+         * @param node
+         * @return
          */
-        private void leftRevolve(Node parentNode, Node delNode) {
-            if (delNode == parentNode.getLeftNode()) {
-                // 删除节点的右节点为空, 直接用左节点代替原来位置
-                if (null == delNode.getRightNode()) {
-                    parentNode.setLeftNode(delNode.getLeftNode());
-                    return;
-                }
-                parentNode.setLeftNode(delNode.getRightNode());
-            } else if (delNode == parentNode.getRightNode()) {
-                if (null == delNode.getRightNode()) {
-                    parentNode.setRightNode(delNode.getLeftNode());
-                    return;
-                }
-                parentNode.setRightNode(delNode.getRightNode());
+        private Node findNextNode(Node node) {
+            Node nextNode = node.getRightNode();
+            if (null == nextNode) {
+                return nextNode;
             }
-            // 重新放置删除节点的左侧节点, 到右侧节点的左侧
-            // 如果右侧节点存在左侧节点, 则对右侧节点
-            fillLeftNode(delNode.getRightNode(), delNode.getLeftNode());
-        }
-
-        /**
-         * 填充左侧节点
-         * @param node 右旋上来的节点
-         * @param leftNode 左子节点
-         */
-         private void fillLeftNode(Node node, Node leftNode) {
-            if (null == leftNode) {
-                return;
+            while (null != nextNode.getLeftNode()) {
+                nextNode = nextNode.getLeftNode();
             }
-            // 删除节点右侧节点的左侧节点不为空, 则一直遍历到最后
-            // 将删除节点的左侧节点挂到最后
-            for (;null != node.getLeftNode();) {
-                node = node.getLeftNode();
-            }
-            node.setLeftNode(leftNode);
+            return nextNode;
         }
 
         // 前序查找
@@ -247,7 +224,7 @@ public class BinaryTree {
             }
         }
 
-        // 中序输入
+        // 中序输出
         // 先输出左侧节点值
         // 再输出当前节点值
         // 最后输出中间节点值
@@ -301,6 +278,8 @@ public class BinaryTree {
         private Node leftNode;
 
         private Node rightNode;
+
+        private Node parentNode;
 
         public Node() {}
 
