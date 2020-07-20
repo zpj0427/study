@@ -1,0 +1,199 @@
+1, 无论是什么节点删除最后都可以转换为删除叶子节点和单子节点的中间节点
+
+2, 删除节点为红色节点
+	* 此时该节点一定是叶子节点
+	* 如果该节点存在单子节点, 因为不能双红, 所以该子节点一定为黑
+	* 如果存在一个黑子节点, 则必须存在两个黑子节点, 否在违反黑高
+	* 所以该节点一定是叶子节点
+	
+	* 此时直接删除该节点, 因为删除不包含子节点的红色节点不影响红黑树性质, 可以直接删除
+
+3, 删除节点为黑色, 则场景较复杂, 大体可分为有无子节点两类
+
+4, 删除节点是黑色节点, 且节点为单子节点
+	* 此时该子节点一定是红色节点
+	* 同样, 因为黑高原则
+	
+	* 此时删除该节点, 因为删除了一个黑色节点, 所以在这一条链上的黑色节点必然少1, 
+	* 此时刚好可以用其红色子节点填充该位置, 并染为黑色, 进行失黑修复
+
+5, 删除节点为黑色节点, 节点为无子节点
+	* 到该部分, 删除了节点后, 因为该子树已经没有节点可以进行失黑修复, 则必须要联动其他子树, 此时需要进行关联判断
+	* 首先先看删除节点的兄弟节点, 删除节点为黑, 则根据黑高原则, 兄弟节点必然存在, 但是兄弟节点颜色不定
+
+5, 删除节点为黑色, 无子节点, 兄弟节点为红
+	* 兄弟节点为红, 则父节点一定为黑
+	* 在删除之前, 该子树上的黑节点一定是平衡的, 所以兄弟节点存在两个黑子节点
+	* 此时以父节点为中心节点进行左/右旋转, 再将父节点变为红色, 兄弟节点变为黑色
+	* 兄弟节点的左侧节点挂到父节点的右侧节点, 且继续为黑色
+	* 那么对于下沉下来变为红色的父节点来说, 此时存在一个删除掉的黑色节点和旋转过来的黑色节点
+	* 这时候问题转化为删除节点为黑, 且无子节点, 兄弟节点为黑的情况了
+	
+6, 删除节点为黑色, 无子节点, 兄弟节点为黑, 此时可继续分为四种场景
+	* 这部分以删除节点为左子节点距离
+	a, 兄弟节点不存在子节点, 父节点为红色
+		* 这一场景延续上一场景遗留的问题
+		* 父节点为红色时, 兄弟节点必定为黑
+		* 此时删除该子树只有一层黑节点, 删除当前节点, 剩下红色父节点和黑色兄弟节点
+		* 可以将父节点和兄弟节点的颜色互换, 保证该子树黑节点层数不变
+		
+	b, 兄弟节点右子节点为红, 左子节点颜色无所谓(要么为空, 要么为空), 父节点颜色随意
+		* 此时从父节点 - 兄弟节点 - 兄弟节点右子节点构成RR, 需一次旋转
+		* 此时删除节点为黑, 兄弟节点为黑, 兄弟节点右子节点为红, 父节点颜色随意
+		* 删除之后, 左侧没有黑节点, 右侧有一个兄弟节点为黑, 有一个兄弟节点的右子节点为红, 且父节点颜色随意
+		* 将兄弟节点染为父节点颜色, 将父节点染黑, 将右子节点染黑, 然后以父节点为中心进行左旋
+		* 此时父节点下沉, 且颜色为黑, 左侧有了一个黑节点
+		* 兄弟节点上浮, 且颜色已经设置为原来父节点的颜色, 即任意颜色
+		* 兄弟节点的右子节点依旧为右子节点, 此时黑高满足
+		
+	c, 兄弟节点左子节点为红, 左子节点无所谓(要么为空, 要么为红), 父节点颜色随意
+		* 此时从父节点 - 兄弟节点 - 兄弟节点左子节点构成RL, 需两次旋转
+		* 此时删除节点为黑, 兄弟节点为黑, 兄弟节点左子节点为红, 父节点颜色随意
+		* 先以兄弟节点为中心点进行右旋, 旋转暂时不变颜色
+		* 此时父节点的右子节点变为原兄弟节点的左子节点, 父节点右子节点的右子节点变为原兄弟节点
+		* 将父节点染黑, 父节点的右子节点变为父节点原来的颜色, 再以父节点为中心进行左旋, 结果同上
+		
+	d, 兄弟节点不存在子节点, 父节点为黑色
+		* 父节点为黑, 当前节点为黑, 兄弟节点不存在子节点, 则兄弟节点必然为黑
+		* 此时就是全黑场景, 左侧子树删除一个黑节点, 此时黑色少1, 右侧也没有多余节点补充, 此时只能递归调整数的黑高
+		* 现将兄弟节点改为红色, 再递归向上一直调整各个子树, 直到整个树的黑高平衡
+		
+		
+		
+		
+package com.asdc.ep.backend;
+
+public class Test {
+
+    // 删除结点
+    private void deleteNode(RBNode<T> node) {
+        // replace表示删除之后顶替上来的结点
+        // parent为replace结点的父结点
+        RBNode<T> replace = null, parent = null;
+        // 如果删除的结点左右孩子都有
+        if (node.left != null && node.right != null) {
+            RBNode<T> succ = null;
+            for (succ = node.right; succ.left != null; succ = succ.left)
+                ;// 找到后继
+            node.key = succ.key;// 覆盖值
+            deleteNode(succ);// 递归删除，只可能递归一次
+            return;
+        } else {// 叶子或只有一个孩子的情况
+            // 如果删除的是根，则root指向其孩子(有一个红孩子或者为nil)
+            if (node.parent == null) {
+                // 如果有左孩子，那根就指向左孩子，没有则指向右孩子（可能有或者为NIL）
+                this.root = (node.left != null ? node.left : node.right);
+                replace = this.root;
+                if (this.root != null)
+                    this.root.parent = null;
+            } else {// 非根情况
+                RBNode<T> child = (node.left != null ? node.left : node.right);
+                if (node.parent.left == node)
+                    node.parent.left = child;
+                else
+                    node.parent.right = child;
+
+                if (child != null)
+                    child.parent = node.parent;
+                replace = child;
+                parent = node.parent;
+            }
+        }
+        // 如果待删除结点为红色，直接结束
+        if (node.color == BLACK)
+            deleteFixUp(replace, parent);
+    }
+
+    private void deleteFixUp(RBNode<T> replace, RBNode<T> parent) {
+        RBNode<T> brother = null;
+        // 如果顶替结点是黑色结点，并且不是根结点。
+        // 由于经过了上面的deleteNode方法，这里面parent是一定不为null的
+        while ((replace == null || replace.color == BLACK) && replace != this.root) {
+            // 左孩子位置的所有情况，
+            if (parent.left == replace) {
+                brother = parent.right;
+                // case1 红兄，brother涂黑，parent涂红，parent左旋，replace的兄弟改变了，变成了黑兄的情况
+                if (brother.color == RED) {
+                    brother.color = BLACK;
+                    parent.color = RED;
+                    leftRotate(parent);
+                    brother = parent.right;
+                }
+                // 经过上面，不管进没进if，兄弟都成了黑色
+                // case2 黑兄，且兄弟的两个孩子都为黑
+                if ((brother.left == null || brother.left.color == BLACK)
+                        && (brother.right == null || brother.right.color == BLACK)) {
+                    // 如果parent此时为红，则把brother的黑色转移到parent上
+                    if (parent.color == RED) {
+                        parent.color = BLACK;
+                        brother.color = RED;
+                        break;
+                    } else {// 如果此时parent为黑，即此时全黑了，则把brother涂红，导致brother分支少一个黑，使整个分支都少了一个黑，需要对parent又进行一轮调整
+                        brother.color = RED;
+                        replace = parent;
+                        parent = replace.parent;
+                    }
+                } else {
+                    // case3 黑兄，兄弟的左孩子为红色
+                    if (brother.left != null && brother.left.color == RED) {
+                        brother.left.color = parent.color;
+                        parent.color = BLACK;
+                        rightRotate(brother);
+                        leftRotate(parent);
+                        // case4 黑兄，兄弟的右孩子为红色
+                    } else if (brother.right != null && brother.right.color == RED) {
+                        brother.color = parent.color;
+                        parent.color = BLACK;
+                        brother.right.color = BLACK;
+                        leftRotate(parent);
+                    }
+                    break;
+                }
+            } else {// 对称位置的情况，把旋转方向反回来
+                brother = parent.left;
+                // case1 红兄，brother涂黑，parent涂红，parent左旋，replace的兄弟改变了，变成了黑兄的情况
+                if (brother.color == RED) {
+                    brother.color = BLACK;
+                    parent.color = RED;
+                    rightRotate(parent);
+                    brother = parent.left;
+                }
+                // 经过上面，不管进没进if，兄弟都成了黑色
+                // case2 黑兄，且兄弟的两个孩子都为黑
+                if ((brother.left == null || brother.left.color == BLACK)
+                        && (brother.right == null || brother.right.color == BLACK)) {
+                    // 如果parent此时为红，则把brother的黑色转移到parent上
+                    if (parent.color == RED) {
+                        parent.color = BLACK;
+                        brother.color = RED;
+                        break;
+                    } else {// 如果此时parent为黑，即此时全黑了，则把brother涂红，导致brother分支少一个黑，使整个分支都少了一个黑，需要对parent又进行一轮调整
+                        brother.color = RED;
+                        replace = parent;
+                        parent = replace.parent;
+                    }
+                } else {
+                    // case3 黑兄，兄弟的左孩子为红色，右孩子随意
+                    if (brother.right != null && brother.right.color == RED) {
+                        brother.right.color = parent.color;
+                        parent.color = BLACK;
+                        leftRotate(brother);
+                        rightRotate(parent);
+                        // case4 黑兄，兄弟的右孩子为红色，左孩子随意
+                    } else if (brother.left != null && brother.left.color == RED) {
+                        brother.color = parent.color;
+                        parent.color = BLACK;
+                        brother.left.color = BLACK;
+                        rightRotate(parent);
+                    }
+                    break;
+                }
+            }
+        }
+        // 这里可以处理到删除结点为只有一个孩子结点的情况，如果是根，也会将其涂黑。
+        if (replace != null)
+            replace.color = BLACK;
+    }
+
+}
+		
