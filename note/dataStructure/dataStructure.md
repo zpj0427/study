@@ -2997,7 +2997,7 @@ public class InsertValueSearch {
 
 * 斐波那契查找，依旧基于数组是有序数组，并使数组长度与斐波那契数组元素相匹配，之后类似于二分查找方式，以斐波那契数组的数组特性`f[k] = f[k - 1] + f[k - 2]`，对目标数组取中值`middle = low+ f[k - 1] - 1`后再进行分段查找
 
-  ![1595054240908](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1595054240908.png)
+  ![1595054240908](E:\gitrepository\study\note\image\dataStructure\1595054240908.png)
 
 * 与二分查找和插值相比，重点依旧是取中值部分求值方式不同；另外效果与二分查找基本一致，网上有分析称斐波那契查找是加减运算，速度会高于二分查找
 
@@ -6540,16 +6540,21 @@ public class BTree {
 
 * 此时可以直接删除，因为删除该红色节点不会造成红黑树失黑，可以直接删除掉
 
-  ![1595232380729](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1595232380729.png)
+  ![1595232380729](E:\gitrepository\study\note\image\dataStructure\1595232380729.png)
 
 ##### 2，删除节点为黑色节点，这种情况下场景较为复杂，可以分为删除节点有子节点，删除节点无子节点等三种情况
 
 ###### 2.1，删除节点存在子节点
 
 * 同样，删除节点存在子节点，并且也只存在一个子节点，此时该节点必定为红色，<font color=red>原因可分析红黑树细致</font>
+
 * 此时删除该黑色节点，会导致删除节点所在的这条链黑色节点数量少1，违反红黑树黑高原则
+
 * 但是在该节点下存在一个红色的子节点，可以通过该节点变黑来弥补删除节点造成的失黑现象，完成失黑修复
+
 * <font color=red>用子节点替代删除节点的位置，并将颜色染黑</font>
+
+  ![1595239417260](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1595239417260.png)
 
 ###### 2.2，删除节点没有子节点，兄弟节点为红
 
@@ -6561,7 +6566,7 @@ public class BTree {
 
 * 旋转后，删除的一侧会有一个红色的父节点和一个黑色的叶子节点，另外一侧有一个黑色的无子节点，且父节点为黑色，此时依旧没有实现黑平衡，但是问题已经转换为**删除节点为黑，兄弟节点为黑，父节点为红的情况**，在下一步进行继续分析
 
-  ![1595233573200](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1595233573200.png)
+  ![1595233573200](E:\gitrepository\study\note\image\dataStructure\1595233573200.png)
 
 ###### 2.3，删除节点没有子节点，兄弟节点为黑
 
@@ -6584,7 +6589,7 @@ public class BTree {
 
 * <font color = red>然后将兄弟节点染为父节点颜色，父节点染黑，兄弟节点的右子节点染黑，兄弟节点的左子节点如果存在，此时会挂到父节点的右子节点，并依旧为红色</font>
 
-  ![1595235597516](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1595235597516.png)
+  ![1595235597516](E:\gitrepository\study\note\image\dataStructure\1595235597516.png)
 
 ###### 2.3.2，兄弟节点为黑，左子节点为红，右子节点颜色随意，父节点颜色随意
 
@@ -6602,7 +6607,7 @@ public class BTree {
 
 * 先旋转后变色还是先变色后选择，这部分可以根据个人来玩
 
-  ![1595237247961](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1595237247961.png)
+  ![1595237247961](E:\gitrepository\study\note\image\dataStructure\1595237247961.png)
 
 ###### 2.3.3，兄弟节点不存在子节点，父节点为黑色
 
@@ -6612,7 +6617,7 @@ public class BTree {
 
 - <font color=red>此时将父亲节点染黑，兄弟节点染红，即可满足黑高不变，即进行颜色互换</font>，这种场景相对比较简单
 
-  ![1595234346822](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1595234346822.png)
+  ![1595234346822](E:\gitrepository\study\note\image\dataStructure\1595234346822.png)
 
 ###### 2.3.4，兄弟节点不存在子节点，父节点为黑
 
@@ -6627,7 +6632,7 @@ public class BTree {
   >
   > 按顺序删节点：450,350,280，220，180,120，10,20,70,
 
-![1595237925242](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1595237925242.png)
+![1595237925242](E:\gitrepository\study\note\image\dataStructure\1595237925242.png)
 
 * <font color=red>至此，红黑树删除分析全部完成</font>
 
