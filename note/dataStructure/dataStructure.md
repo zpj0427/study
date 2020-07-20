@@ -6387,6 +6387,8 @@ public class BTree {
 
 ## 10.11，红黑树
 
+* 红黑树部分关于叶子节点的描述都指的是没有子节点的节点，而不是红黑树的Nil节点
+
 ### 10.11.1，红黑树引入
 
 * 红黑树是对AVL树的补充。AVL树要求整个树的高度差不能超过1，超过后需要进行左旋或者右旋操作再次对树进行平衡，虽然这样能够解决二叉树退化为链表的缺点，将查询的时间复杂度控制在`O(logN)`，但却不是最佳的；因为AVL树对高度差的控制太严，在需要频繁进行插入/删除的场景中，AVL需要频繁进行树平衡调整，影响整体性能，为了解决这个问题，引入**红黑树**
@@ -6509,13 +6511,132 @@ public class BTree {
 
 #### 10.11.5.1，删除操作宏观层面分析
 
-* 
+* 节点删除，可对删除节点是否有子节点进行分类讨论
+* 对于没有子节点的节点，可以直接删除
+* 对于存在一个子节点的节点，可以删除该节点，并让其子节点进行补位
+* 对于存在两个子节点的节点，根据树的节点删除逻辑，可以取该节点的前驱节点或者后继节点进行补位，然后删除其前驱或者后继节点，即会转换为删除单子节点或者无子节点
+* 节点删除完成后，根据删除节点的颜色，需要进行进一步调整；根据红黑树的黑高原则，<font color=red>如果删除节点是一个黑色节点（此处指的是调整后的删除），则会直接破坏红黑树的黑高原则，需要进行失黑修复</font>
+
+#### 10.11.5.2，删除操作涉及子树关系分析
+
+* 删除黑色节点后，需要对红黑树进行失黑修复，即对树当前结构进行调整，大致可分为三种情况进行调整
+* 下面情况分析基于上一步调整后，即删除的节点是单子节点或者无子节点
+* **删除节点是红色节点**：<font color=red>此时直接删除，无需进行失黑修复，因为没有删除黑节点</font>
+* **删除节点存在子节点**：此时删除节点为黑，子节点为红，删除后，可以将子节点变黑补充删除后造成的失黑，直接黑平衡，不用多做处理，<font color=red>属于删除节点自身的子树内调整</font>
+* **删除节点为黑，以父节点为顶点的子树内存在红节点**：该部分删除场景分很多种，后续详细分析，暂时只探讨对树的影响。虽然删除了一个黑节点，但是在该节点所属的子树内存在红色节点，红色节点可以变黑弥补这一失去的黑，<font color=red>属于删除节点所在的子树内的调整，红色节点通过旋转变色后可以弥补该子树缺失的那一个黑</font>
+* **删除节点为黑，以父节点为顶点的子树内不存在红节点**：<font color=red>此时属于全黑场景，当前所属子树已经没有红色节点可以弥补这一缺失，此时单纯在该子树内进行调整是不可能的，所以可以将子树的另一分支，即删除节点的兄弟节点染红，这样对于当前子树是少了一层黑，然后递归向上，对父节点进行模拟删除处理，看是否可以进行黑平衡，直到根节点，如果还是不能平衡（全黑树），则该树的黑高最终会减1，多出几个红节点</font>
+
+#### 10.11.5.2，删除场景具体分析
+
+##### 1， 删除节点为红色节点
+
+* 此时该节点一定是叶子节点
+
+* 根据红黑树性质4：每个红色节点的两个子节点一定都是黑色，不能有两个红色节点相连；如果该节点存在子节点，其节点一定为黑
+
+* 根据红黑树性质5的推论：如果一个节点存在黑子节点，那么该节点肯定有两个子节点；<font color=red>目前该节点最多只能有一个子节点，具体看前边分析</font>
+
+* 综上，该节点只能是叶子节点！
+
+* 此时可以直接删除，因为删除该红色节点不会造成红黑树失黑，可以直接删除掉
+
+  ![1595232380729](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1595232380729.png)
+
+##### 2，删除节点为黑色节点，这种情况下场景较为复杂，可以分为删除节点有子节点，删除节点无子节点等三种情况
+
+###### 2.1，删除节点存在子节点
+
+* 同样，删除节点存在子节点，并且也只存在一个子节点，此时该节点必定为红色，<font color=red>原因可分析红黑树细致</font>
+* 此时删除该黑色节点，会导致删除节点所在的这条链黑色节点数量少1，违反红黑树黑高原则
+* 但是在该节点下存在一个红色的子节点，可以通过该节点变黑来弥补删除节点造成的失黑现象，完成失黑修复
+* <font color=red>用子节点替代删除节点的位置，并将颜色染黑</font>
+
+###### 2.2，删除节点没有子节点，兄弟节点为红
+
+* 从这部分以后，以删除节点为顶点的子树已经没有多余节点可以进行失黑修复，所以必须借助父节点为顶点的子树，即从兄弟节点处借侄子节点来弥补黑节点缺失
+
+* 兄弟节点为红，则父节点必然为黑，以父节点为顶点的子树黑高为2，则兄弟节点下必然有两个黑节点（黑节点先可能还有红节点）
+
+* 此时以父亲节点为中心节点进行旋转，将父亲节点变红下沉，兄弟节点变黑上浮，兄弟节点的一侧节点挂到父亲节点下
+
+* 旋转后，删除的一侧会有一个红色的父节点和一个黑色的叶子节点，另外一侧有一个黑色的无子节点，且父节点为黑色，此时依旧没有实现黑平衡，但是问题已经转换为**删除节点为黑，兄弟节点为黑，父节点为红的情况**，在下一步进行继续分析
+
+  ![1595233573200](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1595233573200.png)
+
+###### 2.3，删除节点没有子节点，兄弟节点为黑
+
+* 这种场景下情况巨多，但是可以分为四种场景进行分析
+* <font color=red>此处以删除左子节点为例，兄弟节点为右子节点，删除右子节点相反即可</font>
+
+###### 2.3.1，兄弟节点为黑，右子节点为红，左子节点颜色随意，父节点颜色随意
+
+* <font color=red>首先这一场景可能延续了2.2场景遗留的问题</font>
+
+* 兄弟节点的右子节点如果存在，则必然为红
+
+* 此时限制右子节点为红，是为了构成父节点 - 兄弟节点 - 右子节点的RR结构，只需要一次旋转变色即可完成
+
+* 删除之后，左侧没有节点，父节点存在且颜色不定，右侧有一个为黑的兄弟节点，和至少一个为红的右子节点，*左子节点可能也存在并且为红*
+
+* 所以在以父节点为顶点的当前子树中，是可以通过节点旋转和变色构成黑平衡的，此时进行选择变色处理
+
+* <font color=red>先以父节点为中心节点进行右</font>
+
+* <font color = red>然后将兄弟节点染为父节点颜色，父节点染黑，兄弟节点的右子节点染黑，兄弟节点的左子节点如果存在，此时会挂到父节点的右子节点，并依旧为红色</font>
+
+  ![1595235597516](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1595235597516.png)
+
+###### 2.3.2，兄弟节点为黑，左子节点为红，右子节点颜色随意，父节点颜色随意
+
+* <font color=red>首先这一场景可能延续了2.2场景遗留的问题</font>
+
+* 该场景下兄弟节点的右子节点不存在，如果存在会在上一个场景进行分析
+
+* 此时父节点 - 兄弟节点 - 兄弟节点左子节点构成了RL结构，需要两次旋转再变色才可以完成
+
+* <font color=red>先以兄弟节点为中心节点进行右旋，此时不变色，旋转完成后，原来的父节点 - 黑兄弟节点 - 红兄弟节点左子节点的RL结构变成了 父节点 - 红兄弟节点左子节点 - 黑兄弟节点的RR结构</font>
+
+* <font color=red>然后以父节点为中心节点进行右旋，进行第二次旋转，此时父节点到左边，侄子节点到父节点的位置，兄弟节点位置较之前不变</font>
+
+* <font color=red>最后进行变色，将侄子节点变为父节点原来的颜色， 将父节点染黑</font>
+
+* 先旋转后变色还是先变色后选择，这部分可以根据个人来玩
+
+  ![1595237247961](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1595237247961.png)
+
+###### 2.3.3，兄弟节点不存在子节点，父节点为黑色
+
+- <font color=red>首先这一场景可能延续了2.2场景遗留的问题</font>
+
+- 在这种场景下，以黑删除节点，黑兄弟节点，红父亲节点组成的子树黑高为1，此时删除一个黑子节点，剩余一个黑子节点和红父亲节点不符合黑高规则；但是，通过变色可以让剩余的子树依旧满足1层黑高
+
+- <font color=red>此时将父亲节点染黑，兄弟节点染红，即可满足黑高不变，即进行颜色互换</font>，这种场景相对比较简单
+
+  ![1595234346822](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1595234346822.png)
+
+###### 2.3.4，兄弟节点不存在子节点，父节点为黑
+
+* 兄弟节点不存在子节点，父节点为黑，此时兄弟节点必定为黑
+* 这时候是全黑场景，在以父节点为顶点的子树中已经没有节点可以进行失黑补充
+* <font color=red>此时为了在该子树中进行黑平衡，只能将兄弟节点染红，该子树黑高从原来的2变为1</font>
+* <font color=red>该子树黑节点减1后，将对整棵树的黑高产生影响，此时需要递归向上处理，直到遇到可以进行失黑修复的子树节点（存在红节点的子树）；如果不存在，说明该树为全黑树，则会一直递归到根节点，则最终整棵树的黑高减1，并且全黑树中会调整出几个红节点</font>
+
+* 构造一个简单的全黑树
+
+  > 按顺序增节点：200，100，300, 50, 150，250, 400，20,70,120，180,220，280,350,450，10
+  >
+  > 按顺序删节点：450,350,280，220，180,120，10,20,70,
+
+![1595237925242](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1595237925242.png)
+
+* <font color=red>至此，红黑树删除分析全部完成</font>
 
 ### 10.11.6，红黑树代码
 
 ```java
 package com.self.datastructure.tree.redblacktree;
 
+import com.sun.org.apache.bcel.internal.generic.RETURN;
 import lombok.Data;
 
 /**
@@ -6528,19 +6649,270 @@ public class RedBlackTree {
 
     public static void main(String[] args) {
         SelfRedBlackTree selfRedBlackTree = new SelfRedBlackTree();
-        // 添加数据层
-        selfRedBlackTree.add(10);
-        selfRedBlackTree.add(20);
-        selfRedBlackTree.add(30);
-        selfRedBlackTree.add(40);
+        // 添加数据层, 这一组数据为了构造全黑树
+        selfRedBlackTree.add(200);
+        selfRedBlackTree.add(100);
+        selfRedBlackTree.add(300);
         selfRedBlackTree.add(50);
-        selfRedBlackTree.add(60);
+        selfRedBlackTree.add(150);
+        selfRedBlackTree.add(250);
+        selfRedBlackTree.add(4000);
+        selfRedBlackTree.add(20);
         selfRedBlackTree.add(70);
-        selfRedBlackTree.add(80);
+        selfRedBlackTree.add(120);
+        selfRedBlackTree.add(180);
+        selfRedBlackTree.add(220);
+        selfRedBlackTree.add(280);
+        selfRedBlackTree.add(350);
+        selfRedBlackTree.add(4500);
+        selfRedBlackTree.add(10);
+        selfRedBlackTree.delete(4500);
+        selfRedBlackTree.delete(350);
+        selfRedBlackTree.delete(280);
+        selfRedBlackTree.delete(220);
+        selfRedBlackTree.delete(220);
+        selfRedBlackTree.delete(180);
+        selfRedBlackTree.delete(120);
+        selfRedBlackTree.delete(10);
+        selfRedBlackTree.delete(20);
+        selfRedBlackTree.delete(70);
+        selfRedBlackTree.delete(50);
     }
 
     static class SelfRedBlackTree {
         private Node root = null;
+
+        /**
+         * 删除节点
+         * @param value
+         */
+        public boolean delete(int value) {
+            // 获取有效的数据, 节点不存在, 返回删除失败
+            Node delNode = findNode(this.root, value);
+            if (null == delNode) {
+                return false;
+            }
+            return doDeleteNode(delNode);
+        }
+
+        private boolean doDeleteNode(Node delNode) {
+            // 进行节点删除, 此处需要分三个大场景进行判断
+            // 1, 删除节点存在两个子节点
+            // 可以转变为删除右侧最左节点 即后继节点
+            if (null != delNode.getLeftNode() && null != delNode.getRightNode()) {
+                // 取右侧最左节点
+                Node nextNode = delNode.getRightNode();
+                for (;null != nextNode.getLeftNode(); nextNode = nextNode.getLeftNode());
+                // 覆盖值
+                delNode.setValue(nextNode.getValue());
+                // 再掉一次删除, 此处注意不是递归, 只是再掉一次, 第二次进来不可能是双子节点
+                return doDeleteNode(nextNode);
+            } else {
+                // 2, 删除节点为单子节点
+                // 3, 删除节点没有子节点
+                // 先对删除节点为根情况进行分析
+                // 为根时, 就是删除黑子单子节点或者直接删根,
+                if (null == delNode.getParentNode()) {
+                    // 子节点可能存在也可能不存在
+                    Node childNode = null == delNode.getLeftNode() ? delNode.getRightNode() : delNode.getLeftNode();
+                    // 如果存在, 设置子节点为根节点
+                    this.root = childNode;
+                    // 子节点存在时, 进行失黑修复, 将子节点设置为根节点并且颜色为黑
+                    // 子节点不存在时, 树直接就空了
+                    if (null != childNode) {
+                        childNode.setParentNode(null);
+                        childNode.setRed(false);
+                    }
+                    return true;
+                } else {
+                    // 父节点, 保存一份, 防止引用传递丢失
+                    Node parentNode = null;
+                    // 删除节点不是根节点
+                    // 将删除节点挂空, 对父节点的子节点和子节点的父节点进行替换
+                    // 取子节点, 子节点有一个或者没有, 修改子节点的父节点
+                    Node childNode = null == delNode.getLeftNode() ? delNode.getRightNode() : delNode.getLeftNode();
+                    if (null != childNode) {
+                        childNode.setParentNode(delNode.getParentNode());
+                    }
+                    // 取父节点, 判断当前节点是父节点的左子还是右子节点
+                    parentNode = delNode.getParentNode();
+                    if (delNode == parentNode.getLeftNode()) {
+                        parentNode.setLeftNode(childNode);
+                    } else if (delNode == parentNode.getRightNode()) {
+                        parentNode.setRightNode(childNode);
+                    }
+
+                    // 删除完成后, 如果删除节点为黑节点, 进行失黑修复
+                    // 如果为红节点, 则不用处理
+                    // 此处是删除场景1, 删除节点为红色节点
+                    // 此时该节点一定是叶子节点
+                    // 如果该节点存在单子节点, 因为不能双红, 所以该子节点一定为黑
+                    // 如果存在一个黑子节点, 则必须存在两个黑子节点, 否在违反黑高
+                    // 所以该节点一定是红色节点
+                    // 此时直接删除该节点, 因为删除不包含子节点的红色节点不影响红黑树性质, 可以直接删除, 不用考虑修复
+                    if (!delNode.isRed()) {
+                        fixedLostBlack(delNode, parentNode);
+                    }
+                }
+            }
+            return true;
+        }
+
+        /**
+         * 黑色节点删除, 进行失黑修复
+         * @param delNode
+         * @param parentNode 原父节点, 只做保留原始数据和传参用, 获取树中的父节点, 可以直接getParent
+         */
+        private void fixedLostBlack(Node delNode, Node parentNode) {
+            // 场景二: delNode存在单子节点,
+            // 因为delNode为黑, 根据红黑树原则, 其单子节点一定是红节点
+            if (null != delNode.getLeftNode() || null != delNode.getRightNode()) {
+                // 删除节点后会导致黑高少1, 此时将红色变黑, 则黑高
+                Node childNode = null == delNode.getLeftNode() ? delNode.getRightNode() : delNode.getLeftNode();
+                childNode.setRed(false);
+                return;
+            }
+
+            // 循环是对全黑情况下的向上递归处理
+            // 如果在递归过程中遇到了红色父节点或者兄弟节点会直接平衡完成, 无需继续处理
+            // 否则最终递归到根节点
+            while (this.root != delNode) {
+                Node brotherNode = null;
+                // 场景三: delNode不存在单子节点, 此时在它的子树内处理已经不可能, 需要连接其他子树
+                // 此处分两种场景进行处理, 分别为当前节点为左节点和右节点
+                // 走到此处, 说明删除节点没有子节点, 则父节点的对应位置为null
+                if (null == parentNode.getLeftNode() || delNode == parentNode.getLeftNode()) {
+                    // 当前节点为左侧, 兄弟节点为右侧
+                    brotherNode = parentNode.getRightNode();
+                    // 先考虑兄弟节点为红的情况
+                    if (brotherNode.isRed()) {
+                        // 兄弟节点为红, 则父节点必定为黑
+                        // 兄弟节点必定存在两个为黑的子节点
+                        // 在删除之前, 该子树上的黑节点一定是平衡的
+                        // 此时以父节点为中心节点进行左旋转
+                        leftRotateWithoutChange(brotherNode, parentNode);
+                        // 再将父节点变为红色, 兄弟节点变为黑色
+                        // 即是旋转后的兄弟节点变为黑色, 兄弟节点的左子节点变红
+                        brotherNode.setRed(false);
+                        brotherNode.getLeftNode().setRed(true);
+                        // 重新赋值父节点和兄弟节点
+                        parentNode = brotherNode.getLeftNode();
+                        brotherNode = parentNode.getRightNode();
+                        // 此时兄弟节点的左侧节点挂到父节点的右侧节点, 且为黑色
+                        // 那么对于下沉下来变为红色的父节点来说, 此时存在一个删除掉的黑色节点和旋转过来的黑色节点
+                        // 这时候问题转化为删除节点为黑, 且无子节点, 兄弟节点为黑的情况了
+                        // 留到下一种情况继续处理
+                    }
+                    // 兄弟节点为黑, 无论上一个循环有没有走到, 都会走到这一步
+                    // 如果走到了上一步, 那上一步也会遗留一个问题到这一步解决
+                    if (!brotherNode.isRed()) {
+                        // case1: 兄弟节点不存在子节点, 父节点为红色
+                        // 这种场景先是一种情况, 然后会延续处理上一个情况遗留的问题
+                        if (null == brotherNode.getRightNode() && null == brotherNode.getLeftNode()
+                                && brotherNode.getParentNode().isRed()) {
+                            // 父节点为红色时, 兄弟节点必定为黑
+                            // 该子树只有一层黑节点, 删除当前节点, 剩下红色父节点和黑色兄弟节点
+                            // 可以将父节点和兄弟节点的颜色互换, 保证该子树黑节点层数不变
+                            boolean brotherColor = brotherNode.isRed();
+                            brotherNode.setRed(parentNode.isRed());
+                            parentNode.setRed(brotherColor);
+                            return; // 处理完成可以退出
+                        }
+                        // case2: 兄弟节点右子节点为红, 左子节点颜色无所谓(要么为空, 要么为空), 父节点颜色随意
+                        // 此时从父节点 - 兄弟节点 - 兄弟节点右子节点构成RR, 需一次旋转
+                        if (null != brotherNode.getRightNode() && brotherNode.getRightNode().isRed()) {
+                            // 删除之后, 左侧没有黑节点, 右侧有一个兄弟节点为黑, 有一个兄弟节点的右子节点为红, 且父节点颜色随意
+                            // 先变色, 将兄弟节点染为父节点颜色, 将父节点染黑, 将右子节点染黑, 然后以父节点为中心进行左旋
+                            boolean parentColor = parentNode.isRed();
+                            parentNode.setRed(false);
+                            brotherNode.setRed(parentColor);
+                            brotherNode.getRightNode().setRed(false);
+                            // 再进行左旋
+                            leftRotateWithoutChange(brotherNode, brotherNode.getParentNode());
+                            return; // 处理完成
+                        }
+                        // case3: 兄弟节点左子节点为红, 左子节点无所谓(要么为空, 要么为红), 父节点颜色随意
+                        // 此时从父节点 - 兄弟节点 - 兄弟节点左子节点构成RL, 需两次旋转
+                        if (null != brotherNode.getLeftNode() && brotherNode.getLeftNode().isRed()) {
+                            // 先以兄弟节点为中心点进行右旋, 旋转暂时不变颜色
+                            rightRotateWithoutChange(brotherNode.getLeftNode(), brotherNode);
+                            // 此处注意旋转后位置已经变化
+                            // 此时父节点的右子节点变为原兄弟节点的左子节点, 父节点右子节点的右子节点变为原兄弟节点
+                            // 将父节点染黑, 父节点的右子节点变为父节点原来的颜色, 再以父节点为中心进行左旋, 结果同上
+                            boolean parentColor = parentNode.isRed();
+                            parentNode.setRed(false);
+                            parentNode.getRightNode().setRed(parentColor);
+                            leftRotateWithoutChange(parentNode.getRightNode(), parentNode);
+                            return; // 处理完成
+                        }
+                    }
+                } else if (null == parentNode.getRightNode() || delNode == parentNode.getRightNode()) {
+                    // 为右节点处理, 与左节点相反
+                    brotherNode = parentNode.getLeftNode();
+                    if (brotherNode.isRed()) {
+                        rightRotateWithoutChange(brotherNode, parentNode);
+                        brotherNode.setRed(false);
+                        brotherNode.getRightNode().setRed(true);
+                    }
+                    if (!brotherNode.isRed()) {
+                        if (null == brotherNode.getRightNode() && null == brotherNode.getLeftNode()
+                                && brotherNode.getParentNode().isRed()) {
+                            boolean brotherColor = brotherNode.isRed();
+                            brotherNode.setRed(parentNode.isRed());
+                            parentNode.setRed(brotherColor);
+                            return;
+                        }
+                        if (null != brotherNode.getLeftNode() && brotherNode.getLeftNode().isRed()) {
+                            boolean parentColor = parentNode.isRed();
+                            parentNode.setRed(false);
+                            brotherNode.setRed(parentColor);
+                            brotherNode.getLeftNode().setRed(false);
+                            rightRotateWithoutChange(brotherNode, brotherNode.getParentNode());
+                            return;
+                        }
+                        if (null != brotherNode.getRightNode() && brotherNode.getRightNode().isRed) {
+                            leftRotateWithoutChange(brotherNode.getRightNode(), brotherNode);
+                            boolean parentColor = parentNode.isRed();
+                            parentNode.setRed(false);
+                            parentNode.getLeftNode().setRed(parentColor);
+                            rightRotateWithoutChange(parentNode.getLeftNode(), parentNode);
+                            return;
+                        }
+                    }
+                }
+                // case4: 兄弟节点不存在子节点, 父节点为黑色
+                // 父节点为黑, 当前节点为黑, 兄弟节点不存在子节点, 则兄弟节点必然为黑
+                // 后续递归向上进行全黑处理时, 兄弟节点是肯定存在子节点的
+                // 这里只对兄弟节点颜色进行判断, 如果兄弟节点存在子节点符合其他条件, 则在上面分支中已经判断完成
+                if (!brotherNode.isRed() && !parentNode.isRed()) {
+                    // 此时就是全黑场景, 左侧子树删除一个黑节点, 此时黑色少1, 右侧也没有多余节点补充, 此时只能递归调整数的黑高
+                    // 现将兄弟节点改为红色
+                    brotherNode.setRed(true);
+                    // 再递归向上一直调整各个子树, 直到整个树的黑高平衡
+                    delNode = parentNode;
+                    parentNode = parentNode.getParentNode();
+                }
+            }
+        }
+
+        /**
+         * 查找指定节点
+         * @param node
+         * @param value
+         * @return
+         */
+        private Node findNode(Node node, int value) {
+            if (null == node) {
+                return null;
+            }
+            if (value < node.getValue()) {
+                return findNode(node.getLeftNode(), value);
+            } else if (value > node.getValue()) {
+                return findNode(node.getRightNode(), value);
+            } else {
+                return node;
+            }
+        }
 
         /**
          * 添加数据
@@ -6619,9 +6991,7 @@ public class RedBlackTree {
                         balanceTree(parentNode.getParentNode(), parentNode.getParentNode().getParentNode());
                     }
                 } else { // 表示叔叔节点不存在, 或者叔叔节点为黑
-                    // 如果当前节点的父节点是祖父节点的左子节点
-                    // 此处不一定是插入节点, 可能是递归处理节点
-                    // 如果当前节点是插入节点, 则叔叔节点如果存在一定为红色, 不然构不成黑平衡
+                    // 如果插入节点的父节点是祖父节点的左子节点
                     if (parentNode == parentNode.getParentNode().getLeftNode()) {
                         // 如果当前节点是父节点左子节点, 则构成LL双红
                         // LL双红, 直接右旋处理
@@ -6703,11 +7073,17 @@ public class RedBlackTree {
          */
         private void rightRotateWithoutChange(Node currNode, Node parentNode) {
             // 构造父节点为节点
-            Node newNode = new Node(parentNode.getValue());
+            Node newNode = new Node(parentNode.getValue(), parentNode.isRed());
             // 父节点的右子节点不变
             newNode.setRightNode(parentNode.getRightNode());
+            if (null != parentNode.getRightNode()) {
+                parentNode.getRightNode().setParentNode(newNode);
+            }
             // 父节点的左子节点为当前节点的右子节点
             newNode.setLeftNode(currNode.getRightNode());
+            if (null != currNode.getRightNode()) {
+                currNode.getRightNode().setParentNode(newNode);
+            }
             // 当前节点的右子节点为新节点, 当前节点的左子节点不变
             currNode.setRightNode(newNode);
             newNode.setParentNode(currNode);
@@ -6717,9 +7093,9 @@ public class RedBlackTree {
             if (root == parentNode) {
                 root = currNode;
             }
-            // 如果祖父节点不为根节点, 则替换祖父父节点的左子节点为父节点
+            // 如果祖父节点不为根节点, 则替换祖父父节点的右子节点为父节点
             else {
-                parentNode.getParentNode().setLeftNode(currNode);
+                parentNode.getParentNode().setRightNode(currNode);
             }
             // 这样会直接将原来的parentNode挂空, 等待GC回收
         }
@@ -6737,11 +7113,17 @@ public class RedBlackTree {
          */
         private void leftRotateWithoutChange(Node currNode, Node parentNode) {
             // 构造父节点为节点
-            Node newNode = new Node(parentNode.getValue());
+            Node newNode = new Node(parentNode.getValue(), parentNode.isRed());
             // 父节点的左子节点不变
             newNode.setLeftNode(parentNode.getLeftNode());
+            if (null != parentNode.getLeftNode()) {
+                parentNode.getLeftNode().setParentNode(newNode);
+            }
             // 父节点的右子节点为当前节点的左子节点
             newNode.setRightNode(currNode.getLeftNode());
+            if (null != currNode.getLeftNode()) {
+                currNode.getLeftNode().setParentNode(newNode);
+            }
             // 当前节点的左子节点为新节点, 当前节点的右子节点不变
             currNode.setLeftNode(newNode);
             newNode.setParentNode(currNode);
@@ -6750,9 +7132,9 @@ public class RedBlackTree {
             if (root == parentNode) {
                 root = currNode;
             }
-            // 如果祖父节点不为根节点, 则替换祖父父节点的右子节点为父节点
+            // 如果祖父节点不为根节点, 则替换祖父父节点的左子节点为父节点
             else {
-                parentNode.getParentNode().setRightNode(currNode);
+                parentNode.getParentNode().setLeftNode(currNode);
             }
             // 这样会直接将原来的parentNode挂空, 等待GC回收
         }
@@ -6762,7 +7144,7 @@ public class RedBlackTree {
     static class Node {
 
         // 数据
-        private Integer value;
+        private int value;
 
         // 左子节点
         private Node leftNode;
@@ -6776,13 +7158,25 @@ public class RedBlackTree {
         // 是否红色节点
         private boolean isRed = true;
 
-        Node(Integer value) {
+        Node(int value) {
             this.value = value;
+        }
+
+        Node(int value, boolean isRed) {
+            this.value = value;
+            this.isRed = isRed;
+        }
+
+        Node (Node node) {
+            this.value = node.getValue();
+            this.leftNode = node.getLeftNode();
+            this.rightNode = node.getRightNode();
+            this.parentNode = node.getParentNode();
+            this.isRed = node.isRed();
         }
 
     }
 }
-
 ```
 
 # 11，图

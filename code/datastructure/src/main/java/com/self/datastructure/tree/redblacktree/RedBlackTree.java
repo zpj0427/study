@@ -34,7 +34,6 @@ public class RedBlackTree {
         selfRedBlackTree.delete(350);
         selfRedBlackTree.delete(280);
         selfRedBlackTree.delete(220);
-        selfRedBlackTree.delete(220);
         selfRedBlackTree.delete(180);
         selfRedBlackTree.delete(120);
         selfRedBlackTree.delete(10);
