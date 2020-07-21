@@ -1141,3 +1141,27 @@ public class SimpleExtend {
 
 
 # 2，UML类图
+
+## 2.1，IDEA使用PlantUML进行类图绘制
+
+### 2.1.2，Windows安装graphviz
+
+* 下载地址：https://www2.graphviz.org/Packages/stable/windows/10/msbuild/Release/Win32/graphviz-2.38-win32.msi
+
+### 2.1.1，IDEA中安装PlantUML插件
+
+* 搜索该插件直接进行安装，搜索完成后，按道理类图是打不开的，此时配置graphviz
+
+![1595326844659](E:\gitrepository\study\note\image\designMode\1595326844659.png)
+
+* IDEA配置graphviz
+
+  ![1595326926306](E:\gitrepository\study\note\image\designMode\1595326926306.png)
+
+* 创建一个画类图文件，可以看到里面还包括流程图，时序图等
+
+  ![1595326958448](E:\gitrepository\study\note\image\designMode\1595326958448.png)
+
+* 最终页面呈现，剩下的就是语法问题了
+
+  ![1595327017048](E:\gitrepository\study\note\image\designMode\1595327017048.png)
