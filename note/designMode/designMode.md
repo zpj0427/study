@@ -1165,3 +1165,233 @@ public class SimpleExtend {
 * 最终页面呈现，剩下的就是语法问题了
 
   ![1595327017048](E:\gitrepository\study\note\image\designMode\1595327017048.png)
+
+* PlantUML基本语法
+
+  ```java
+  
+  ```
+
+## 2.2，UML类图
+
+### 2.2.1，类关系（Dependency）
+
+* **依赖，泛华（继承），实现，关联，聚合和组合**
+
+### 2.2.2，依赖关系
+
+* 依赖关系介绍
+  * 成员变量可以作为类依赖关系
+  * 返回值可以作为类依赖关系
+  * 方法参数传递可以作为类依赖关系
+  * 局部变量定义可以作为类依赖关系
+  * 凡是在该类中出现的其他类，都可以作为该类的依赖类
+
+* 代码示例
+
+  ```java
+  package com.self.designmode.uml.dependency;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-07-22 11:01
+   **/
+  public class Dependency {
+  
+      // 成员变量可以作为类依赖关系
+      private MemberParam memberParam;
+  
+      // 返回值可以作为类依赖关系
+      public ReturnData getData() { return null;}
+  
+      // 传参可以作为类依赖关系
+      public void param(ParamData paramData) {}
+  
+      // 局部变量可以作为类依赖关系
+      public void local() { LocalData localData = new LocalData(); }
+  
+  }
+  
+  class ReturnData {}
+  
+  class ParamData {}
+  
+  class MemberParam {}
+  
+  class LocalData {}
+  
+  ```
+
+* 依赖关系类图
+
+  * <font color=red>注意方向是从依赖类指向被依赖类</font>
+
+  ![1595388280752](E:\gitrepository\study\note\image\designMode\1595388280752.png)
+
+### 2.2.3，泛化关系（继承关系）（Generalization）
+
+* 泛化关系介绍
+
+  * 泛化关系就是继承关系，是依赖关系的一种特例
+
+* 代码示例
+
+  ```java
+  package com.self.designmode.uml.generalization;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-07-22 11:09
+   **/
+  // 存在类继承, 即为泛华关系
+  // 包括普通类继承和抽象类继承
+  public abstract class Generalization extends Parent {
+  }
+  
+  class Parent {}
+  
+  // 包括接口继承
+  interface CliendInterface {}
+  
+  interface ParentInterface {}
+  
+  ```
+
+* 依赖关系类图
+
+  * <font color=red>注意箭头方向是从子类指向父类</font>
+
+  ![1595388649946](E:\gitrepository\study\note\image\designMode\1595388649946.png)
+
+### 2.2.4，实现关系（Implementation）
+
+* 实现关系判断条件
+
+  * 如果类A实现了接口B，则称A与B是实现关系，实现关系是依赖关系的一种特例
+
+* 代码示例
+
+  ```java
+  package com.self.designmode.uml.implementation;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-07-22 11:35
+   **/
+  public class Implementation implements Interface {
+  }
+  
+  interface Interface {}
+  
+  ```
+
+* 实现关系类图
+
+  * <font color=red>注意箭头方向从实现类指向接口</font>
+
+  ![1595389622700](E:\gitrepository\study\note\image\designMode\1595389622700.png)
+
+### 2.2.5，关联关系（Association）
+
+* 关联关系介绍
+
+  * 关联关系实际上就是类与类之间的关系，是依赖关系的特例
+  * 关联关系具有**导航性**：即双向或者单向关系
+  * 关系具有多重性，比如一对一(1V1)，一对多(1Vn)，多对多(nVm)，以下仅以一对一说明问题
+
+* 代码示例
+
+  ```java
+  package com.self.designmode.uml.association;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-07-22 12:37
+   **/
+  public class OneClass {
+      private OtherClass otherClass;
+  }
+  
+  class OtherClass {
+      // 单向图示中不存在该部分
+      private OneClass oneClass;
+  }
+  ```
+
+* 关联关系类图
+
+  ![1595392650993](E:\gitrepository\study\note\image\designMode\1595392650993.png)
+
+### 2.2.6，聚合关系（Aggregation）
+
+* 聚合关系介绍
+
+  * **聚合关系是整体和部分的关系，且整体和部分可以分开，是依赖关系的特例**
+  * 在实现层面上，如果类A依赖类B，且类B对象不会随着类B对象的初始化而初始化，则可以称为聚合关系，说明它们没有强相关
+
+* 代码示例
+
+  ```java
+  package com.self.designmode.uml.aggregation;
+  
+  /**
+   * 聚合关系
+   * @author PJ_ZHANG
+   * @create 2020-07-22 12:17
+   **/
+  public class Computer {
+      private Mouse mouse;
+      private Moniter moniter;
+      public void setMouse(Mouse mouse) { this.mouse = mouse; }
+      public void setMoniter(Moniter moniter) { this.moniter = moniter; }
+  }
+  
+  class Mouse {}
+  
+  class Moniter {}
+  
+  ```
+
+* 聚合关系类图
+
+  * <font color=red>注意箭头在主类端</font>
+
+  ![1595391437069](E:\gitrepository\study\note\image\designMode\1595391437069.png)
+
+### 2.2.7，组合关系（Composition）
+
+* 组合关系基本介绍
+
+  * **组合关系是整体和部分的关系，但是强调整体和部分不可分割，也是一种特殊的依赖关系**
+  * 在实现层面上，如果类A依赖类B，且类A初始化会直接关联类B初始化，则类A与类B有组合关系
+  * 如下示例，此时如果在代码中设置了`Person`和`Computer`的**级联删除**，此时关系就变为了组合
+
+* 代码示例
+
+  ```java
+  package com.self.designmode.uml.composition;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-07-22 12:20
+   **/
+  public class Person {
+      // 人和头部是强相关, 必须存在
+      // 组合关系
+      private Head head = new Head();
+      // 和电脑可以分开, 聚合关系
+      private Computer computer;
+      public void setComputer(Computer computer) { this.computer = computer; }
+  }
+  
+  class Computer {}
+  
+  class Head {}
+  
+  ```
+
+* 组合关系类图
+
+  * <font color=red>注意箭头在主类端</font>
+
+  ![1595391909317](E:\gitrepository\study\note\image\designMode\1595391909317.png)
