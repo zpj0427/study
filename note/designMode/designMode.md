@@ -1625,9 +1625,318 @@ enum EnumSingleton {
 
 # 5，工厂模式
 
+* 工厂模式在逻辑上可以分为三种：简单工厂模式，工厂方法模式和抽象工厂模式。其中简单工厂模式不属于23种设计模式。
+* 从实际中理解三种工厂模式，大致可以理解为工厂发展的三个阶段，下面将从一个专营炸鸡，汉堡，可乐的小店说起，可能不是很具体，但就是那么回事
+
 ## 5.1，简单工厂模式
+
+### 5.1.1，基本介绍
+
+* 简单工厂模式属于**创建者模式**，是工厂模式的一种，由一个工厂对象决定建出哪一种产品类的实例。简单工厂模式是工厂模式家族中最简单使用的模式
+* 简单工厂模式：定义了一个创建对象的类，由这个类来封装实例化具体对象的行为
+
+### 5.1.2，具体业务场景分析
+
+* 现在有一家快餐店，主营汉堡包，炸鸡，可乐三种产品
+* 在店铺开业之初，所有商品都由一家上游工厂进行提供，客户端只需要操作需要什么即可完成商品构建
+
+### 5.1.3，类图
+
+* 简单工厂模式中存在一个商品的工厂模型和一个向上抽取的商品接口
+* 具体商品类型分别作为商品抽象类的子类，并依赖在工厂模型类中
+* 工厂类通过`createProduct()`方法创建具体商品模型并多态返回具体商品对象
+* 简单来说，简单工厂模式是在代码中通过if-else层级进行封装，使代码职能更加专一
+
+![1595516848762](E:\gitrepository\study\note\image\designMode\1595516848762.png)
+
+### 5.1.4，代码实现
+
+* 顶层产品抽象类：Product
+
+```java
+public abstract class Product {
+
+    public abstract void show();
+
+}
+```
+
+* 商品类：炸鸡
+
+```java
+public class Chicken extends Product {
+    @Override
+    public void show() {
+        System.out.println("这是一只炸鸡...");
+    }
+}
+```
+
+* 商品类：可乐
+
+```java
+public class Cola extends Product {
+    @Override
+    public void show() {
+        System.out.println("这是一杯可乐...");
+    }
+}
+```
+
+* 商品类：汉堡包
+
+```java
+public class Hamburger extends Product {
+    @Override
+    public void show() {
+        System.out.println("这是一个汉堡包...");
+    }
+}
+```
+
+* 简单工厂类：商品构建类
+
+```java
+public class ProductFactory {
+
+    public static Product createProduct(String type) {
+        if ("chicken".equals(type)) {
+            return new Chicken();
+        } else if ("cola".equals(type)) {
+            return new Cola();
+        } else if ("hamburger".equals(type)) {
+            return new Hamburger();
+        }
+        return null;
+    }
+
+}
+```
+
+* 客户端
+
+```java
+public class Client {
+
+    public static void main(String[] args) {
+        // 要一杯可乐
+        Product product = ProductFactory.createProduct("cola");
+        product.show();
+        // 要一个汉堡
+        product = ProductFactory.createProduct("hamburger");
+        product.show();
+        // 再来一个炸鸡
+        product = ProductFactory.createProduct("chicken");
+        product.show();
+    }
+
+}
+```
+
+### 5.1.5，优缺点分析
+
+* **优点**：简单工厂模式将具体对象的创建交由工厂来完成，在一定程度上精简了代码结构，从整体上对具体的创建提供了一个范式。
+* **缺点**：简单工厂模式只是将创建对象的动作进行了向上抽取。如果店铺中添加了其他产品，则对应的需要在工厂类中添加分支，不符合开闭原则
 
 ## 5.2，工厂方法模式
 
+### 5.2.1，基本介绍
+
+* 工厂方法模式是对简单工厂模式的的完善和扩充
+* 工厂方法模式在简单工厂模式的基础上，向上抽取了一个抽象工厂，通过抽象工厂派生出一个具体工厂的子类
+* 最后通过这个派生出的具体工厂进行商品创建
+
+### 5.2.2，具体业务场景分析
+
+* 接简单工厂模式
+* 现在，这家快餐店经营火爆，目前的上游商品提供方式已经不能满足快餐店的基本需求
+* 快餐店需要商品更专业，更多元。这样就提出了商品提供的专一化和后续多元扩展的可能性（此处个人感觉可嵌套简单工厂模式）
+
+### 5.2.3，类图
+
+![1595516752351](E:\gitrepository\study\note\image\designMode\1595516752351.png)
+
+* 工厂方法模式提供向上的商品类和工厂类
+* 分别创建若干的具体工厂类实现抽象工厂
+* 具体商品类实现商品接口并依赖于其对应的具体工厂类
+* 多态创建工厂，并通过工厂多态返回具体商品对象，完成对象创建
+
+### 5.2.4，代码实现
+
+* 工厂方法模式已经列出的代码不再罗列，这部分只罗列出工厂和客户端的变化
+
+* 工厂顶层接口
+
+  ```java
+  public interface IProductFactory {
+      Product createProduct();
+  }
+  ```
+
+* 具体工厂：HanburgerFactory
+
+  ```java
+  public class HambugerFactory implements IProductFactory {
+      @Override
+      public Product createProduct() {
+          // 如果汉堡包类型过多, 可继续套用简单工厂模式
+          return new Hamburger();
+      }
+  }
+  ```
+
+* 具体工厂：ChickenFactory
+
+  ```java
+  public class ChickenFactory implements IProductFactory {
+      @Override
+      public Product createProduct() {
+          // 如果炸鸡类型过多, 可继续套用简单工厂模式
+          return new Chicken();
+      }
+  }
+  ```
+
+* 具体工厂：ColaFactory
+
+  ```java
+  public class ColaFactory implements IProductFactory {
+      @Override
+      public Product createProduct() {
+          // 如果可乐类型过多, 可继续套用简单工厂模式
+          return new Cola();
+      }
+  }
+  ```
+
+* 客户端
+
+  ```java
+  public class Client {
+  
+      public static void main(String[] args) {
+          // 来一个炸鸡
+          IProductFactory productFactory = new ChickenFactory();
+          productFactory.createProduct().show();
+          // 来一个汉堡
+          productFactory = new HambugerFactory();
+          productFactory.createProduct().show();
+          // 来一杯可乐
+          productFactory = new ColaFactory();
+          productFactory.createProduct().show();
+      }
+  
+  }
+  ```
+
+### 5.2.5，优缺点分析
+
+* 工厂方法模式弥补了简单工厂模式中分支过多，代码维护困难的问题，符合Java开闭原则
+* 每一个商品的添加，都对应的需要添加一个具体的商品类和工厂类，这不可避免的造成整体类结构复杂。当然，也是设计模式的通病
+* 最后，如果业务继续扩展，一个具体工厂依然满足不了商品需求，此时就需要进入到抽象工厂模式
+
 ## 5.3，抽象工厂模式
+
+### 5.3.1，基本介绍
+
+* 抽象工厂模式是对简单工厂模式和工厂方法模式的整合，提出了"产品族"的概念
+
+### 5.3.2，具体业务场景分析
+
+* 接工厂方法模式
+* 此时快餐店的生意已经好出了天际，开始有了连锁加盟店，而且连锁加盟店扩展到全国加盟甚至全球加盟
+* 在这样的体量下，我们刚才提高的简简单单的几个工厂肯定是不够用的。而且针对不同的地方，产品的风味肯定需要因地制宜进行改良
+* 这样为了减少成本，更好的当地进行推广，肯定需要在每一个大的地区都有一系列对应的工厂提供对应的商品。但是工厂过多之后需要如何对工厂和商品进行管理，就有了产品族的概念，继续向上抽取
+
+### 5.3.3，类图
+
+![1595518331585](E:\gitrepository\study\note\image\designMode\1595518331585.png)
+
+* 抽象工厂模式提供了用于创建产品族的抽象工厂类和相对应的抽象产品接口
+* 具体产品组工厂实现抽象工厂并重写抽象方法
+* 具体产品族工厂类依赖具体工厂进行产品组对应产品创建
+* 具体工厂创建产品共客户使用
+
+### 5.2.4，代码实现
+
+* 同样在工厂方法基础上填充没有的方法
+
+* 产品族顶层抽象接口：IFactory
+
+  ```java
+  public interface IFactory {
+  
+      Product createChicken();
+  
+      Product createHamburger();
+  
+      Product createCola();
+  }
+  ```
+
+* 产品族具体工厂类：ChinaFactory
+
+  ```java
+  public class ChinaFactory implements IFactory {
+      @Override
+      public Product createChicken() {
+          return new ChickenFactory().createProduct();
+      }
+  
+      @Override
+      public Product createHamburger() {
+          return new HamburgerFactory().createProduct();
+      }
+  
+      @Override
+      public Product createCola() {
+          return new ColaFactory().createProduct();
+      }
+  }
+  ```
+
+* 产品族具体工厂类：USAFactory
+
+  ```java
+  public class USAFactory implements IFactory {
+      @Override
+      public Product createChicken() {
+          return new ChickenFactory().createProduct();
+      }
+  
+      @Override
+      public Product createHamburger() {
+          return new HamburgerFactory().createProduct();
+      }
+  
+      @Override
+      public Product createCola() {
+          return new ColaFactory().createProduct();
+      }
+  }
+  ```
+
+* 客户端
+
+  ```java
+  public class Client {
+  
+      public static void main(String[] args) {
+          IFactory factory = new ChinaFactory();
+          factory.createChicken().show();
+          factory.createHamburger().show();
+          factory.createCola().show();
+      }
+  
+  }
+  ```
+
+* <font color=red>此处只是为了简单说明问题，具体不同地区的工厂肯定有不同方式的产品实现形式，每一种产品又有多种外在的表现形式，这种可以通过三种工厂模式的灵活嵌套来完成。工厂模式，通过符合OCP原则的一系列处理，不可避免的会存在类爆炸</font>
+
+### 5.2.5，优缺点分析
+
+* 抽象工厂模式，提出了产品族的概念，对同一模块下的产品行为进行了整合，有利于模块化的业务模型处理
+* 不可否认，不合理的应用抽象工厂模式，极易产生类结构爆炸。<font color=red>合理的也会</font>
+
+# 6，原型模式
 
