@@ -1395,3 +1395,239 @@ public class SimpleExtend {
   * <font color=red>注意箭头在主类端</font>
 
   ![1595391909317](E:\gitrepository\study\note\image\designMode\1595391909317.png)
+
+# 3，设计模式概述
+
+## 3.1，设计模式基本介绍
+
+* 设计模式是某类通用问题的进本解决方式，设计模式不是代码，设计模式代表了最佳实践
+* 设计模式的本质提高**软件的维护性，通用性和扩展性，并降低软件的复杂度**
+
+## 3.2，设计模式的类型
+
+* 设计模式一共分为三大类，共23小类
+* **创建型模式**：单例模式，工厂模式，原型模式，建造者模式
+* **结构型模式**：适配器模式，桥接模式，装饰者模式，组合模式，外观模式，享元模式，代理模式
+* **行为型模式**：模板方法模式，命令模式，访问者模式，迭代器模式，观察者模式，中介者模式，备忘录模式，解释器模式，状态模式，策略模式，职责链模式（责任链模式）
+
+# 4，单例模式
+
+## 4.1，单例模式基本介绍
+
+* 所谓单例模式，就是通过一定的方式保证在系统中，对某一个类只存在一个对象实例，并且该类只提供一个获取该对象的方法（静态方法）
+
+* 单例模式创建方式比较多，目前大致可以分为五类八种，后面为一一分析，<font color=red>其中标红表明不可取方式</font>，分别如下：
+  * 饿汉式：静态常量，静态代码块
+  * 懒汉式：<font color=red>线程不安全方式</font>，同步方法，<font color=red>同步代码块</font>
+  * 双重检查方式（推荐）
+  * 静态内部类方式（推荐）
+  * 枚举方式（推荐）
+
+## 4.2，饿汉式_静态常量&静态代码块
+
+### 4.2.1，代码示例
+
+```java
+package com.self.designmode.singleton;
+
+/**
+ * 饿汉式加载, 包括两种方式:
+ * * 静态常量加载
+ * * 静态代码块加载
+ * @author PJ_ZHANG
+ * @create 2020-07-23 14:23
+ **/
+public class DirectLoading {
+
+    public static void main(String[] args) {
+        for (int i = 0; i < 10; i++) {
+            new Thread(() -> System.out.println(StaticCodeBlock.getInstance())).start();
+        }
+    }
+
+}
+
+class StaticCodeBlock {
+    private StaticCodeBlock() {}
+
+    private static StaticCodeBlock singletion;
+
+    // 静态代码块加载
+    static {
+        singletion = new StaticCodeBlock();
+    }
+
+    public static StaticCodeBlock getInstance() {
+        return singletion;
+    }
+}
+
+class StaticField {
+
+    private StaticField() {}
+
+    // 常量加载
+    private static final StaticField SINGLETON = new StaticField();
+
+    public static StaticField getInstance() {
+        return SINGLETON;
+    }
+
+}
+```
+
+### 4.2.2，优缺点分析
+
+* **优点**：写法简单，在类加载时候完成对象初始化，避免了多线程下产生的问题；*静态代码块只在类第一次加载的时候执行一次*
+* **缺点**：在类加载的时候就完成了对象初始化，没有达到Lazy Loading的效果。如果始终都不对使用这个对象，则会造成内存浪费
+* 因为JVM通过`classLoader`加载类是线程安全的，所以这种方式是依托JVM的性质，从虚拟机层面保证了单例的可行性。<font color=red>PS：记得之前有看过一些分析，说这种方式也不一定，后续！！！</font>
+
+## 4.3，懒加载_线程不安全方式
+
+### 4.3.1，代码示例
+
+```java
+class NotSafe {
+
+    private NotSafe() {}
+
+    private static NotSafe notSafe;
+
+    public static NotSafe getInstance() {
+        return null == notSafe ? notSafe = new NotSafe() : notSafe;
+    }
+}
+```
+
+### 4.3.2，优缺点分析
+
+* <font color=red>首先，这种方式没有优点，不要用就行</font>
+
+* 通过这种方式进行加载，单纯从代码上来看，感觉是没有问题的，但是在多线程环境下，如果线程A先抢到线程，进行了第一步判断，此时线程B抢到线程，并以此走完了全部流程，再切换到线程A，此时线程A已经判断过，会直接new对象，这样就会产生两个对象，可以在多线程下多跑几次看看效果
+
+  ![1595486982796](E:\gitrepository\study\note\image\designMode\1595486982796.png)
+
+## 4.4，懒加载_同步方法方式
+
+### 4.4.1，代码示例
+
+```java
+class SynMethod {
+    private SynMethod() {}
+
+    private static SynMethod synMethod;
+
+    public static synchronized SynMethod getInstance() {
+        return null == synMethod ? synMethod = new SynMethod() : synMethod;
+    }
+}
+```
+
+### 4.4.2，优缺点分析
+
+* **优点**：首先，这种方式是绝对满足要求的，满足单例模式，满足懒加载
+* **缺点**：但是，这种方式在满足要求的时候，有些为了满足要求而满足要求。对象单例化本来就是一次性的过程，在第一次创建的时候可能会存在线程竞争导致创建出多个对象。但是，挺过第一波后，后续对象获取都是基于对象创建完成获取的，其实不需要有同步考虑。同步方法之后，后续对象读取都需要排队进行，性能甚至不如直接加载，优点舍本逐末。<font color=red>我甚至感觉这个破玩意就是凑数的</font>
+
+## 4.5，懒加载_同步代码块
+
+### 4.5.1，代码示例
+
+```java
+class SynMethod {
+    private SynMethod() {}
+
+    private static SynMethod synMethod;
+
+    public static synchronized SynMethod getInstance() {
+        return null == synMethod ? synMethod = new SynMethod() : synMethod;
+    }
+}
+```
+
+### 4.5.2，优缺点分析
+
+* <font color=red>这个也不要用，没有优点</font>
+* **缺点**：同步代码块，就是通过`synchronized`关键字，对一段代码进行包裹，在该段代码内，保证线程同步。在创建单例对象时，能满足同步的代码块就是创建对象的代码块。而`synchronized`能同步的代码， 也就是是分为带判断和不带判断语句两种。
+  * 带判断语句：等同于整个方法同步，与同步方法方式完全一致
+  * 不带判断语句：就是在线程不安全方式的基础上，加了个不安全部分的同步，其实没有任何意义，还是不安全
+  * <font color=red>这个也是凑数的</font>
+
+## 4.6，双重校验
+
+### 4.6.1，代码示例
+
+```java
+class Singleton {
+    private Singleton() {}
+
+    private static Singleton singleton;
+
+    public static Singleton getInstance() {
+        if (null == singleton) {
+            synchronized (Singleton.class) {
+                if (null == singleton) {
+                    singleton = new Singleton();
+                }
+            }
+        }
+        return singleton;
+    }
+}
+```
+
+### 4.6.2，优缺点分析
+
+* Double-Check是多线程开发中经常用到的，是比较推荐的创建方式
+* 通过两层循环中间加一层同步代码块进行实现
+* 首先，外层判断，对不存在线程竞争的初次创建和其他后续对象获取进行判断，如果对象已经创建直接返回，此处不存在锁处理，不会影响性能
+* 其次，中间的同步代码块部分，对存在线程竞争的初次创建，如果存在多道线程同时过了第一道if，则在同步代码块部分必须要排队进行处理，此时只能一道线程一道线程的去执行同步代码快里面的代码；在这一步里面，能同时抢占的可能性本来就很小，所以这部分排队等候的线程也就只有个位数
+* 最后，内层判断，同步代码块内代码，多个线程排队执行，所以不会存在重复创建，如果第二个线程排队进入，此时判断对象已经创建完成，返回即可
+* <font color=red>该方式是单例模式的推荐方式</font>
+
+## 4.7，静态内部类
+
+### 4.7.1，代码示例
+
+```java
+class OuterClass {
+    private OuterClass() {}
+
+    public static OuterClass getInstance() {
+        return InnerClass.OUTER_CLASS;
+    }
+
+    static class InnerClass {
+        private static final OuterClass OUTER_CLASS = new OuterClass();
+    }
+}
+```
+
+### 4.7.2，优缺点分析
+
+* 与饿汉式加载原理基本一致，依托类加载机制，通过类加载机制保证线程同步
+* 与饿汉式不同的是，在单例类里面会通过一个静态内部类来创建该类对象，在外部类（单例类）加载时，此时不会加载外部类，只有在进行对象创建，需要调用到内部类，此时内部类才会被加载，并同步创建外部类对象，通过外部类的对象获取方法返回
+* <font color=red>个人感觉该方法由于双重校验，也是单例模式的推荐方式</font>
+
+## 4.8，枚举方式
+
+### 4.8.1，代码示例
+
+```java
+enum EnumSingleton {
+    INSTANCE
+}
+```
+
+### 4.8.2，优缺点分析
+
+* 通过JDK1.5引入的枚举机制来实现单例化。不仅能避免多线程同步问题，而且还能防止反序列化重新创建新的对象
+* <font color=red>这种方式也是Effective Java作者Josh Bloch推荐的方式</font>
+
+# 5，工厂模式
+
+## 5.1，简单工厂模式
+
+## 5.2，工厂方法模式
+
+## 5.3，抽象工厂模式
+
