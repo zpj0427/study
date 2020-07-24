@@ -1,4 +1,4 @@
-# 1，设计模式的七大原则
+1，设计模式的七大原则
 
 ## 1.1，设计模式的目的
 
@@ -1142,43 +1142,11 @@ public class SimpleExtend {
 
 # 2，UML类图
 
-## 2.1，IDEA使用PlantUML进行类图绘制
-
-### 2.1.2，Windows安装graphviz
-
-* 下载地址：https://www2.graphviz.org/Packages/stable/windows/10/msbuild/Release/Win32/graphviz-2.38-win32.msi
-
-### 2.1.1，IDEA中安装PlantUML插件
-
-* 搜索该插件直接进行安装，搜索完成后，按道理类图是打不开的，此时配置graphviz
-
-![1595326844659](E:\gitrepository\study\note\image\designMode\1595326844659.png)
-
-* IDEA配置graphviz
-
-  ![1595326926306](E:\gitrepository\study\note\image\designMode\1595326926306.png)
-
-* 创建一个画类图文件，可以看到里面还包括流程图，时序图等
-
-  ![1595326958448](E:\gitrepository\study\note\image\designMode\1595326958448.png)
-
-* 最终页面呈现，剩下的就是语法问题了
-
-  ![1595327017048](E:\gitrepository\study\note\image\designMode\1595327017048.png)
-
-* PlantUML基本语法
-
-  ```java
-  
-  ```
-
-## 2.2，UML类图
-
-### 2.2.1，类关系（Dependency）
+## 2.1，类关系（Dependency）
 
 * **依赖，泛华（继承），实现，关联，聚合和组合**
 
-### 2.2.2，依赖关系
+## 2.2，依赖关系
 
 * 依赖关系介绍
   * 成员变量可以作为类依赖关系
@@ -1228,7 +1196,7 @@ public class SimpleExtend {
 
   ![1595388280752](E:\gitrepository\study\note\image\designMode\1595388280752.png)
 
-### 2.2.3，泛化关系（继承关系）（Generalization）
+## 2.3，泛化关系（继承关系）（Generalization）
 
 * 泛化关系介绍
 
@@ -1263,7 +1231,7 @@ public class SimpleExtend {
 
   ![1595388649946](E:\gitrepository\study\note\image\designMode\1595388649946.png)
 
-### 2.2.4，实现关系（Implementation）
+## 2.4，实现关系（Implementation）
 
 * 实现关系判断条件
 
@@ -1291,7 +1259,7 @@ public class SimpleExtend {
 
   ![1595389622700](E:\gitrepository\study\note\image\designMode\1595389622700.png)
 
-### 2.2.5，关联关系（Association）
+## 2.5，关联关系（Association）
 
 * 关联关系介绍
 
@@ -1322,7 +1290,7 @@ public class SimpleExtend {
 
   ![1595392650993](E:\gitrepository\study\note\image\designMode\1595392650993.png)
 
-### 2.2.6，聚合关系（Aggregation）
+## 2.6，聚合关系（Aggregation）
 
 * 聚合关系介绍
 
@@ -1358,7 +1326,7 @@ public class SimpleExtend {
 
   ![1595391437069](E:\gitrepository\study\note\image\designMode\1595391437069.png)
 
-### 2.2.7，组合关系（Composition）
+## 2.7，组合关系（Composition）
 
 * 组合关系基本介绍
 
