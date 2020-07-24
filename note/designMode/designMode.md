@@ -1410,7 +1410,7 @@ public class SimpleExtend {
 * **结构型模式**：适配器模式，桥接模式，装饰者模式，组合模式，外观模式，享元模式，代理模式
 * **行为型模式**：模板方法模式，命令模式，访问者模式，迭代器模式，观察者模式，中介者模式，备忘录模式，解释器模式，状态模式，策略模式，职责链模式（责任链模式）
 
-# 4，单例模式
+# 4，单例模式（Singleton）
 
 ## 4.1，单例模式基本介绍
 
@@ -1623,7 +1623,7 @@ enum EnumSingleton {
 * 通过JDK1.5引入的枚举机制来实现单例化。不仅能避免多线程同步问题，而且还能防止反序列化重新创建新的对象
 * <font color=red>这种方式也是Effective Java作者Josh Bloch推荐的方式</font>
 
-# 5，工厂模式
+# 5，工厂模式（Factory）
 
 * 工厂模式在逻辑上可以分为三种：简单工厂模式，工厂方法模式和抽象工厂模式。其中简单工厂模式不属于23种设计模式。
 * 从实际中理解三种工厂模式，大致可以理解为工厂发展的三个阶段，下面将从一个专营炸鸡，汉堡，可乐的小店说起，可能不是很具体，但就是那么回事
@@ -1938,5 +1938,228 @@ public class Client {
 * 抽象工厂模式，提出了产品族的概念，对同一模块下的产品行为进行了整合，有利于模块化的业务模型处理
 * 不可否认，不合理的应用抽象工厂模式，极易产生类结构爆炸。<font color=red>合理的也会</font>
 
-# 6，原型模式
+# 6，原型模式（Prototype）
 
+## 6.1，基本介绍
+
+* 原型模式是通过原型实例指定创建对象的种类，并通过拷贝这些原型，创建新的对象
+* 原型模式是一种**创建型设计模式**，允许通过一个对象再创建一个可定制的对象，且不用对外暴露创建过程
+* 原型模式拷贝对象的方式，分为浅拷贝和深拷贝两种：
+* 浅拷贝通过JDK提供的API可直接进行处理，只会改变外部对象的地址，对内部引用对象地址不会改变
+* 深拷贝需要通过一些其他途径，如序列化，递归拷贝等，关联对内部引用对象地址进行改变，新对象与原对象不会再有任何联系
+
+## 6.2，类图
+
+![1595583402092](E:\gitrepository\study\note\image\designMode\1595583402092.png)
+
+* 原型模式分为浅拷贝和深拷贝两种方式，两种分别对应不同的类结构
+
+* `Prototype`表示需要进行拷贝的类对象
+
+* 无论什么类，都会有顶层父类`Object`，而浅拷贝会依托于父类的`clone()`方法
+
+* 浅拷贝需要使用父类的`clone()`方法，则其类必须实现接口`Cloneable`，否则会报异常`CloneNotSupportedException`，具体可以看`clone()`的方法描述
+
+  > ```
+  > CloneNotSupportedException：if the object's class does not support the {@code Cloneable} interface
+  > ```
+
+* 深拷贝通常基于对象的序列化完成，对象序列化，其类必须实现序列化接口`Serializable`
+
+## 6.2，浅拷贝 — 克隆方式
+
+### 6.2.1，基本介绍
+
+* 浅拷贝是基于顶层父类`Object`的方法`clone()`进行实现，对应实体类必须实现`Cloneable接口`
+* 浅拷贝完成后，拷贝后对象与原对象相比，外层对象即该对象会重新构造地址创建，与原对象地址不同
+* 对于原对象内部属性，如果该属性是基本类型属性，浅拷贝会直接进行值传递，后续数据修改不会引起原对象关联修改
+* <font color=red>对于内部属性是引用类型的属性，浅拷贝会直接赋值其地址到拷贝后的对象，此时原对象和拷贝后对象内部引用类型的成员属性地址公用一个，此时无论对哪一个进行修改，都会关联影响另外一个属性</font>
+
+### 6.2.1，代码示例
+
+* 原型类
+
+  ```java
+  package com.self.designmode.prototype;
+  
+  import lombok.Getter;
+  import lombok.Setter;
+  
+  /**
+   * 浅拷贝
+   * * 方法必须实现Cloneable接口, 不然在调用clone()方法时会报异常
+   * CloneNotSupportedException  if the object's class does not support the {@code Cloneable} interface
+   *
+   * * 浅拷贝问题:
+   * * 浅拷贝只会对直接对象进行初始化, 如果该对象内部还存在其他引用类型对象, 则不会进行初始化
+   * * 此时会将内部引用类型的地址, 直接赋值给新创建的外部对象
+   * * 因为地址没有变化, 如果此时对原对象的该内部引用进行修改, 会关联修改现有对象
+   * @author PJ_ZHANG
+   * @create 2020-07-24 17:12
+   **/
+  @Getter
+  @Setter
+  public class ShallowCopy implements Cloneable {
+      private String name;
+      private String addr;
+      private ShallowCopy inner;
+  
+      @Override
+      protected Object clone() throws CloneNotSupportedException {
+          return super.clone();
+      }
+  }
+  ```
+
+* 客户端
+
+  ```java
+  package com.self.designmode.prototype;
+  
+  /**
+   * 原型模式,
+   * * 分为深拷贝和浅拷贝两种
+   * @author PJ_ZHANG
+   * @create 2020-07-24 17:11
+   **/
+  public class Prototype {
+  
+      public static void main(String[] args) throws CloneNotSupportedException {
+          ShallowCopy shallowCopy = new ShallowCopy();
+          ShallowCopy inner = new ShallowCopy();
+          inner.setName("inner张三");
+          shallowCopy.setName("张三");
+          shallowCopy.setInner(inner);
+          ShallowCopy copy = (ShallowCopy) shallowCopy.clone();
+          System.out.println("原对象    : " + shallowCopy.getName() + ",      地址: " + shallowCopy);
+          System.out.println("拷贝对象  : " + copy.getName() + ",      地址: " + copy);
+          ShallowCopy copyIn = copy.getInner();
+          System.out.println("原内对象  : " + inner.getName() + ", 地址: " + inner);
+          System.out.println("拷贝内对象: " + copyIn.getName() + ", 地址: " + copyIn);
+          // 修改名称
+          copyIn.setName("Update");
+          System.out.println(inner.getName());
+          System.out.println(copyIn.getName());
+      }
+  }
+  ```
+
+* 打印结果
+
+  ![1595584315894](E:\gitrepository\study\note\image\designMode\1595584315894.png)
+
+## 6.3，深拷贝 — 序列化方式
+
+### 6.3.1，基本介绍
+
+* 浅拷贝存在内部引用类型属性没有重新构建地址，深拷贝就是解决这个问题
+* 深拷贝对基本类型属性进行值复制
+* 对于成员类型属性也会重新构造内存地址，并复制该引用类型对象中每个属性的值到新构造的对象中，直到处理完该对象内部的所有可达对象（递归处理）
+* 深拷贝方式通常使用序列化来进行实现，也可通过Json进行转换，此处通过序列化实现，更清晰
+
+### 6.3.2，代码示例
+
+* 原型类
+
+  ```java
+  package com.self.designmode.prototype;
+  
+  import com.sun.xml.internal.messaging.saaj.util.ByteInputStream;
+  import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
+  import lombok.Getter;
+  import lombok.Setter;
+  
+  import java.io.*;
+  import java.util.stream.Stream;
+  
+  /**
+   * 浅拷贝
+   * * 方法必须实现Cloneable接口, 不然在调用clone()方法时会报异常
+   * CloneNotSupportedException  if the object's class does not support the {@code Cloneable} interface
+   *
+   * * 浅拷贝问题:
+   * * 浅拷贝只会对直接对象进行初始化, 如果该对象内部还存在其他引用类型对象, 则不会进行初始化
+   * * 此时会将内部引用类型的地址, 直接赋值给新创建的外部对象
+   * * 因为地址没有变化, 如果此时对原对象的该内部引用进行修改, 会关联修改现有对象
+   * @author PJ_ZHANG
+   * @create 2020-07-24 17:12
+   **/
+  @Getter
+  @Setter
+  public class ShallowCopy implements Serializable {
+      private String name;
+      private String addr;
+      private ShallowCopy inner;
+  
+      public ShallowCopy deepCopy() {
+          ByteArrayOutputStream byteArrayOutputStream = null;
+          ObjectOutputStream objectOutputStream = null;
+          ByteArrayInputStream byteArrayInputStream = null;
+          ObjectInputStream objectInputStream = null;
+          try {
+              // 写对象到内存中
+              byteArrayOutputStream = new ByteArrayOutputStream();
+              objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+              objectOutputStream.writeObject(this);
+              objectOutputStream.flush();
+              // 从内存中读对象
+              byteArrayInputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+              objectInputStream = new ObjectInputStream(byteArrayInputStream);
+              Object copyObject = objectInputStream.readObject();
+              return (ShallowCopy) copyObject;
+          } catch (Exception e) {
+              e.printStackTrace();
+          } finally {
+              try {
+                  byteArrayOutputStream.close();
+                  objectOutputStream.close();
+                  byteArrayInputStream.close();
+                  objectOutputStream.close();
+              } catch (Exception e) {
+                  e.printStackTrace();
+              }
+          }
+          return null;
+      }
+  }
+  ```
+
+* 客户端
+
+  ```java
+  package com.self.designmode.prototype;
+  
+  /**
+   * 原型模式,
+   * * 分为深拷贝和浅拷贝两种
+   * @author PJ_ZHANG
+   * @create 2020-07-24 17:11
+   **/
+  public class Prototype {
+  
+      public static void main(String[] args) throws CloneNotSupportedException {
+          ShallowCopy shallowCopy = new ShallowCopy();
+          ShallowCopy inner = new ShallowCopy();
+          inner.setName("inner张三");
+          shallowCopy.setName("张三");
+          shallowCopy.setInner(inner);
+          // 浅拷贝
+          // ShallowCopy copy = (ShallowCopy) shallowCopy.clone();
+          // 深拷贝
+          ShallowCopy copy = shallowCopy.deepCopy();
+          System.out.println("原对象    : " + shallowCopy.getName() + ",      地址: " + shallowCopy);
+          System.out.println("拷贝对象  : " + copy.getName() + ",      地址: " + copy);
+          ShallowCopy copyIn = copy.getInner();
+          System.out.println("原内对象  : " + inner.getName() + ", 地址: " + inner);
+          System.out.println("拷贝内对象: " + copyIn.getName() + ", 地址: " + copyIn);
+          // 修改名称
+          copyIn.setName("Update");
+          System.out.println(inner.getName());
+          System.out.println(copyIn.getName());
+      }
+  }
+  ```
+
+* 打印结果
+
+  ![1595585130241](E:\gitrepository\study\note\image\designMode\1595585130241.png)
