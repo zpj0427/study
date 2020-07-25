@@ -1915,6 +1915,7 @@ public class Client {
 * 原型模式拷贝对象的方式，分为浅拷贝和深拷贝两种：
 * 浅拷贝通过JDK提供的API可直接进行处理，只会改变外部对象的地址，对内部引用对象地址不会改变
 * 深拷贝需要通过一些其他途径，如序列化，递归拷贝等，关联对内部引用对象地址进行改变，新对象与原对象不会再有任何联系
+* <font color=red>在Spring中的使用：Bean创建方式，单例/原型</font>
 
 ## 6.2，类图
 
@@ -2140,4 +2141,186 @@ public class Client {
 * 在实现深拷贝的时候可能会需要比较复杂的代码（如递归处理，序列化处理）
 * **缺点**：需要为每一个类配备一个克隆方法，对新增类影响不大，如果项目中突然引入，需要对全项目进行修改，势必修改大量源代码
 * <font color=red>原型模式可完全通过JSON转换来实现，先序列化为字符串，再由字符串转为对象，即可实现一次深拷贝，对实体类零入侵，前面一大堆就是演示过程！！！</font>
+
+# 7，建造者模式（Build）
+
+## 7.1，基本介绍
+
+* 建造者模式（Builder Pattern）是一种对象构建模式，可以将复杂对象的建造过程抽象出来，使这个抽象过程的不同实现过程可以构造出不同的对象
+* 建造者模式是一步一步创建一个复杂的对象，它允许用户只通过复杂对象的类型和内容就可以创建它们，用户不需要知道具体的构建细节
+* <font color=red>在JDK中的应用：StringBuilder</font>
+
+## 7.2，四个基本角色
+
+* `Product`：**产品角色**，一个具体的产品类
+* `AbstractBuilder`：**抽象建造者**，抽取一个向上的抽象类，定义具体产品的创建细节模型
+* `ConcreteBuilder`：**具体建造者**，实现抽象建造者，并重写产品创建的细节方法，用于完成装配产品的各个部件
+* `Director`：**指挥者**，构建一个使用`AbstractBuilder`类的对象，主要用于构建一个复杂对象。有两部分的功能：
+  * 隔离了客户与对象的生产过程：对外连接客户，对内连接建造者
+  * 负责控制对象的产品过程：根据客户端传递的参数，合理的控制创建过程，
+
+## 7.3，类图
+
+![1595678859455](E:\gitrepository\study\note\image\designMode\1595678859455.png)
+
+* 建造者的层次结构，定义一个抽象的建造者`AbstractBuilder`，并抽象化构造细节；子类即具体建造者类`ConcreteBuilder`，继承抽象类并重写这部分方法，建造完成后，通过抽象类的`build()`方法直接返回构造完成的对象。
+  * 此处抽象类组合了产品类`Product`，是在抽象类进行产品对象的直接初始化
+  * 字节依赖产品类`Product`，是在子类中给父类构建好的产品对象赋值
+* 指挥者类`Director`中，组合了抽象建造者`AbstractBuilder`，是需要通过具体建造者类进行对象建造，体现了**对内连接建造者**，同时被客户端`Client`依赖，体现了**对外连接客户端**
+* 客户端`Client`中，依赖指挥者`Director`创建产品，在创建时传递一系列基本属性，指挥类`Director`对属性进行基本组装，并通过实际建造者类`ConcreteBuilder`传递到对应的实现细节进行细节装配，最后通过`AbstractBuilder.build()`方法返回具体构建完成的产品`Product`
+
+## 7.4，代码实现
+
+* 产品类：`Product`
+
+  ```java
+  package com.self.designmode.builder;
+  
+  import lombok.Getter;
+  import lombok.Setter;
+  import lombok.ToString;
+  
+  /**
+   * 产品: 房子
+   * @author pj_zhang
+   * @create 2020-07-25 16:21
+   **/
+  @Getter
+  @Setter
+  @ToString
+  public class Product {
+      private int height;
+      private int size;
+  }
+  ```
+
+* 抽象建造者类：`AbstractBuilder`
+
+  ```java
+  package com.self.designmode.builder;
+  
+  /**
+   * 抽象建造类
+   * @author pj_zhang
+   * @create 2020-07-25 16:35
+   **/
+  public abstract class AbstractBuilder {
+  
+      protected Product house = new Product();
+  
+      protected abstract void buildHeight(int height);
+  
+      protected abstract void buildSize(int size);
+  
+      public Product build() {
+          return house;
+      }
+  
+  }
+  ```
+
+* 具体建造者类1：`CommonBuilder`
+
+  ```java
+  package com.self.designmode.builder;
+  
+  /**
+   * 具体建造类: 普通房子建造
+   * @author pj_zhang
+   * @create 2020-07-25 16:37
+   **/
+  public class CommonBuilder extends AbstractBuilder {
+      @Override
+      protected void buildHeight(int height) {
+          house.setHeight(height);
+      }
+  
+      @Override
+      protected void buildSize(int size) {
+          house.setSize(size);
+      }
+  }
+  ```
+
+* 具体建造者类2：`HighBuilder`
+
+  ```java
+  package com.self.designmode.builder;
+  
+  /**
+   * 具体建造类: 高楼大厦建造
+   * @author pj_zhang
+   * @create 2020-07-25 16:37
+   **/
+  public class HighBuilder extends AbstractBuilder {
+      @Override
+      protected void buildHeight(int height) {
+          house.setHeight(height);
+      }
+  
+      @Override
+      protected void buildSize(int size) {
+          house.setSize(size);
+      }
+  }
+  ```
+
+* 指挥者类：`BuilderDirector`
+
+  ```java
+  package com.self.designmode.builder;
+  
+  /**
+   * 指挥类: 建造指挥类
+   * @author pj_zhang
+   * @create 2020-07-25 16:39
+   **/
+  public class BuilderDirector {
+      AbstractBuilder abstractBuilder;
+  
+      public BuilderDirector(AbstractBuilder builder) {
+          this.abstractBuilder = builder;
+      }
+  
+      public Product build(int height, int size) {
+          abstractBuilder.buildHeight(height);
+          abstractBuilder.buildSize(size);
+          return abstractBuilder.build();
+      }
+  }
+  ```
+
+* 客户端：`Client`
+
+  ```java
+  package com.self.designmode.builder;
+  
+  /**
+   * @author pj_zhang
+   * @create 2020-07-25 16:41
+   **/
+  public class Client {
+      public static void main(String[] args) {
+          BuilderDirector director = new BuilderDirector(new CommonBuilder());
+          Product house = director.build(80, 200);
+          System.out.println(house);
+      }
+  }
+  ```
+
+## 7.5，注意事项和细节
+
+* 客户端不需要知道产品内部组成的细节，将产品本身与产品的创建过程解耦，使得相同的创建过程可以创建出不同的对象
+* 每一个具体建造者都相对独立，与其他建造者无关；因此可以很方便的替换建造者或者增加新的建造者，用户根据不同的建造者即可得到不同的对象
+* **更加精细的控制建造过程**。将复杂产品的创建步骤分解为不同的地方，使得创建过程更加清晰，也更加能方便的进行控制
+* 增加新的创建者无需修改原有类库的代码，指挥者类也是面向顶层抽象类，系统扩展方便，符合**开闭原则**
+* 通过建造者模式创建的对象具有较多的共同点，其组成部分相似，如果产品的差异性很大，则不适合使用建造者模式，存在一定的限制
+* 如果产品内部变化复杂，可能会导致要使用更多的建造者类进行建造，因此在这种情况下，要考虑是否适用
+* **抽象工厂模式** VS **建造者模式**
+  * 抽象工厂模式是对产品族的管理，不需要关心构建过程，只需要知道什么工厂生产什么产品即可
+  * 建造者模式则要求按照指定的蓝图设计产品，主要目的是经过配件组装成为新的产品
+
+# 8，适配器模式（Adapter）
+
+
 
