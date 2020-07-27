@@ -2322,5 +2322,524 @@ public class Client {
 
 # 8，适配器模式（Adapter）
 
+## 8.1，基本介绍
 
+* 适配器模式是将某个类的接口转换为客户端期望的另一个接口表示，**主要目的是兼容性**，让原本不能工作的接口经过一次转换适配后可以正常工作
 
+* 适配器属于**结构性模式**
+
+* 主要可以分为三类：**类适配器**，**对象适配器**，**接口适配器**
+
+  ![1595824104472](E:\gitrepository\study\note\image\designMode\1595824104472.png)
+
+## 8.2，类适配器
+
+### 8.2.1，基本介绍
+
+* 类适配器是基于继承原则，对原有功能进行扩展，并适配到具体功能
+
+### 8.2.2，类图
+
+![1595831985004](E:\gitrepository\study\note\image\designMode\1595831985004.png)
+
+* 定义适配器顶层接口：`IVoltageAdapter`
+* 定义具体适配器类：`PhoneVoltageAdapter`
+* 具体适配器类继承原有标准类`NormalVoltage`，从该类中获取初始方法，并实现适配器顶层接口，作为后续多态调用
+* 具体产品类依赖适配器顶层接口，通过传入的具体实例多态调用实现方法
+* 客户端依赖适配器具体类和接口构造多态，传递到产品类中进行调用
+
+### 8.2.3，代码示例
+
+* 原始类：`NormalVoltage`
+
+  ```java
+  package com.self.designmode.adapter.classadapter;
+  
+  /**
+   * 适配器: 被适配类, 原类, 标准电压220V
+   * @author PJ_ZHANG
+   * @create 2020-07-27 14:12
+   **/
+  public class NormalVoltage {
+      public int voltage() {
+          System.out.println("适配器源类... 获取220V电压...");
+          return 220;
+      }
+  }
+  ```
+
+* 适配器顶层接口：`IVoltageAdapter`
+
+  ```java
+  package com.self.designmode.adapter.classadapter;
+  
+  /**
+   * 适配器: 电压适配顶层接口
+   * @author PJ_ZHANG
+   * @create 2020-07-27 14:12
+   **/
+  public interface IVoltageAdapter {
+      int voltage();
+  }
+  ```
+
+* 适配器具体类：`PhoneVoltageAdapter`
+
+  ```java
+  package com.self.designmode.adapter.classadapter;
+  
+  /**
+   * 适配器类: 手机电压
+   * @author PJ_ZHANG
+   * @create 2020-07-27 14:17
+   **/
+  public class PhoneVoltageAdapter extends NormalVoltage implements IVoltageAdapter {
+      @Override
+      public int voltage() {
+          // 获取标准电压
+          int voltage = super.voltage();
+          // 获取手机充电标准电压5V
+          return voltage / 44;
+      }
+  }
+  ```
+
+* 产品类：`Phone`
+
+  ```java
+  package com.self.designmode.adapter.classadapter;
+  
+  /**
+   * 使用类
+   * @author PJ_ZHANG
+   * @create 2020-07-27 14:19
+   **/
+  public class Phone {
+      public void charge(IVoltageAdapter voltageAdapter) {
+          int voltage = voltageAdapter.voltage();
+          System.out.println("对手机进行充电, 充电电压: " + voltage);
+      }
+  }
+  ```
+
+* 客户端：`Client`
+
+  ```java
+  package com.self.designmode.adapter.classadapter;
+  
+  /**
+   * 使用者
+   * @author PJ_ZHANG
+   * @create 2020-07-27 14:20
+   **/
+  public class Client {
+      public static void main(String[] args) {
+          // 构造手机
+          Phone phone = new Phone();
+          // 构造手机充电的适配器
+          IVoltageAdapter voltageAdapter = new PhoneVoltageAdapter();
+          // 手机充电
+          phone.charge(voltageAdapter);
+      }
+  }
+  ```
+
+## 8.3，对象适配器
+
+### 8.3.1，基本介绍
+
+* 类适配器是基于继承实现
+* 对象适配器基于组合实现，将原有类组合到具体适配器类中，对整体类结构进行解耦
+
+### 8.3.2，类图
+
+![1595832592763](E:\gitrepository\study\note\image\designMode\1595832592763.png)
+
+* 大体思路与类适配器基本一致
+* 根据合成服用原则，将对原始类的继承改为组合实现
+* 具体适配器类初始化时，需要关联实现初始类，并作为参数传递
+
+### 8.3.3，代码示例
+
+* 具体适配器类变更：`PhoneVoltageAdapter`
+
+  ```java
+  package com.self.designmode.adapter.objectadapter;
+  
+  /**
+   * 适配器类: 手机电压
+   * @author PJ_ZHANG
+   * @create 2020-07-27 14:17
+   **/
+      public class PhoneVoltageAdapter implements IVoltageAdapter {
+  
+      private NormalVoltage normalVoltage;
+  
+      public PhoneVoltageAdapter(NormalVoltage normalVoltage) {
+          this.normalVoltage = normalVoltage;
+      }
+  
+      @Override
+      public int voltage() {
+          // 获取标准电压
+          int voltage = normalVoltage.voltage();
+          // 获取手机充电标准电压5V
+          return voltage / 44;
+      }
+  }
+  ```
+
+* 客户端变更：`Client`
+
+  ```java
+  package com.self.designmode.adapter.objectadapter;
+  
+  /**
+   * 使用者
+   * @author PJ_ZHANG
+   * @create 2020-07-27 14:20
+   **/
+  public class Client {
+      public static void main(String[] args) {
+          // 构造手机
+          Phone phone = new Phone();
+          // 构造手机充电的适配器
+          IVoltageAdapter voltageAdapter = new PhoneVoltageAdapter(new NormalVoltage());
+          // 手机充电
+          phone.charge(voltageAdapter);
+      }
+  }
+  ```
+
+## 8.4，接口适配器
+
+### 8.4.1，基本介绍
+
+* 核心思路：当不需要全部实现接口提供的方法时，可先用一个抽象类实现该接口，并为接口中的所有方法构造一个空实现，抽象类的子类可以有选择性的实现具体方法
+* 适用于适配器存在多接口，但对某一具体需求可能只需要实现部分接口的场景
+
+### 8.4.2，类图
+
+![1595833830728](E:\gitrepository\study\note\image\designMode\1595833830728.png)
+
+* 在对象适配器的基础上，在具体适配器和顶层接口之间，添加一个抽象类
+* 该抽象类对接口方法进行空实现，这样抽象类的子类就不需要重写全部接口方法，只需要重写自己需要的方法
+
+### 8.4.2，代码示例
+
+* 适配器顶层接口：`IVoltageAdapter`
+
+  ```java
+  package com.self.designmode.adapter.interfaceadapter;
+  
+  /**
+   * 适配器: 电压适配顶层接口
+   * @author PJ_ZHANG
+   * @create 2020-07-27 14:12
+   **/
+  public interface IVoltageAdapter {
+      int voltage();
+      void m1();
+      void m2();
+  }
+  ```
+
+* 抽象适配器类：`AbstractAdapter`
+
+  ```java
+  package com.self.designmode.adapter.interfaceadapter;
+  
+  /**
+   * 抽象适配器类: 用于对适配器顶层接口的方法进行初始化空实现
+   * @author PJ_ZHANG
+   * @create 2020-07-27 15:12
+   **/
+  public abstract class AbstractAdapter implements IVoltageAdapter {
+  
+      @Override
+      public int voltage() {
+          return 0;
+      }
+  
+      @Override
+      public void m1() {
+      }
+  
+      @Override
+      public void m2() {
+      }
+  }
+  ```
+
+* 适配器具体类：`PhoneVoltageAdapter`
+
+  ```java
+  package com.self.designmode.adapter.interfaceadapter;
+  
+  /**
+   * 适配器类: 手机电压
+   * @author PJ_ZHANG
+   * @create 2020-07-27 14:17
+   **/
+  public class PhoneVoltageAdapter extends AbstractAdapter {
+  
+      private NormalVoltage normalVoltage;
+  
+      public PhoneVoltageAdapter(NormalVoltage normalVoltage) {
+          this.normalVoltage = normalVoltage;
+      }
+  
+      @Override
+      public int voltage() {
+          // 获取标准电压
+          int voltage = normalVoltage.voltage();
+          // 获取手机充电标准电压5V
+          return voltage / 44;
+      }
+  }
+  ```
+
+## 8.5，注意事项和细节
+
+* 三种适配器方式，是根据原始类以怎么的方式到适配器类中区分的
+  * 类适配器：继承方式
+  * 对象适配器：组合方式
+  * 接口适配器：抽象适配器类实现接口后，再以对象适配器方式实现
+* 适配器模式的最大作用还是将原本不兼容的类融合到一起进行工作
+* 三种适配器方式只是说法和实现方式不同，具体工作中可随意选择
+
+# 9，桥接模式（Bridge）
+
+## 9.1，问题引入
+
+* 现在对不同类型不同品牌的手机实现操作编程，如下手机外观类型和对应品牌：
+
+  ![1595844062823](E:\gitrepository\study\note\image\designMode\1595844062823.png)
+
+* 则需要编写的代码类图可能如下：
+
+  ![1595844104062](E:\gitrepository\study\note\image\designMode\1595844104062.png)
+
+* 带来的问题如下：
+  * 如果我们需要添加一个手机，则需要在各个类型下添加手机
+  * 如果我们需要添加一个品牌，则需要在该品牌下添加各个类型的手机
+* 这样会造成基本的类爆炸，可以使用桥接模式对实现（手机品牌）和抽象（手机类型）分别进行向上抽取，通过抽象依赖实现的方式增强代码维护性
+
+## 9.2，基本介绍
+
+* 桥接模式是指将实现和抽象放在两个不同的类层次中，并可以进行独立改变。桥接模式是一种结构性设计模式
+* 桥接模式基于类的最小设计原则，使用封装，聚合和继承等行为让不同的类承担不同的职责。主要特点是把抽象（Abstraction）和实现（Implementation）分离开来，从而保证各部分的独立性及功能扩展
+
+## 9.3，类图
+
+![1595844812102](E:\gitrepository\study\note\image\designMode\1595844812102.png)
+
+* 对抽象和实现进行拆分，拆分为两个独立的模块，并通过组合关系关联在一起
+* 抽象模块是手机类型模块，以`PhoneType`为顶层抽象类，并派生出`UpRightType`和`FlodedType`等具体类型类
+* 实现模块是手机品牌模块，以`IBrand`为顶层接口，并派生出各个手机品牌
+* 手机类型组合手机品牌，将手机品牌作为其内部的构造参数
+* 客户端在进行具体操作时，默认先适配机型，再适配具体手机
+
+## 9.4，代码示例
+
+* 实现模块顶层接口：`IBrand`
+
+  ```java
+  package com.self.designmode.bridge;
+  
+  /**
+   * 手机品牌: 实现层顶层接口
+   * @author PJ_ZHANG
+   * @create 2020-07-27 17:51
+   **/
+  public interface IBrand {
+      void open();
+      void call();
+      void close();
+  }
+  ```
+
+* 实现模块实现类_1：`Huawei`
+
+  ```java
+  package com.self.designmode.bridge;
+  
+  /**
+   * 具体实现类: 华为手机
+   * @author PJ_ZHANG
+   * @create 2020-07-27 17:55
+   **/
+  public class Huawei implements IBrand {
+      @Override
+      public void open() {
+          System.out.println("华为手机开机...");
+      }
+  
+      @Override
+      public void call() {
+          System.out.println("华为手机打电话...");
+      }
+  
+      @Override
+      public void close() {
+          System.out.println("华为手机关机");
+      }
+  }
+  ```
+
+* 实现模块实现类_2：`Xiaomi`
+
+  ```java
+  package com.self.designmode.bridge;
+  
+  /**
+   * 具体实现类: 小米手机
+   * @author PJ_ZHANG
+   * @create 2020-07-27 17:56
+   **/
+  public class Xiaomi implements IBrand {
+      @Override
+      public void open() {
+          System.out.println("小米手机开机...");
+      }
+  
+      @Override
+      public void call() {
+          System.out.println("小米手机打电话...");
+      }
+  
+      @Override
+      public void close() {
+          System.out.println("小米手机关机");
+      }
+  }
+  ```
+
+* 抽象模块顶层抽象类：`PhoneType`
+
+  ```java
+  package com.self.designmode.bridge;
+  
+  import com.self.designmode.adapter.interfaceadapter.Phone;
+  
+  /**
+   * 手机类型: 抽象层顶层类
+   * @author PJ_ZHANG
+   * @create 2020-07-27 17:53
+   **/
+  public abstract class PhoneType {
+      private IBrand brand;
+      public PhoneType(IBrand brand) {
+          this.brand = brand;
+      }
+      public void open() {
+          brand.open();
+      }
+      public void call() {
+          brand.call();
+      }
+  
+      public void close() {
+          brand.close();
+      }
+  }
+  ```
+
+* 抽象模块子类_1：`FlodedType`
+
+  ```java
+  package com.self.designmode.bridge;
+  
+  /**
+   * 抽象子类: 旋转类型手机
+   * @author PJ_ZHANG
+   * @create 2020-07-27 17:57
+   **/
+  public class FlodedType extends PhoneType{
+      public FlodedType(IBrand brand) {
+          super(brand);
+      }
+      public void open() {
+          super.open();
+          System.out.println("旋转类型手机开机...");
+      }
+      public void call() {
+          super.call();
+          System.out.println("旋转类型手机打电话...");
+      }
+  
+      public void close() {
+          super.close();
+          System.out.println("旋转类型手机关机...");
+      }
+  }
+  ```
+
+* 抽象模块子类_2：`UpRightType`
+
+  ```java
+  package com.self.designmode.bridge;
+  
+  /**
+   * 抽象子类: 直立类型手机
+   * @author PJ_ZHANG
+   * @create 2020-07-27 17:57
+   **/
+  public class UpRightType extends PhoneType{
+      public UpRightType(IBrand brand) {
+          super(brand);
+      }
+      public void open() {
+          super.open();
+          System.out.println("直立类型手机开机...");
+      }
+      public void call() {
+          super.call();
+          System.out.println("直立类型手机打电话...");
+      }
+  
+      public void close() {
+          super.close();
+          System.out.println("直立类型手机关机...");
+      }
+  }
+  ```
+
+* 客户端：`Client`
+
+  ```java
+  package com.self.designmode.bridge;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-07-27 17:58
+   **/
+  public class Client {
+      public static void main(String[] args) {
+          PhoneType phoneType = new UpRightType(new Huawei());
+          phoneType.call();
+  
+          phoneType = new FlodedType(new Xiaomi());
+          phoneType.open();
+      }
+  }
+  ```
+
+## 9.5，注意事项和细节
+
+* 实现了抽象部分和实现部分的分离，极大的提供了系统的灵活性，有助于系统的分层化设计，从而产生更好的结构化系统
+* 对于系统的高层部分，只需要知道抽象部分和实现部分的接口即可，具体业务由底层完成
+* **桥接模式替代多层继承关系**，可以有效的介绍子类数量，降低系统管理和维护成本
+* 桥接模式的引入增加了系统的理解和设计难度，因为组合关联关系在抽象层，所以需要面向抽象层进行编程
+* 桥接模式需要**准确的识别出系统中两个维度（抽象层，实现层）**，因此其使用场景有一定的局限性
+
+## 9.6，常见使用场景
+
+* 银行转账系统
+  * 转账分类：网上银行，柜台转账，ATM转账
+  * 用户类型：普通用户，会员用户，金卡用户
+* 消息管理
+  * 消息类型：即时消息，延时消息
+  * 消息分类：手机短信，右键信息，QQ消息...
+
+# 10，装饰者模式（Decorator）
