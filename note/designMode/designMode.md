@@ -2843,3 +2843,244 @@ public class Client {
   * 消息分类：手机短信，右键信息，QQ消息...
 
 # 10，装饰者模式（Decorator）
+
+## 10.1，问题引入
+
+### 10.1.1，星巴克咖啡订单项目
+
+* **咖啡种类**：Espresso（意大利浓咖啡），LongBlack（美式咖啡），Decaf（无因咖啡）
+* **调料**：Mild，Soy，Chocolate
+* 要求在增加新的咖啡时能有更好的扩展性，改动方便，维护方便
+* 使用OO计算不同种类咖啡的价格：包括咖啡价格和调料价格
+
+### 10.1.2，方式一：穷举类方式
+
+![1595929587095](E:\gitrepository\study\note\image\designMode\1595929587095.png)
+
+* `Drink`：是顶层抽象类，表示饮品，`price`是咖啡价格， `description`是对咖啡的描述，`cost()`方法是计算最终咖啡价格
+* 图中第一层的子类表示单品咖啡，即列举出所有的单品咖啡以供单点
+* 图中第二层的子类表示单品咖啡+调料，即对所有可能的咖啡+调料进行组合列举
+* 这种设计方式会造成绝对的类爆炸，优点扯淡，我也不知道我要列它。。。
+
+### 10.1.3，方式二：聚合方式
+
+![1595930021207](E:\gitrepository\study\note\image\designMode\1595930021207.png)
+
+* 这种方式较第一种方式的改观，是避免了类爆炸，将调料以聚合的方式依赖到单品咖啡中，在买咖啡时候可以进行调料添加
+* 但是如果需要添加一份调料，此时需要对所有单品咖啡部分代码进行变更，不符合OCP原则
+* 此时可以考虑**装饰者模式**
+
+## 10.2，基本介绍
+
+* 装饰者模式：**动态的将新功能附加到对象上**，在对象功能扩展方面，比继承更具有弹性，装饰者模式符合**开闭原则（OCP原则）**
+* 装饰者模式是将整体功能分为两部分，即**主体（被装饰者 Component）部分**和**包装（装饰者 Decorator）部分**，装饰者通过组合顶层接口，对被装饰者或者*装饰者（包装再包装）*进行包装
+* 当需要增加被装饰者或者装饰者时，只需要添加对应的类即可，后续在客户端即可适配装饰方式
+
+## 10.3，类图
+
+![1595930769382](E:\gitrepository\study\note\image\designMode\1595930769382.png)
+
+* 顶层抽象类：`IDrink`，保证整个体系中的强一致性
+* 被装饰者部分：单品咖啡部分，列举出所有的单品咖啡
+* 装饰者部分顶层类：`Decorator`，对整个调料部分进行管理，进行消费计算
+* 装饰者部分：调料部分，列举出所有调料
+* 最后用装饰者对被装饰者进行组合，再进行对象装饰时构造为一个新的对象，该对象内部的`drink`属性即表示被装饰过的**被装饰者或者装饰者对象**
+
+## 10.4，代码示例
+
+* 顶层抽象类：`IDrink`
+
+  ```java
+  package com.self.designmode.decorator;
+  
+  import lombok.Getter;
+  import lombok.Setter;
+  
+  /**
+   * 装饰者模式: 顶层抽象类, 确保强一致
+   * @author PJ_ZHANG
+   * @create 2020-07-28 18:11
+   **/
+  @Getter
+  @Setter
+  public abstract class IDrink {
+      // 价格
+      private int price;
+      // 描述
+      private String des;
+      // 花费
+      abstract int cost();
+  }
+  ```
+
+* 被装饰者类：`LongBlack`
+
+  ```java
+  package com.self.designmode.decorator;
+  
+  /**
+   * 装饰者:被装饰者类
+   * @author PJ_ZHANG
+   * @create 2020-07-28 18:18
+   **/
+  public class LongBlack extends IDrink {
+      public LongBlack() {
+          setDes("美氏咖啡...");
+          setPrice(20);
+      }
+      @Override
+      int cost() {
+          System.out.println(getDes() + " : " + getPrice());
+          return getPrice();
+      }
+  }
+  ```
+
+* 被装饰者类：`Espresso`
+
+  ```java
+  package com.self.designmode.decorator;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-07-28 18:20
+   **/
+  public class Espresso extends IDrink {
+      public Espresso() {
+          setDes("意氏咖啡...");
+          setPrice(30);
+      }
+      @Override
+      int cost() {
+          System.out.println(getDes() + " : " + getPrice());
+          return getPrice();
+      }
+  }
+  ```
+
+* 被装饰者类：`Decaf`
+
+  ```java
+  package com.self.designmode.decorator;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-07-28 18:21
+   **/
+  public class Decaf extends IDrink {
+      public Decaf() {
+          setDes("无因咖啡...");
+          setPrice(30);
+      }
+      @Override
+      int cost() {
+          System.out.println(getDes() + " : " + getPrice());
+          return getPrice();
+      }
+  }
+  ```
+
+* 装饰者顶层类：`Decorator`
+
+  ```java
+  package com.self.designmode.decorator;
+  
+  /**
+   * 装饰者: 顶层装饰者类
+   * @author PJ_ZHANG
+   * @create 2020-07-28 18:22
+   **/
+  public class Decorator extends IDrink {
+      private IDrink drink;
+      public Decorator(IDrink drink) {
+          this.drink = drink;
+      }
+      @Override
+      int cost() {
+          System.out.println(this.getDes() + " : " + this.getPrice());
+          return drink.cost() + this.getPrice();
+      }
+  }
+  ```
+
+* 装饰者类：`Milk`
+
+  ```java
+  package com.self.designmode.decorator;
+  
+  /**
+   * 装饰者: 装饰者类,加牛奶
+   * @author PJ_ZHANG
+   * @create 2020-07-28 18:25
+   **/
+  public class Milk extends Decorator {
+      public Milk(IDrink drink) {
+          super(drink);
+          setDes("加牛奶...");
+          setPrice(5);
+      }
+  }
+  ```
+
+* 装饰者类：`Soy`
+
+  ```java
+  package com.self.designmode.decorator;
+  
+  /**
+   * 装饰者: 装饰者类,加豆浆
+   * @author PJ_ZHANG
+   * @create 2020-07-28 18:26
+   **/
+  public class Soy extends Decorator {
+      public Soy(IDrink drink) {
+          super(drink);
+          setDes("加豆浆...");
+          setPrice(3);
+      }
+  }
+  ```
+
+* 装饰者类：`Chocolate`
+
+  ```java
+  package com.self.designmode.decorator;
+  
+  /**
+   * 装饰者: 装饰者类,加巧克力
+   * @author PJ_ZHANG
+   * @create 2020-07-28 18:26
+   **/
+  public class Chocolate extends Decorator {
+      public Chocolate(IDrink drink) {
+          super(drink);
+          setDes("加巧克力...");
+          setPrice(2);
+      }
+  }
+  ```
+
+* 客户端：`Client`
+
+  ```java
+  package com.self.designmode.decorator;
+  
+  /**
+   * 装饰者模式客户端
+   * @author PJ_ZHANG
+   * @create 2020-07-28 18:18
+   **/
+  public class Client {
+      public static void main(String[] args) {
+          int cost = new Chocolate(new Milk(new LongBlack())).cost();
+          System.out.println(cost);
+      }
+  }
+  ```
+
+# 11，组合模式
+
+
+
+
+
