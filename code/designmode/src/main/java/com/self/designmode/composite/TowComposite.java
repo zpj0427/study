@@ -28,7 +28,7 @@ public class TowComposite extends OrgComponent {
         System.out.println("---------------------");
         System.out.println("name: " + getName() + ", des: " + getDes());
         for (OrgComponent component : lstChildComponent) {
-            System.out.println("name: " + component.getName() + ", des: " + component.getDes());
+            component.print();
         }
         System.out.println("---------------------");
     }
