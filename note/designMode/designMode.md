@@ -2627,7 +2627,7 @@ public class Client {
 
 ## 9.2，基本介绍
 
-* 桥接模式是指将实现和抽象放在两个不同的类层次中，并可以进行独立改变。桥接模式是一种结构性设计模式
+* 桥接模式是指将**实现**和**抽象**放在两个不同的类层次中，并可以进行独立改变。桥接模式是一种结构性设计模式
 * 桥接模式基于类的最小设计原则，使用封装，聚合和继承等行为让不同的类承担不同的职责。主要特点是把抽象（Abstraction）和实现（Implementation）分离开来，从而保证各部分的独立性及功能扩展
 
 ## 9.3，类图
@@ -3078,9 +3078,186 @@ public class Client {
   }
   ```
 
-# 11，组合模式
+# 11，组合模式（Composite）
 
+## 11.1，问题引入
 
+* 展示一个学校的体系结构，一个学校有多个学院，一个学院有多个专业
 
+  ![1595996792858](E:\gitrepository\study\note\image\designMode\1595996792858.png)
 
+## 11.2，基本介绍
+
+* 组合模式（Composite），又叫部分整体模式，属于结构性模式，创建了对象组的树形结构，将对象组合成树状结构以表示**整体—部分**的关系
+* 组合模式使得用户对单个对象和组合对象的访问具有一致性，即组合模式能让客户以一致的方式处理单个对象和组合对象
+
+## 11.3，类图
+
+![1595996933981](E:\gitrepository\study\note\image\designMode\1595996933981.png)
+
+* 顶层抽象类：`OrgComponent`，定义了组合模式中的强一致类型，并提供了基本属性和方法供子类去继承和重写
+* 中间节点：`Composite`，即部分和整体部分，对它的子节点表示整体，对它的父节点表示部分，定义它的部分的集合属性，并重写父类方法
+* 叶子节点：`Leaf`，绝对的部分，由中间节点`Composite`通过多态组合
+
+## 11.4，代码示例
+
+* 顶层抽象类：`OrgComponent`
+
+  ```java
+  package com.self.designmode.composite;
+  
+  import lombok.Getter;
+  import lombok.Setter;
+  
+  /**
+   * 组合模式: 顶层抽象类
+   * @author PJ_ZHANG
+   * @create 2020-07-29 12:36
+   **/
+  @Getter
+  @Setter
+  public abstract class OrgComponent {
+      private String name;
+      private String des;
+      public void add(OrgComponent component) { throw new UnsupportedOperationException("不支持添加...");}
+      public void delete(OrgComponent component) {throw new UnsupportedOperationException("不支持删除...");}
+      abstract void print();
+  }
+  ```
+
+* 中间节点具体类：`OneComposite`
+
+  ```java
+  package com.self.designmode.composite;
+  
+  import java.util.ArrayList;
+  import java.util.List;
+  
+  /**
+   * 中间层级: 具体类
+   * @author PJ_ZHANG
+   * @create 2020-07-29 12:45
+   **/
+  public class OneComposite extends OrgComponent {
+      List<OrgComponent> lstChildComponent;
+      public OneComposite(String name, String des) {
+          setName(name);
+          setDes(des);
+          lstChildComponent = new ArrayList<>(10);
+      }
+      @Override
+      public void add(OrgComponent component) {
+          lstChildComponent.add(component);
+      }
+      @Override
+      public void delete(OrgComponent component) {
+          lstChildComponent.remove(component);
+      }
+      @Override
+      void print() {
+          System.out.println("---------------------");
+          System.out.println("name: " + getName() + ", des: " + getDes());
+          for (OrgComponent component : lstChildComponent) {
+              component.print();
+          }
+          System.out.println("---------------------");
+      }
+  }
+  ```
+
+* 中间节点具体类：`TowComposite`
+
+  ```java
+  package com.self.designmode.composite;
+  
+  import java.util.ArrayList;
+  import java.util.List;
+  
+  /**
+   * 中间层级: 具体类
+   * @author PJ_ZHANG
+   * @create 2020-07-29 12:45
+   **/
+  public class TowComposite extends OrgComponent {
+      List<OrgComponent> lstChildComponent;
+      public TowComposite(String name, String des) {
+          setName(name);
+          setDes(des);
+          lstChildComponent = new ArrayList<>(10);
+      }
+      @Override
+      public void add(OrgComponent component) {
+          lstChildComponent.add(component);
+      }
+      @Override
+      public void delete(OrgComponent component) {
+          lstChildComponent.remove(component);
+      }
+      @Override
+      void print() {
+          System.out.println("---------------------");
+          System.out.println("name: " + getName() + ", des: " + getDes());
+          for (OrgComponent component : lstChildComponent) {
+              System.out.println("name: " + component.getName() + ", des: " + component.getDes());
+          }
+          System.out.println("---------------------");
+      }
+  }
+  ```
+
+* 叶子节点具体类：`Leaf`
+
+  ```java
+  package com.self.designmode.composite;
+  
+  /**
+   * 叶子节点: Leaf
+   * @author PJ_ZHANG
+   * @create 2020-07-29 12:50
+   **/
+  public class Leaf extends OrgComponent {
+      public Leaf(String name, String des) {
+          setName(name);
+          setDes(des);
+      }
+      @Override
+      void print() {
+          System.out.println("---------------------");
+          System.out.println("name: " + getName() + ", des: " + getDes());
+          System.out.println("---------------------");
+      }
+  }
+  ```
+
+* 客户端：`Client`
+
+  ```java
+  package com.self.designmode.composite;
+  
+  /**
+   * 客户端
+   * @author PJ_ZHANG
+   * @create 2020-07-29 12:51
+   **/
+  public class Client {
+      public static void main(String[] args) {
+          OrgComponent university = new OneComposite("学校", "挺好");
+          OrgComponent college = new TowComposite("学院", "挺不错");
+          university.add(college);
+          OrgComponent leaf = new Leaf("专业", "挺棒");
+          college.add(leaf);
+          university.print();
+      }
+  }
+  ```
+
+## 11.5，注意事项和细节
+
+* 简化客户端操作，客户端只需要面对一致的对象，而不用考虑整体部分或者节点叶子的问题
+* 具有将强的扩展性，当需要改变组合对象时，只需要调整内部的层次关系
+* 方便创建复杂的层次结构。客户端不用理会组合里面的组成节点，通过添加节点和叶子节点即可创建出复杂的树形结构
+* <font color=red>对于组织结构，或者其他类似的树形结构，非常实用组合模式</font>
+* <font color=red>对于抽象性较高，差异性较大的节点，不适合实用组合模式</font>
+
+# 12，外观模式
 
