@@ -2628,7 +2628,7 @@ public class Client {
 ## 9.2，基本介绍
 
 * 桥接模式是指将**实现**和**抽象**放在两个不同的类层次中，并可以进行独立改变。桥接模式是一种结构性设计模式
-* 桥接模式基于类的最小设计原则，使用封装，聚合和继承等行为让不同的类承担不同的职责。主要特点是把抽象（Abstraction）和实现（Implementation）分离开来，从而保证各部分的独立性及功能扩展
+* 桥接模式基于类的最小设计原则，使用封装，聚合和继承等行为让不同的类承担不同的职责。主要特点是把**抽象（Abstraction）**和**实现（Implementation）**分离开来，从而保证各部分的独立性及功能扩展
 
 ## 9.3，类图
 
@@ -3259,5 +3259,162 @@ public class Client {
 * <font color=red>对于组织结构，或者其他类似的树形结构，非常实用组合模式</font>
 * <font color=red>对于抽象性较高，差异性较大的节点，不适合实用组合模式</font>
 
-# 12，外观模式
+# 12，外观模式（Facade）
 
+## 12.1，问题引入
+
+* 组建一个家庭影院，需要准备屏幕，投影仪，灯光。此时看一场电影的大概过程为：放下屏幕，打开投影仪，调暗灯光；等电影看完后，大致过程为：调两灯光，关闭投影仪，收回屏幕。
+* 此时如果不进行各种模式统筹管理，在实际操作中，需要通过三个开关对三种设备进行单独控制，此时如果设备过多，会造成过程混乱，还有可能出现顺序（逻辑）错误
+* 这时候可以引入**外观模式**，通过外观类，进行具体操作流程进行管理，面向客户端只包括打开，关闭等基本操作，提高用户体验
+
+## 12.2，基本介绍
+
+* 外观模式（Facade），也叫过程模式，外观模式为子系统中的一组接口提供一个一致的界面，通过定义一个高层接口，似的一系列子系统的接口更容易使用
+* 通过定义一个一致的接口，用于屏蔽内部子系统的细节，使得调用端只需要跟这个接口发生调用，而无需关心子系统的内部实现
+
+## 12.3，类图
+
+![1596446164556](E:\gitrepository\study\note\image\designMode\1596446164556.png)
+
+* `Lamplight`，`Projector`，`Screen`：实际业务类，组合在外观类中，用于实际业务执行
+* `Facade`：外观类，定义一致接口，组合实际类，按既定顺序进行调用
+* `Client`：客户端，客户端组合外观类，并且只组合外观类，通过一个一致的界面操作，进行其他实际业务类操作
+
+## 12.4，代码示例
+
+* `Lamplight`：实际业务类
+
+  ```java
+  package com.self.designmode.facade;
+  
+  /**
+   * 外观模式: 灯光
+   * @author PJ_ZHANG
+   * @create 2020-08-03 17:05
+   **/
+  public class Lamplight {
+      private static Lamplight lamplight = new Lamplight();
+      public static Lamplight instance() {
+          return lamplight;
+      }
+      public void lightUp() {
+          System.out.println("调亮灯光...");
+      }
+      public void lightDown() {
+          System.out.println("调暗灯光...");
+      }
+  }
+  ```
+
+* `Screen`：实际业务类
+
+  ```java
+  package com.self.designmode.facade;
+  
+  /**
+   * 外观模式: 幕布类
+   * @author PJ_ZHANG
+   * @create 2020-08-03 17:03
+   **/
+  public class Screen {
+      private static Screen screen = new Screen();
+      public static Screen instance() {
+          return screen;
+      }
+      public void up() {
+          System.out.println("收起屏幕...");
+      }
+      public void down() {
+          System.out.println("放下屏幕...");
+      }
+  }
+  ```
+
+* `Projector`：实际业务类
+
+  ```java
+  package com.self.designmode.facade;
+  
+  /**
+   * 外观模式: 投影仪
+   * @author PJ_ZHANG
+   * @create 2020-08-03 17:04
+   **/
+  public class Projector {
+      private static Projector projector = new Projector();
+      public static Projector instance() {
+          return projector;
+      }
+      public void open() {
+          System.out.println("打开投影仪...");
+      }
+      public void close() {
+          System.out.println("关闭投影仪...");
+      }
+  }
+  ```
+
+* `Facade`：外观类
+
+  ```java
+  package com.self.designmode.facade;
+  
+  /**
+   * 外观模式, 外观类,
+   * 抽取顶层接口进行统一管理
+   * @author PJ_ZHANG
+   * @create 2020-08-03 17:02
+   **/
+  public class Facade {
+      private Lamplight lamplight = null;
+      private Projector projector = null;
+      private Screen screen = null;
+      public Facade() {
+          lamplight = Lamplight.instance();
+          projector = Projector.instance();
+          screen = Screen.instance();
+      }
+      // 开始观影
+      public void start() {
+          screen.down();
+          projector.open();
+          lamplight.lightDown();
+      }
+      // 结束观影
+      public void end() {
+          screen.up();
+          projector.close();
+          lamplight.lightUp();
+      }
+  }
+  ```
+
+* `Client`：客户端
+
+  ```java
+  package com.self.designmode.facade;
+  
+  /**
+   * 外观模式: 客户端
+   * @author PJ_ZHANG
+   * @create 2020-08-03 17:10
+   **/
+  public class Client {
+      public static void main(String[] args) {
+          Facade facade = new Facade();
+          facade.start();
+          System.out.println("------------------------");
+          facade.end();
+      }
+  }
+  ```
+
+## 12.5，注意事项和细节
+
+* 外观模式**对外屏蔽了子系统的细节**，因此外观模式降低了客户端对子系统使用的复杂性
+* 外部模式让客户端与子系统实现解耦，让子系统内部模块更易维护和扩展
+* 通过合理的使用外观模式，可以更好的划分访问层次
+* 当系统需要进行分层设计时，可以考虑使用**Facade模式**
+* 当需要维护一个大型系统，且系统已经变得非常难以维护和扩展，可以考虑为新系统提供`Facade`类，让新系统与该类交互，提供可复用性
+
+## 13，享元模式
