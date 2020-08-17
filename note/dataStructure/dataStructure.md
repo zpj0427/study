@@ -6044,7 +6044,7 @@ public class AVLTree {
         }
 
         /**
-         * 获取左侧树高度
+         * 获取右侧树高度
          * @param node
          * @return
          */
@@ -6056,7 +6056,7 @@ public class AVLTree {
         }
 
         /**
-         * 获取右侧树高度
+         * 获取左侧树高度
          * @param node
          * @return
          */
