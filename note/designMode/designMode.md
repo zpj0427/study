@@ -3419,3 +3419,216 @@ public class Client {
 
 # 13，享元模式
 
+## 13.1，问题引入
+
+### 13.1.1，展示网站项目需求
+
+​		小型的外包项目，给客户A做一个产品展示网站，客户A的朋友觉得效果不错，也需要这样的产品展示网站，但是需求有些变化：
+
+* 有客户要求以新闻的形式发布
+* 有客户要求以博客的形式发布
+* 有客户要求以微信小程序的形式发布
+
+### 13.1.2，传统方式解决网站项目
+
+* 直接将项目复制一份，根据不同客户的需求，进行定制化修改
+
+  ![1598107446663](E:\gitrepository\study\note\image\designMode\1598107446663.png)
+
+### 13.1.3，问题分析
+
+* 需要的网站相似度很高，而且都不是高访问量网站，如果分成多个虚拟机进行部署，相当于一个相同网站的实例有很多，造成服务器资源浪费
+* 可以将代码和数据整合到一个网站中，对于硬盘，内存，CPU等资源进行共享，减少服务器资源
+
+## 13.2，享元模式基本概述
+
+* 享元模式，也叫**蝇量模式**：运用共享技术有效的支持大量细粒度的对象。“享”表示共享，“元”表示对象
+* 常用语系统底层开发，解决系统的性能问题。像数据库连接池，里面都是已经创建好的数据库连接对象，这些连接对象在我们需要的时候可以直接拿来用，避免重新创建，如果没有我们需要的，则新创建一个
+* 享元模型能够解决重复对象的内存浪费问题，当系统中存在大量的对象需要缓冲池时。不需要不断的创建新对象，可以直接从缓冲池中拿。可以降低系统内存，提升效率。如JVM中的常量池
+* 在JDK中的应用，`Integer`的缓存池`-127~127`
+
+## 13.3，类图
+
+![1598108907208](E:\gitrepository\study\note\image\designMode\1598108907208.png)
+
+* `FlyWeightFactory`：享元工厂，用于提供一个池容器，并从池中获取对象的方法
+* `IFlyWeight`：享元抽象接口，提供产品的抽象接口，并同时定义出对象内部状态和外部状态的接口和实现
+
+* `FlyWeight`：具体享元角色，共享的角色，即具体的产品类，实现内部状态，内部状态角色是被享元工厂托管的角色
+* `UnsharedFlyWeight`：特殊享元角色，不可共享的角色，实现外部状态，该部分不会被享元工厂托管
+
+## 13.4，内部状态和外部状态
+
+* 享元模式提出了两个要求：细粒度和共享对象，这就设计到内部状态和外部状态了
+* 内部状态是对象共享出来的信息，存储在享元对象内并不会随着环境的不同而改变
+* 外部状态是对象得以依赖的一个标记，随环境改变而改变，不可共享的状态
+* 举例：围棋理论上是有361个空位可以放棋子，每盘棋都有可能有两三百个棋子产生，因为内存空间有限，一台服务器很难支撑更多的玩家玩围棋游戏，如果用享元模式来处理棋子，则棋子对象减少到两个，空棋盘共用，具体的棋盘布局是特殊角色
+
+## 13.5，代码实现
+
+* `IFlyWeight`：享元角色顶层类
+
+  ```java
+  package com.self.designmode.flyweight;
+  
+  /**
+   * 享元模式顶层接口
+   * @author PJ_ZHANG
+   * @create 2020-08-22 21:16
+   **/
+  public interface IFlyWeight {
+  
+      void use();
+  
+      void setUnsharedFlyWeight(UnsharedFlyWeight unsharedFlyWeight);
+  
+  }
+  ```
+
+* `FlyWeight`：具体角色
+
+  ```java
+  package com.self.designmode.flyweight;
+  
+  /**
+   * 享元模式: 具体角色
+   * @author PJ_ZHANG
+   * @create 2020-08-22 21:20
+   **/
+  public class FlyWeight implements IFlyWeight {
+  
+      private String type = "";
+  
+      private UnsharedFlyWeight unsharedFlyWeight = null;
+  
+      public FlyWeight(String type) {
+          this.type = type;
+      }
+  
+      @Override
+      public void use() {
+          System.out.println("享元具体角色: " + type);
+          if (null != unsharedFlyWeight) {
+              unsharedFlyWeight.use();
+          }
+      }
+  
+      @Override
+      public void setUnsharedFlyWeight(UnsharedFlyWeight unsharedFlyWeight) {
+          this.unsharedFlyWeight = unsharedFlyWeight;
+      }
+  
+  }
+  ```
+
+* `UnsharedFlyWeight`：特殊角色
+
+  ```java
+  package com.self.designmode.flyweight;
+  
+  /**
+   * 享元模式: 特殊角色
+   * @author PJ_ZHANG
+   * @create 2020-08-22 21:26
+   **/
+  public class UnsharedFlyWeight implements IFlyWeight {
+  
+      private String type = "";
+  
+      private UnsharedFlyWeight unsharedFlyWeight = null;
+  
+      public UnsharedFlyWeight(String type) {
+          this.type = type;
+      }
+  
+      @Override
+      public void use() {
+          System.out.println("享元特殊角色: " + type);
+          if (null != unsharedFlyWeight) {
+              unsharedFlyWeight.use();
+          }
+      }
+  
+      @Override
+      public void setUnsharedFlyWeight(UnsharedFlyWeight unsharedFlyWeight) {
+          this.unsharedFlyWeight = unsharedFlyWeight;
+      }
+  
+  }
+  ```
+
+* `FlyWeightFactory`：享元工厂
+
+  ```java
+  package com.self.designmode.flyweight;
+  
+  import java.util.Map;
+  import java.util.concurrent.ConcurrentHashMap;
+  
+  /**
+   * 享元工厂, 获取具体享元角色
+   * @author PJ_ZHANG
+   * @create 2020-08-22 21:16
+   **/
+  public class FlyWeightFactory {
+  
+      private static Map<String, FlyWeight> map = new ConcurrentHashMap<>(16);
+  
+      private static Map<String, UnsharedFlyWeight> unsharedMap = new ConcurrentHashMap<>(16);
+  
+      public static FlyWeight getFlyWeight(String type) {
+          if (!map.containsKey(type)) {
+              map.put(type, new FlyWeight(type));
+          }
+          return map.get(type);
+      }
+  
+      public static UnsharedFlyWeight getUnsharedFlyWeight(String type) {
+          if (!unsharedMap.containsKey(type)) {
+              unsharedMap.put(type, new UnsharedFlyWeight(type));
+          }
+          return unsharedMap.get(type);
+      }
+  
+  }
+  ```
+
+* `Client`：客户端
+
+  ```java
+  package com.self.designmode.flyweight;
+  
+  /**
+   * 享元模式
+   * @author PJ_ZHANG
+   * @create 2020-08-22 21:02
+   **/
+  public class Client {
+  
+      public static void main(String[] args) {
+          FlyWeight flyWeight = FlyWeightFactory.getFlyWeight("新闻");
+          UnsharedFlyWeight unsharedFlyWeight = FlyWeightFactory.getUnsharedFlyWeight("特殊");
+          flyWeight.setUnsharedFlyWeight(unsharedFlyWeight);
+          flyWeight.use();
+          System.out.println("----------------------------");
+          flyWeight = FlyWeightFactory.getFlyWeight("博客");
+          unsharedFlyWeight = FlyWeightFactory.getUnsharedFlyWeight("特殊");
+          flyWeight.setUnsharedFlyWeight(unsharedFlyWeight);
+          flyWeight.use();
+          System.out.println("----------------------------");
+          flyWeight = FlyWeightFactory.getFlyWeight("小程序");
+          unsharedFlyWeight = FlyWeightFactory.getUnsharedFlyWeight("特殊");
+          flyWeight.setUnsharedFlyWeight(unsharedFlyWeight);
+          flyWeight.use();
+          System.out.println("----------------------------");
+      }
+  
+  }
+  ```
+
+## 13.6，注意事项及细节
+
+* 当系统中存在大量对象，这些对象消耗大量内存，并且对象的状态大部分可以外部化时，可以考虑使用享元模式
+* 享元模式可以大大减少对象的创建，降低了程序内存的占用，提高效率
+* 享元模式提高了**系统复杂度**。需要分离出内部状态和外部状态，外部状态具有固化特性，不会随着内部状态的改变而改变，这是使用享元模式需要注意的问题
+* 享元模式的经典使用场景：String常量池，数据库连接池，线程池
