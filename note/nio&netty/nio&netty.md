@@ -2709,7 +2709,7 @@ public class AIOClient {
 
 10. 每个Worker的`NioEventLoop`在处理任务时，会使用`Pipeline`(管道)，`Pipeline`中包含了`Channel`，即使用管道可以获取到对应的通道，管道中维护了很多的处理器
 
-### 4.2.3，NIO快速入门_TCP服务
+### 4.2.3，Netty快速入门_TCP服务
 
 #### 4.2.3.1，服务端代码
 
