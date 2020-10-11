@@ -30,8 +30,8 @@ public class StringDecoderHandler extends ByteToMessageDecoder {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         if (in.readableBytes() > 0) {
-            byte[] bytes = new byte[1];
-            in.readBytes(1).readBytes(bytes);
+            byte[] bytes = new byte[in.readableBytes()];
+            in.readBytes(in.readableBytes()).readBytes(bytes);
             out.add(new String(bytes));
         }
         System.out.println("解码数据..." + out);
