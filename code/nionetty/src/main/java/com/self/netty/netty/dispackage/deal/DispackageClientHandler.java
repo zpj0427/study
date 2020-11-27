@@ -15,19 +15,28 @@ public class DispackageClientHandler extends SimpleChannelInboundHandler<MyProto
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         // 发送数据到服务端
-        for (int i = 0; i < 5; i++) {
-            MyProtocol myProtocol = new MyProtocol();
-            String sendMessage = "send Message: " + i + " \t\n";
-            myProtocol.setLength(sendMessage.length());
-            myProtocol.setContent(sendMessage);
-            ctx.writeAndFlush(myProtocol);
-        }
+        MyProtocol myProtocol = new MyProtocol();
+        String sendMessage = "send Message: connect";
+        myProtocol.setLength(sendMessage.length());
+        myProtocol.setContent(sendMessage);
+        ctx.writeAndFlush(myProtocol);
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, MyProtocol myProtocol) throws Exception {
         // 接收数据
         System.out.println(myProtocol.getContent());
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        System.out.println("心跳检测....");
+        MyProtocol myProtocol = new MyProtocol();
+        String sendMessage = "客户端发起心跳检测...";
+        myProtocol.setLength(sendMessage.length());
+        myProtocol.setContent(sendMessage);
+        ctx.channel().writeAndFlush(myProtocol);
+        super.userEventTriggered(ctx, evt);
     }
 
     @Override

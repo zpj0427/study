@@ -5,6 +5,9 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * TCP拆包粘包问题展示_服务端启动类
@@ -27,6 +30,7 @@ public class DispackageServer {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
                             ChannelPipeline channelPipeline = socketChannel.pipeline();
+                            channelPipeline.addLast(new IdleStateHandler(5, 5,5 , TimeUnit.SECONDS));
                             // 添加解码器
                             channelPipeline.addLast(new ProtocolDecoder());
                             // 添加编码器, 用于返回数据
@@ -42,8 +46,6 @@ public class DispackageServer {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            bossEventLoopGroup.shutdownGracefully();
-            workerEventLoopGroup.shutdownGracefully();
         }
     }
 

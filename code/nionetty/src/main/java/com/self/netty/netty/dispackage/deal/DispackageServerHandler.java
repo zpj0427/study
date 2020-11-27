@@ -33,4 +33,15 @@ public class DispackageServerHandler extends SimpleChannelInboundHandler<MyProto
         cause.printStackTrace();
         ctx.close();
     }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        System.out.println("心跳检测....");
+        MyProtocol myProtocol = new MyProtocol();
+        String sendMessage = "服务端发起心跳检测...";
+        myProtocol.setLength(sendMessage.length());
+        myProtocol.setContent(sendMessage);
+        ctx.channel().writeAndFlush(myProtocol);
+        super.userEventTriggered(ctx, evt);
+    }
 }
