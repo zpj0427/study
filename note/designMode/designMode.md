@@ -3443,7 +3443,7 @@ public class Client {
 ## 13.2，享元模式基本概述
 
 * 享元模式，也叫**蝇量模式**：运用共享技术有效的支持大量细粒度的对象。“享”表示共享，“元”表示对象
-* 常用语系统底层开发，解决系统的性能问题。像数据库连接池，里面都是已经创建好的数据库连接对象，这些连接对象在我们需要的时候可以直接拿来用，避免重新创建，如果没有我们需要的，则新创建一个
+* 常用于系统底层开发，解决系统的性能问题。像数据库连接池，里面都是已经创建好的数据库连接对象，这些连接对象在我们需要的时候可以直接拿来用，避免重新创建，如果没有我们需要的，则新创建一个
 * 享元模型能够解决重复对象的内存浪费问题，当系统中存在大量的对象需要缓冲池时。不需要不断的创建新对象，可以直接从缓冲池中拿。可以降低系统内存，提升效率。如JVM中的常量池
 * 在JDK中的应用，`Integer`的缓存池`-127~127`
 
@@ -3632,3 +3632,867 @@ public class Client {
 * 享元模式可以大大减少对象的创建，降低了程序内存的占用，提高效率
 * 享元模式提高了**系统复杂度**。需要分离出内部状态和外部状态，外部状态具有固化特性，不会随着内部状态的改变而改变，这是使用享元模式需要注意的问题
 * 享元模式的经典使用场景：String常量池，数据库连接池，线程池
+
+# 14，代理模式
+
+## 14.1，代码模式基本介绍
+
+* 代理对象为对象提供一个替身，以控制对这个对象的访问，即通过代理对象去访问目标对象
+* 被代理的对象可以是远程对象，开销大的对象或者是需要安全控制的对象
+* 代理模式有不同的形式，大体可以分为三种：静态代理，JDK动态代理（接口代理）和CGLIB动态代理（不需要接口）
+* 对象被代理后，可以在目标对象现有的基础上，增加额外的功能操作，即对现有目标对象的扩展。如执行前后日志打印，方法鉴权等等，是AOP的基本思想
+
+## 14.2，静态代理
+
+### 14.2.1，基本介绍
+
+* 静态代码就是简单的代码传递调用，通过代理对象组合目标对象进行强关联，在实际执行的方法外层包裹一层代理方法，实现静态代理
+
+### 14.2.2，类图
+
+![1606975940817](E:\gitrepository\study\note\image\designMode\1606975940817.png)
+
+* 定义一个顶层接口：`IProxy`
+* 定义目标对象 `TargetProxy` 并实现顶层接口 `IProxy`
+* 定义代理对象 `StaticProxy` 实现顶层接口 `Iproxy`，组合目标对象 `TargetProxy`，并在构造器中直接初始化
+* 客户端调用时，初始化代理对象时需要传入初始化好的目标对象，在通过代理对象对象调用方法时，先调用代理对象中的该方法，并最终传递到目标方法
+
+### 14.2.3，代码实现
+
+* `IProxy`：顶层对象
+
+  ```java
+  package com.self.designmode.proxy.statics;
+  
+  /**
+   * 静态代理顶层接口
+   * @author PJ_ZHANG
+   * @create 2020-12-03 13:53
+   **/
+  public interface IProxy {
+  
+      void realMethod(String name);
+  
+  }
+  ```
+
+* `TargetProxy`：目标对象
+
+  ```java
+  package com.self.designmode.proxy.statics;
+  
+  /**
+   * 实际执行类
+   * @author PJ_ZHANG
+   * @create 2020-12-03 13:54
+   **/
+  public class TargetProxy implements IProxy {
+  
+      @Override
+      public void realMethod(String name) {
+          System.out.println("实际执行方法: " + name);
+      }
+  }
+  ```
+
+* `StaticProxy`：代理对象
+
+  ```java
+  package com.self.designmode.proxy.statics;
+  
+  /**
+   * 代理方法
+   * @author PJ_ZHANG
+   * @create 2020-12-03 13:54
+   **/
+  public class StaticProxy implements IProxy {
+  
+      private IProxy proxy;
+  
+      public StaticProxy(IProxy proxy) {
+          this.proxy = proxy;
+      }
+  
+      @Override
+      public void realMethod(String name) {
+          System.out.println("静态代码执行...");
+          proxy.realMethod(name);
+          System.out.println("静态代理执行完成...");
+      }
+  }
+  ```
+
+* `Client`：客户端
+
+  ```java
+  package com.self.designmode.proxy.statics;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-12-03 13:56
+   **/
+  public class Client {
+  
+      public static void main(String[] args) {
+          // 创建实际对象
+          TargetProxy targetProxy = new TargetProxy();
+          // 创建代理对象
+          StaticProxy staticProxy = new StaticProxy(targetProxy);
+          // 方法执行
+          staticProxy.realMethod("执行...");
+      }
+  
+  }
+  ```
+
+### 14.2.4，静态代理优缺点
+
+* 优点：在不修改目标对象的前提下，能实现代理对象对目标对象的功能扩展
+* 缺点：因为代理对象需要与目标对象实现同样的接口，所以会产生太多的代理类。同样，一旦接口方法增加，同时需要处理代理类和目标类
+* 可通过静态代理进行继续优化
+
+## 14.3，JDK动态代理
+
+### 14.3.1，基本介绍
+
+* JDK动态代理又叫做接口代理
+* 目标类需要实现接口，并通过JDK提供的API创建代理对象，实现方法代理
+
+### 14.3.2，类图
+
+![1606977597837](E:\gitrepository\study\note\image\designMode\1606977597837.png)
+
+* 定义顶层接口：`IProxy`，动态代理必须需要一个目标类接口
+* 定义目标类：`TargetProxy`
+* 定义代理工厂：`ProxyFactory`，该代理工厂是生产代理对象的核心部分，通过JDK的API方法`Porxy.newInstance(..)` 创建并返回一个代理对象。在传递参数时，需要实现一个处理接口 `InvocationHandler`，在该接口的实现方法中，进行方法功能扩展及实际方法执行。
+
+### 14.3.3，代码实现
+
+* `IProxy`：顶层接口
+
+  ```java
+  package com.self.designmode.proxy.jdk;
+  
+  /**
+   * JDK动态代理顶层接口
+   * @author PJ_ZHANG
+   * @create 2020-12-03 13:53
+   **/
+  public interface IProxy {
+  
+      void realMethod(String name);
+  
+  }
+  ```
+
+* `TargetProxy`：目标类
+
+  ```java
+  package com.self.designmode.proxy.jdk;
+  
+  /**
+   * 实际执行类
+   * @author PJ_ZHANG
+   * @create 2020-12-03 13:54
+   **/
+  public class TargetProxy implements IProxy {
+  
+      @Override
+      public void realMethod(String name) {
+          System.out.println("实际执行方法: " + name);
+      }
+  }
+  ```
+
+* `ProxyFactory`：代理工厂
+
+  ```java
+  package com.self.designmode.proxy.jdk;
+  
+  import java.lang.reflect.InvocationHandler;
+  import java.lang.reflect.Method;
+  import java.lang.reflect.Proxy;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-12-03 14:48
+   **/
+  public class ProxyFactory {
+  
+      private Object proxy;
+  
+      public ProxyFactory(Object proxy) {
+          this.proxy = proxy;
+      }
+  
+      public Object getInstance() {
+          // 第一次参数:目标对象的类加载器
+          // 第二个参数:目标对象的接口集合, 这也是JDK动态代理必须需要是基于接口的原因
+          // 第三个参数:处理器对象,真正去进行方法代理执行部分,在该接口的的实现方法中需要定义实际方法执行和功能扩展
+          return (IProxy) Proxy.newProxyInstance(proxy.getClass().getClassLoader(), proxy.getClass().getInterfaces(), (proxy, method, args) -> {
+              System.out.println("method: " + method.getName() + "执行前...");
+              // 基于Java反射的方法执行, 第一个对象参数需要的是目标类对象
+              // 该对象如果给代理类对象, 则会构成死循环, 一直触发方法执行,
+              // 因为代理对象的方法执行会走到这部分,然后再触发一次代理对象的方法执行,依次循环
+              Object result = method.invoke(this.proxy, args);
+              System.out.println("method: " + method.getName() + "执行后...");
+              return result;
+          });
+      }
+  
+  }
+  ```
+
+* `Client`：客户端
+
+  ```java
+  package com.self.designmode.proxy.jdk;
+  
+  import sun.misc.ProxyGenerator;
+  
+  import java.io.FileOutputStream;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-12-03 14:46
+   **/
+  public class Client {
+  
+      public static void main(String[] args) throws Exception {
+          ProxyFactory proxyFactory = new ProxyFactory(new TargetProxy());
+          IProxy instance = (IProxy) proxyFactory.getInstance();
+          instance.realMethod("JDK动态代理");
+          // com.sun.proxy.$Proxy0
+          System.out.println(instance.getClass().getName());
+          // 打印出Proxy文件
+          byte[] bytes = ProxyGenerator.generateProxyClass("$Proxy0", TargetProxy.class.getInterfaces());
+          FileOutputStream fileOutputStream = new FileOutputStream("F:\\$Proxy0.class");
+          fileOutputStream.write(bytes);
+          fileOutputStream.flush();
+          fileOutputStream.close();
+      }
+  
+  }
+  ```
+
+### 14.3.4，代理对象.class分析
+
+* 在上一个代码块中，已经把代理对象对应的.class下载下来，具体文件如下
+
+  ```java
+  //
+  // Source code recreated from a .class file by IntelliJ IDEA
+  // (powered by Fernflower decompiler)
+  //
+  
+  import com.self.designmode.proxy.jdk.IProxy;
+  import java.lang.reflect.InvocationHandler;
+  import java.lang.reflect.Method;
+  import java.lang.reflect.Proxy;
+  import java.lang.reflect.UndeclaredThrowableException;
+  
+  public final class $Proxy0 extends Proxy implements IProxy {
+      private static Method m1;
+      private static Method m2;
+      private static Method m3;
+      private static Method m0;
+  
+      public $Proxy0(InvocationHandler var1) throws  {
+          super(var1);
+      }
+  
+      public final boolean equals(Object var1) throws  {
+          try {
+              return ((Boolean)super.h.invoke(this, m1, new Object[]{var1})).booleanValue();
+          } catch (RuntimeException | Error var3) {
+              throw var3;
+          } catch (Throwable var4) {
+              throw new UndeclaredThrowableException(var4);
+          }
+      }
+  
+      public final String toString() throws  {
+          try {
+              return (String)super.h.invoke(this, m2, (Object[])null);
+          } catch (RuntimeException | Error var2) {
+              throw var2;
+          } catch (Throwable var3) {
+              throw new UndeclaredThrowableException(var3);
+          }
+      }
+  
+      public final void realMethod(String var1) throws  {
+          try {
+              super.h.invoke(this, m3, new Object[]{var1});
+          } catch (RuntimeException | Error var3) {
+              throw var3;
+          } catch (Throwable var4) {
+              throw new UndeclaredThrowableException(var4);
+          }
+      }
+  
+      public final int hashCode() throws  {
+          try {
+              return ((Integer)super.h.invoke(this, m0, (Object[])null)).intValue();
+          } catch (RuntimeException | Error var2) {
+              throw var2;
+          } catch (Throwable var3) {
+              throw new UndeclaredThrowableException(var3);
+          }
+      }
+  
+      static {
+          try {
+              m1 = Class.forName("java.lang.Object").getMethod("equals", new Class[]{Class.forName("java.lang.Object")});
+              m2 = Class.forName("java.lang.Object").getMethod("toString", new Class[0]);
+              m3 = Class.forName("com.self.designmode.proxy.jdk.IProxy").getMethod("realMethod", new Class[]{Class.forName("java.lang.String")});
+              m0 = Class.forName("java.lang.Object").getMethod("hashCode", new Class[0]);
+          } catch (NoSuchMethodException var2) {
+              throw new NoSuchMethodError(var2.getMessage());
+          } catch (ClassNotFoundException var3) {
+              throw new NoClassDefFoundError(var3.getMessage());
+          }
+      }
+  }
+  ```
+
+* 上面这个.class文件，即动态代理生成的代理对象`com.sun.proxy.$Proxy0` 对应的.class文件
+
+* 通过代理对象调用方法 `instance.realMethod("JDK动态代理")`，实际上调用的是这个类文件中的 `realMethod(..)`方法
+
+* 跟到该类的父类 `java.lang.reflect.Proxy` 中会发现，`super.h` 其实就指的是 `InvocationHandler h`，这个 `h` 对应的就是传参传递的 `InvocationHandler` 的实现类对象
+
+* 在代理类中执行 `super.h.invoke(this, m3, new Object[]{var1})` 方法，实际上就是执行自定义的 `InvocationHandler` 中的 `invoke(..)` 方法
+
+* 调用的传参与 `invoke(..)` 方法的接收参数相对应：
+
+  * `this`：表示的是该代理对象
+  * `m3`：即`Method`对象，表示要执行的方法。该参数在代理类中已经通过静态代码块的形式初始化
+  * `new Object[]{var1}`：方法参数，将方法参数封装为`args`
+
+* 最终在 `InvocationHandler.invoke(..)` 进行方法调用和方法扩展，方法调用即通过JDK的反射进行调用，***<font color=red>此处对象传递切记传递原对象，如果传递代理对象会陷入方法死递归。</font>***
+
+## 14.4，CGLIB动态代理
+
+### 14.4.1，基本介绍
+
+* 静态代理和JDK代理都需要目标类有一个接口，但有时候目标对象就是一个单独的对象，并没有实现任何接口，这时候可用CGLIB进行动态代理
+* CGLIB是一个强大的高性能的代码生成包，是第三方jar包，需要单独引入
+* CGLIB代理也被称为子类代理，是在内存中构建一个目标类的子类，并通过该子类对目标类功能进行扩展
+* CGLIB的底层是通过字节码处理框架ASM来转换字节码并生成新的类
+* 注意事项：
+  * 目标类不能是final类，final类不支持继承
+  * 目标类方法如果是final/static，也不会被拦截，即不会拦截额外的业务方法
+
+### 14.4.2，类图
+
+![1606984327225](E:\gitrepository\study\note\image\designMode\1606984327225.png)
+
+* 定义目标类：`TargetProxy`，目标类不需要如JDK动态代理般实现接口，但是该类不能是final类
+* 定义代理工厂类：`ProxyFactory`，代理工厂需要实现 `net.sf.cglib.proxy.MethodInterceptor` 接口并重写 `intercept(..)` 方法，具体方法调用和扩展逻辑在该方法中实现
+
+### 14.4.3，代码实现
+
+* Maven坐标引入
+
+  ```xml
+  <dependency>
+      <groupId>cglib</groupId>
+      <artifactId>cglib</artifactId>
+      <version>3.1</version>
+  </dependency>
+  ```
+
+* `TargetProxy`：目标类
+
+  ```java
+  package com.self.designmode.proxy.cglib;
+  
+  /**
+   * 实际执行类
+   * @author PJ_ZHANG
+   * @create 2020-12-03 13:54
+   **/
+  public class TargetProxy {
+  
+      public void realMethod(String name) {
+          System.out.println("实际执行方法: " + name);
+      }
+  
+  }
+  ```
+
+* `ProxyFactory`：代理工厂
+
+  ```java
+  package com.self.designmode.proxy.cglib;
+  
+  import net.sf.cglib.proxy.Enhancer;
+  import net.sf.cglib.proxy.MethodInterceptor;
+  import net.sf.cglib.proxy.MethodProxy;
+  
+  import java.lang.reflect.Method;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-12-03 14:48
+   **/
+  public class ProxyFactory implements MethodInterceptor {
+  
+      private Object targetProxy;
+  
+      public ProxyFactory(Object targetProxy) {
+          this.targetProxy = targetProxy;
+      }
+  
+      public Object getInstance() {
+          // 创建工具列
+          Enhancer enhancer = new Enhancer();
+          // 传递父类
+          enhancer.setSuperclass(targetProxy.getClass());
+          // 设置回调, 即MethodInterceptor的实现类
+          enhancer.setCallback(this);
+          // 创建代理对象
+          return enhancer.create();
+      }
+  
+      @Override
+      public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
+          System.out.println("CGLIB 执行前...");
+          Object result = method.invoke(targetProxy, objects);
+          System.out.println("CGLIB 执行后...");
+          return result;
+      }
+  }
+  ```
+
+* `Client`：客户端
+
+  ```java
+  package com.self.designmode.proxy.cglib;
+  
+  import net.sf.cglib.core.DebuggingClassWriter;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-12-03 15:53
+   **/
+  public class Client {
+  
+      public static void main(String[] args) throws Exception {
+          // 取代理对象对应的.class文件, 注意这句话一定要放前面
+          System.setProperty(DebuggingClassWriter.DEBUG_LOCATION_PROPERTY, "F://tmp");
+          ProxyFactory proxyFactory = new ProxyFactory(new TargetProxy());
+          TargetProxy targetProxy = (TargetProxy) proxyFactory.getInstance();
+          targetProxy.realMethod("CGLIB...");
+          System.out.println(targetProxy.getClass().getName());
+      }
+  
+  }
+  ```
+
+### 14.4.4，代理对象.class分析
+
+* 在上一个代码块中，已经将.class输入到本地文件夹，可在对应包路径下找到文件 `TargetProxy$$EnhancerByCGLIB$$99d2ba72.class`
+
+  ```java
+  //
+  // Source code recreated from a .class file by IntelliJ IDEA
+  // (powered by Fernflower decompiler)
+  //
+  
+  package com.self.designmode.proxy.cglib;
+  
+  import java.lang.reflect.Method;
+  import net.sf.cglib.core.ReflectUtils;
+  import net.sf.cglib.core.Signature;
+  import net.sf.cglib.proxy.Callback;
+  import net.sf.cglib.proxy.Factory;
+  import net.sf.cglib.proxy.MethodInterceptor;
+  import net.sf.cglib.proxy.MethodProxy;
+  
+  public class TargetProxy$$EnhancerByCGLIB$$99d2ba72 extends TargetProxy implements Factory {
+      private boolean CGLIB$BOUND;
+      private static final ThreadLocal CGLIB$THREAD_CALLBACKS;
+      private static final Callback[] CGLIB$STATIC_CALLBACKS;
+      private MethodInterceptor CGLIB$CALLBACK_0;
+      private static final Method CGLIB$realMethod$0$Method;
+      private static final MethodProxy CGLIB$realMethod$0$Proxy;
+      private static final Object[] CGLIB$emptyArgs;
+      private static final Method CGLIB$finalize$1$Method;
+      private static final MethodProxy CGLIB$finalize$1$Proxy;
+      private static final Method CGLIB$equals$2$Method;
+      private static final MethodProxy CGLIB$equals$2$Proxy;
+      private static final Method CGLIB$toString$3$Method;
+      private static final MethodProxy CGLIB$toString$3$Proxy;
+      private static final Method CGLIB$hashCode$4$Method;
+      private static final MethodProxy CGLIB$hashCode$4$Proxy;
+      private static final Method CGLIB$clone$5$Method;
+      private static final MethodProxy CGLIB$clone$5$Proxy;
+  
+      static void CGLIB$STATICHOOK1() {
+          CGLIB$THREAD_CALLBACKS = new ThreadLocal();
+          CGLIB$emptyArgs = new Object[0];
+          Class var0 = Class.forName("com.self.designmode.proxy.cglib.TargetProxy$$EnhancerByCGLIB$$99d2ba72");
+          Class var1;
+          Method[] var10000 = ReflectUtils.findMethods(new String[]{"finalize", "()V", "equals", "(Ljava/lang/Object;)Z", "toString", "()Ljava/lang/String;", "hashCode", "()I", "clone", "()Ljava/lang/Object;"}, (var1 = Class.forName("java.lang.Object")).getDeclaredMethods());
+          CGLIB$finalize$1$Method = var10000[0];
+          CGLIB$finalize$1$Proxy = MethodProxy.create(var1, var0, "()V", "finalize", "CGLIB$finalize$1");
+          CGLIB$equals$2$Method = var10000[1];
+          CGLIB$equals$2$Proxy = MethodProxy.create(var1, var0, "(Ljava/lang/Object;)Z", "equals", "CGLIB$equals$2");
+          CGLIB$toString$3$Method = var10000[2];
+          CGLIB$toString$3$Proxy = MethodProxy.create(var1, var0, "()Ljava/lang/String;", "toString", "CGLIB$toString$3");
+          CGLIB$hashCode$4$Method = var10000[3];
+          CGLIB$hashCode$4$Proxy = MethodProxy.create(var1, var0, "()I", "hashCode", "CGLIB$hashCode$4");
+          CGLIB$clone$5$Method = var10000[4];
+          CGLIB$clone$5$Proxy = MethodProxy.create(var1, var0, "()Ljava/lang/Object;", "clone", "CGLIB$clone$5");
+          CGLIB$realMethod$0$Method = ReflectUtils.findMethods(new String[]{"realMethod", "(Ljava/lang/String;)V"}, (var1 = Class.forName("com.self.designmode.proxy.cglib.TargetProxy")).getDeclaredMethods())[0];
+          CGLIB$realMethod$0$Proxy = MethodProxy.create(var1, var0, "(Ljava/lang/String;)V", "realMethod", "CGLIB$realMethod$0");
+      }
+  
+      final void CGLIB$realMethod$0(String var1) {
+          super.realMethod(var1);
+      }
+  
+      public final void realMethod(String var1) {
+          MethodInterceptor var10000 = this.CGLIB$CALLBACK_0;
+          if(this.CGLIB$CALLBACK_0 == null) {
+              CGLIB$BIND_CALLBACKS(this);
+              var10000 = this.CGLIB$CALLBACK_0;
+          }
+  
+          if(var10000 != null) {
+              var10000.intercept(this, CGLIB$realMethod$0$Method, new Object[]{var1}, CGLIB$realMethod$0$Proxy);
+          } else {
+              super.realMethod(var1);
+          }
+      }
+  
+      final void CGLIB$finalize$1() throws Throwable {
+          super.finalize();
+      }
+  
+      protected final void finalize() throws Throwable {
+          MethodInterceptor var10000 = this.CGLIB$CALLBACK_0;
+          if(this.CGLIB$CALLBACK_0 == null) {
+              CGLIB$BIND_CALLBACKS(this);
+              var10000 = this.CGLIB$CALLBACK_0;
+          }
+  
+          if(var10000 != null) {
+              var10000.intercept(this, CGLIB$finalize$1$Method, CGLIB$emptyArgs, CGLIB$finalize$1$Proxy);
+          } else {
+              super.finalize();
+          }
+      }
+  
+      final boolean CGLIB$equals$2(Object var1) {
+          return super.equals(var1);
+      }
+  
+      public final boolean equals(Object var1) {
+          MethodInterceptor var10000 = this.CGLIB$CALLBACK_0;
+          if(this.CGLIB$CALLBACK_0 == null) {
+              CGLIB$BIND_CALLBACKS(this);
+              var10000 = this.CGLIB$CALLBACK_0;
+          }
+  
+          if(var10000 != null) {
+              Object var2 = var10000.intercept(this, CGLIB$equals$2$Method, new Object[]{var1}, CGLIB$equals$2$Proxy);
+              return var2 == null?false:((Boolean)var2).booleanValue();
+          } else {
+              return super.equals(var1);
+          }
+      }
+  
+      final String CGLIB$toString$3() {
+          return super.toString();
+      }
+  
+      public final String toString() {
+          MethodInterceptor var10000 = this.CGLIB$CALLBACK_0;
+          if(this.CGLIB$CALLBACK_0 == null) {
+              CGLIB$BIND_CALLBACKS(this);
+              var10000 = this.CGLIB$CALLBACK_0;
+          }
+  
+          return var10000 != null?(String)var10000.intercept(this, CGLIB$toString$3$Method, CGLIB$emptyArgs, CGLIB$toString$3$Proxy):super.toString();
+      }
+  
+      final int CGLIB$hashCode$4() {
+          return super.hashCode();
+      }
+  
+      public final int hashCode() {
+          MethodInterceptor var10000 = this.CGLIB$CALLBACK_0;
+          if(this.CGLIB$CALLBACK_0 == null) {
+              CGLIB$BIND_CALLBACKS(this);
+              var10000 = this.CGLIB$CALLBACK_0;
+          }
+  
+          if(var10000 != null) {
+              Object var1 = var10000.intercept(this, CGLIB$hashCode$4$Method, CGLIB$emptyArgs, CGLIB$hashCode$4$Proxy);
+              return var1 == null?0:((Number)var1).intValue();
+          } else {
+              return super.hashCode();
+          }
+      }
+  
+      final Object CGLIB$clone$5() throws CloneNotSupportedException {
+          return super.clone();
+      }
+  
+      protected final Object clone() throws CloneNotSupportedException {
+          MethodInterceptor var10000 = this.CGLIB$CALLBACK_0;
+          if(this.CGLIB$CALLBACK_0 == null) {
+              CGLIB$BIND_CALLBACKS(this);
+              var10000 = this.CGLIB$CALLBACK_0;
+          }
+  
+          return var10000 != null?var10000.intercept(this, CGLIB$clone$5$Method, CGLIB$emptyArgs, CGLIB$clone$5$Proxy):super.clone();
+      }
+  
+      public static MethodProxy CGLIB$findMethodProxy(Signature var0) {
+          String var10000 = var0.toString();
+          switch(var10000.hashCode()) {
+          case -1574182249:
+              if(var10000.equals("finalize()V")) {
+                  return CGLIB$finalize$1$Proxy;
+              }
+              break;
+          case -508378822:
+              if(var10000.equals("clone()Ljava/lang/Object;")) {
+                  return CGLIB$clone$5$Proxy;
+              }
+              break;
+          case 1826985398:
+              if(var10000.equals("equals(Ljava/lang/Object;)Z")) {
+                  return CGLIB$equals$2$Proxy;
+              }
+              break;
+          case 1913648695:
+              if(var10000.equals("toString()Ljava/lang/String;")) {
+                  return CGLIB$toString$3$Proxy;
+              }
+              break;
+          case 1953784640:
+              if(var10000.equals("realMethod(Ljava/lang/String;)V")) {
+                  return CGLIB$realMethod$0$Proxy;
+              }
+              break;
+          case 1984935277:
+              if(var10000.equals("hashCode()I")) {
+                  return CGLIB$hashCode$4$Proxy;
+              }
+          }
+  
+          return null;
+      }
+  
+      public TargetProxy$$EnhancerByCGLIB$$99d2ba72() {
+          CGLIB$BIND_CALLBACKS(this);
+      }
+  
+      public static void CGLIB$SET_THREAD_CALLBACKS(Callback[] var0) {
+          CGLIB$THREAD_CALLBACKS.set(var0);
+      }
+  
+      public static void CGLIB$SET_STATIC_CALLBACKS(Callback[] var0) {
+          CGLIB$STATIC_CALLBACKS = var0;
+      }
+  
+      private static final void CGLIB$BIND_CALLBACKS(Object var0) {
+          TargetProxy$$EnhancerByCGLIB$$99d2ba72 var1 = (TargetProxy$$EnhancerByCGLIB$$99d2ba72)var0;
+          if(!var1.CGLIB$BOUND) {
+              var1.CGLIB$BOUND = true;
+              Object var10000 = CGLIB$THREAD_CALLBACKS.get();
+              if(var10000 == null) {
+                  var10000 = CGLIB$STATIC_CALLBACKS;
+                  if(CGLIB$STATIC_CALLBACKS == null) {
+                      return;
+                  }
+              }
+  
+              var1.CGLIB$CALLBACK_0 = (MethodInterceptor)((Callback[])var10000)[0];
+          }
+  
+      }
+  
+      public Object newInstance(Callback[] var1) {
+          CGLIB$SET_THREAD_CALLBACKS(var1);
+          TargetProxy$$EnhancerByCGLIB$$99d2ba72 var10000 = new TargetProxy$$EnhancerByCGLIB$$99d2ba72();
+          CGLIB$SET_THREAD_CALLBACKS((Callback[])null);
+          return var10000;
+      }
+  
+      public Object newInstance(Callback var1) {
+          CGLIB$SET_THREAD_CALLBACKS(new Callback[]{var1});
+          TargetProxy$$EnhancerByCGLIB$$99d2ba72 var10000 = new TargetProxy$$EnhancerByCGLIB$$99d2ba72();
+          CGLIB$SET_THREAD_CALLBACKS((Callback[])null);
+          return var10000;
+      }
+  
+      public Object newInstance(Class[] var1, Object[] var2, Callback[] var3) {
+          CGLIB$SET_THREAD_CALLBACKS(var3);
+          TargetProxy$$EnhancerByCGLIB$$99d2ba72 var10000 = new TargetProxy$$EnhancerByCGLIB$$99d2ba72;
+          switch(var1.length) {
+          case 0:
+              var10000.<init>();
+              CGLIB$SET_THREAD_CALLBACKS((Callback[])null);
+              return var10000;
+          default:
+              throw new IllegalArgumentException("Constructor not found");
+          }
+      }
+  
+      public Callback getCallback(int var1) {
+          CGLIB$BIND_CALLBACKS(this);
+          MethodInterceptor var10000;
+          switch(var1) {
+          case 0:
+              var10000 = this.CGLIB$CALLBACK_0;
+              break;
+          default:
+              var10000 = null;
+          }
+  
+          return var10000;
+      }
+  
+      public void setCallback(int var1, Callback var2) {
+          switch(var1) {
+          case 0:
+              this.CGLIB$CALLBACK_0 = (MethodInterceptor)var2;
+          default:
+          }
+      }
+  
+      public Callback[] getCallbacks() {
+          CGLIB$BIND_CALLBACKS(this);
+          return new Callback[]{this.CGLIB$CALLBACK_0};
+      }
+  
+      public void setCallbacks(Callback[] var1) {
+          this.CGLIB$CALLBACK_0 = (MethodInterceptor)var1[0];
+      }
+  
+      static {
+          CGLIB$STATICHOOK1();
+      }
+  }
+  ```
+
+* 具体执行逻辑与JDK动态代理基本类似
+
+## 14.5，集中常见的代码模式变体
+
+* 防火墙代理：内网通过代理穿透防火墙，实现对公网的访问
+* 缓存代理：请求图片，文件等大资源时，先从缓存获取，取到则OK，取不到从库中获取并缓存
+* 远程代理：远程对象的本地使用，通过远程代理将远程对象本地化。远程代理通过网络和真正的远程对象沟通
+* 同步代理：多线程编程中，完成线程间同步
+
+# 15，模板方法模式
+
+## 15.1，基本介绍
+
+* 模板方法模式（Template Method Pattern），在一个抽象类中公开定义执行它的方法的模板。子类中可以按需重写相关方法进行自定义，调用则通过抽象类以多态的形式进行。
+* 简单来说，模板方法模式定义了一个算法骨架，将一些步骤的实现延伸到子类中，使得子类可以不改变算法结构，但能重定义算法中的某个步骤
+
+## 15.2，类图
+
+![1606989545919](E:\gitrepository\study\note\image\designMode\1606989545919.png)
+
+* 定义顶层抽象类：`CommonTemplate`，在该抽象类中定义算法骨架，对公共的部分进行公共实现，对需要子类实现的部分提供抽象方法，由子类继承实现
+* 定义具体类：`Concrete`，继承自抽象类，并重写抽象方法，实现自定义算法；也可覆盖父类中已经实现的公共方法，进行算法覆盖	
+
+## 15.3，代码实现
+
+* `CommonTemplate`：顶层抽象类
+
+  ```java
+  package com.self.designmode.template;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-12-03 18:03
+   **/
+  public abstract class CommonTemplate {
+  
+      public void common() {
+          commonSomething();
+          doSomething();
+      }
+  
+      public abstract void doSomething();
+  
+      private void commonSomething() {
+          System.out.println("公共方法...");
+      }
+  
+  }
+  ```
+
+* `Concrete_1`：具体类_1
+
+  ```java
+  package com.self.designmode.template;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-12-03 18:04
+   **/
+  public class Concrete_1 extends CommonTemplate {
+      @Override
+      public void doSomething() {
+          System.out.println("A doSomething...");
+      }
+  }
+  ```
+
+* `Concrete_2`：具体类_2
+
+  ```java
+  package com.self.designmode.template;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-12-03 18:04
+   **/
+  public class Concrete_2 extends CommonTemplate {
+      @Override
+      public void doSomething() {
+          System.out.println("B doSomething...");
+      }
+  }
+  ```
+
+* `Client`：客户端
+
+  ```java
+  package com.self.designmode.template;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-12-03 18:04
+   **/
+  public class Client {
+  
+      public static void main(String[] args) {
+          CommonTemplate concreteA = new Concrete_1();
+          concreteA.common();
+  
+          CommonTemplate concreteB = new Concrete_2();
+          concreteB.common();
+      }
+  
+  }
+  ```
+
+## 15.4，注意事项和细节
+
+* 基本思想：基础算法只存在在一个地方，即父类中。需要进行算法基础算法修改时，只需要修改一处，子类中会默认继承
+* 实现代码最大化复用，父类中的模板方法和已经实现的基础算法会被子类所共用
+* 在统一了算法的同时，提供了算法的灵活性。父类模板方法保证算法结构不变，同时子类提供部分算法步骤的实现
+* 不足之处：每一个不同的实现都要重写一个子类实现，导致类个数增加，系统庞大
+* 一般模板方法需要加上final关键字，防止算法结构被子类重写打散
+* 使用场景：需要完成某个过程，该过程需要一系列步骤，步骤逻辑基本一致，但存在个别步骤实现方式不同，可以考虑使用模板方法模式处理
