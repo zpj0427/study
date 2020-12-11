@@ -4499,3 +4499,916 @@ public class Client {
 
 # 16，命令模式（Command）
 
+## 16.1，问题引入_智能生活项目需求
+
+* 假如有一套智能家电，照明灯、风扇、空调、冰箱、洗衣机等，需要在手机上安装APP进行控制
+* 这些智能家电来自不同的厂家，每一个厂家针对设备都有不同的APP，但是我们不想下载那么多的APP，希望通过一个APP进行全控制，如万能遥控
+* 要实现一个APP控制所有智能家电的需要，则各个智能家电需要一个统一的接口提供给APP使用，这时候可以考虑命令模式
+* 命令模式可以将 **动作的请求者** 从 **动作的执行者** 对象中解耦出来
+* 在这个例子中：动作的请求者是手机APP，动作的执行者就是各个智能家电
+
+## 16.2，基本介绍
+
+* 命令模式（Command Pattern）：在软件设计中，我们经常需要向某些对象发送请求，但是并不知道请求的接受者是谁，也不知道请求的操作是哪个，我们只需要在程序运行时指定具体的请求接收者即可。此时，可以使用命令模式设计
+* 命令模式使得请求发送者和请求接收者消除彼此之间的耦合，让对象间的调用关系更加灵活，实现解耦
+* 命令模式中，会将一个请求封装为一个对象，使用不同的参数来表示不同的请求，同时命令模式也支持撤销操作
+* 用一个简单的解释：将军发送命令，士兵去执行。其中**将军就是请求发送者，士兵是请求接收者，命令连接了将军和士兵**
+* 命令模式在 `Spring` 框架中的 `JDBCTemplate` 模块中有被使用，`StatementCallBack` 接口是命令顶层接口
+
+## 16.3，类图
+
+![1607578361138](E:\gitrepository\study\note\image\designMode\1607578361138.png)
+
+* `Light`：请求接收者，真正执行命令的角色，控制运行
+* `Command`：命令，也就是请求发送者和请求接收者的关联角色，知道如果实施和执行一个指令操作
+* `LightXXCommand`：具体命令角色，实现自 `Command`，将一个命令与一个功能绑定，通过命令实现功能
+* `RemoteController`：请求发送者，即APP万能遥控，通过按钮实现功能控制。每一个命令角色封装，对万能遥控的呈现即为一个按钮
+* `Client`：客户端，即操作人，通过APP进行控制
+
+## 16.4，代码实现
+
+* `Light`：请求接收者，具体执行类
+
+  ```java
+  package com.self.designmode.command;
+  
+  /**
+   * 请求接收者: 具体工作类
+   * @author PJ_ZHANG
+   * @create 2020-12-10 13:52
+   **/
+  public class Light {
+  
+      public void on() {
+          System.out.println("电灯打开了...");
+      }
+  
+      public void off() {
+          System.out.println("电灯关上了...");
+      }
+  
+  }
+  ```
+
+* `Command`：顶层命令接口，连接请求发起者和请求接收者
+
+  ```java
+  package com.self.designmode.command;
+  
+  /**
+   * 命令顶层接口
+   * @author PJ_ZHANG
+   * @create 2020-12-10 13:50
+   **/
+  public interface Command {
+  
+      /**
+       * 执行操作
+       */
+      void execute();
+  
+      /**
+       * 撤销操作
+       */
+      void undo();
+  
+  }
+  ```
+
+* `LightOnCommand`：具体命令类，实际调度请求接收者的功能
+
+  ```java
+  package com.self.designmode.command;
+  
+  /**
+   * 具体命令, 对应某种功能
+   * 打开电灯
+   * @author PJ_ZHANG
+   * @create 2020-12-10 13:54
+   **/
+  public class LightOnCommand implements Command {
+  
+      private Light light;
+  
+      public LightOnCommand(Light light) {
+          this.light = light;
+      }
+  
+      @Override
+      public void execute() {
+          light.on();
+      }
+  
+      @Override
+      public void undo() {
+          light.off();
+      }
+  }
+  ```
+
+* `LightOffCommand`：具体命令类，实际调度请求接收者的功能
+
+  ```java
+  package com.self.designmode.command;
+  
+  /**
+   * 具体命令, 对应某种功能
+   * 关闭电灯
+   * @author PJ_ZHANG
+   * @create 2020-12-10 13:54
+   **/
+  public class LightOffCommand implements Command {
+  
+      private Light light;
+  
+      public LightOffCommand(Light light) {
+          this.light = light;
+      }
+  
+      @Override
+      public void execute() {
+          light.off();
+      }
+  
+      @Override
+      public void undo() {
+          light.on();
+      }
+  }
+  ```
+
+* `NoCommand`：命令空实现，作为预留部分
+
+  ```java
+  package com.self.designmode.command;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-12-10 14:02
+   **/
+  public class NoCommand implements Command {
+  
+      @Override
+      public void execute() {
+          System.out.println("do nothing,,,");
+      }
+  
+      @Override
+      public void undo() {
+          System.out.println("do nothing,,,");
+      }
+  
+  }
+  ```
+
+* `RemoteController`：请求发起者，即万能遥控
+
+  ```java
+  package com.self.designmode.command;
+  
+  import java.util.HashMap;
+  import java.util.Map;
+  
+  /**
+   * 请求发起者, 即万能遥控,
+   * @author PJ_ZHANG
+   * @create 2020-12-10 13:55
+   **/
+  public class RemoteController {
+  
+      private Map<String, Command> onCommandMap = new HashMap<>(16);
+  
+      private Map<String, Command> offCommandMap = new HashMap<>(16);
+  
+      private Command undoCommand;
+  
+      /**
+       * 初始化开关
+       * @param type
+       * @param onCommand
+       * @param offCommand
+       */
+      public void setCommand(String type, Command onCommand, Command offCommand) {
+          onCommandMap.put(type, onCommand);
+          offCommandMap.put(type, offCommand);
+      }
+  
+      /**
+       * 打开开关命令
+       * @param type
+       */
+      public void onCommand(String type) {
+          Command onCommand = null == onCommandMap.get(type) ? new NoCommand() : onCommandMap.get(type);
+          onCommand.execute();
+          undoCommand = onCommand;
+      }
+  
+      /**
+       * 关闭开关命令
+       * @param type
+       */
+      public void offCommand(String type) {
+          Command offCommand = null == offCommandMap.get(type) ? new NoCommand() : offCommandMap.get(type);
+          offCommand.execute();
+          undoCommand = offCommand;
+      }
+  
+      /**
+       * 撤销开关命令
+       */
+      public void undoCommand() {
+          undoCommand.undo();
+      }
+  
+  }
+  ```
+
+* `Client`：客户端，用户操作
+
+  ```java
+  package com.self.designmode.command;
+  
+  /**
+   * 客户端操作
+   * @author PJ_ZHANG
+   * @create 2020-12-10 14:09
+   **/
+  public class Client {
+  
+      public static void main(String[] args) {
+          // 初始化请求接收者,即实际执行类
+          Light light = new Light();
+          // 初始化具体命令类,即命令
+          Command lightOnCommand = new LightOnCommand(light);
+          Command lightOffCommand = new LightOffCommand(light);
+          // 初始化遥控器, 即请求发起者
+          RemoteController remoteController = new RemoteController();
+          // 绑定命令
+          remoteController.setCommand("1", lightOnCommand, lightOffCommand);
+          // 开灯
+          remoteController.onCommand("1");
+          // 关灯
+          remoteController.offCommand("1");
+          // 撤销
+          remoteController.undoCommand();
+          // 如果需要添加其他智能家居,
+          // 只需要添加请求接收者和对应的具体命令类
+          // 在初始化遥控器时设置为不同的type即可
+      }
+  
+  }
+  ```
+
+## 16.5，命令模式的注意事项和细节
+
+* 将发起请求的对象和执行请求的对象解耦。发起请求的对象是调用者，调用者只需要调用命令对象的 `execute()` 方法可以让接口者工作，而不必知道接收者是谁、是如何工作的。命令对象会负责让对应的接收者执行工作。也就是说 **请求发起者** 和 **请求接受者** 是完全解耦的，命令对象在中间起连接作用
+* 比较容易的设计一个命令队列。只需要将命令放入队列中，就可以进行多线程控制
+* 比较容易的实现对请求的撤销和重做
+* 空命令也是命令模式的一种设计，省去了判空操作，对命令进行了基础的空实现
+* 命令模式的应用场景：界面的一个按钮都是一个命令，模拟基于命令的订单撤销、恢复、触发、反馈机制
+* **命令模式不足：可能导致某些系统有过多的具体命令类，增加系统复杂性**
+
+# 17，访问者模式（Visitor）
+
+## 17.1，问题引入_账本查看
+
+* 财务系统是存在财务账本，财务账本有很多分类，而其中大体可以分为两种元素：支出和收入
+* 查看账本的人也分为好几种：老板，注会等等，每一个人查看账本的目的也是不相同的
+* 这时候对有多个固定元素的账本和多个角色的访问者，可以考虑使用访问者模式
+
+## 17.2，基本介绍
+
+* 访问者模式（Visitor Pattern）：封装一些作用于某种数据结构的各元素操作，可以在不改变数据结构的前提下定义作用与这些元素的新的操作
+* 主要是将数据结构（元素）与数据操作（访问者）分离，解决数据结构与数据操作耦合性的问题
+* 访问者模式的基本工作原理是：在被访问的类里面加一个对外提供接待访问者的接口
+* 访问者模式主要应用场景是：需要一个对象结构中的对象进行不同的操作（这些操作之间彼此没有关联），同时需要避免让这些操作污染这些对象的类，可以选用访问者模式解决
+* <font color=red>在问题引入的例子中，账本分类就是不同的元素，查看账本的人是不同的访问者，元素对外提供访问方式，多个元素组装成一个对象结构，由不同的访问者进行自定义访问</font>
+
+## 17.3，类图
+
+![1607655726994](E:\gitrepository\study\note\image\designMode\1607655726994.png)
+
+* `IElement`：元素顶级接口，用于构造对象结构，内部提供访问者访问方式
+* `ElementA`：具体元素，实现自元素顶级接口，重写访问方式方法，提供对元素的进行访问
+* `ElementStructure`：数据结构，即元素集合，对固定元素进行统一管理，由访问者进行访问
+* `IVisitor`：访问者顶级接口，定义访问者的访问操作，对多个固定元素进行操作
+* `Visitor`：具体访问者，实现自访问者顶级接口，重写访问操作，自定义该访问者的元素操作方式
+* `Client`：客户端操作
+
+## 17.4，代码实现
+
+* `IElement`：元素顶级接口
+
+  ```java
+  package com.self.designmode.visitor;
+  
+  /**
+   * 访问者模式_元素顶层接口, 用于提供给访问者进行访问
+   * @author PJ_ZHANG
+   * @create 2020-12-10 17:17
+   **/
+  public interface IElement {
+  
+      /**
+       * 接受访问者访问
+       * @param visitor
+       */
+      void accept(IVisitor visitor);
+  
+      String getName();
+  
+  }
+  ```
+
+* `ElementA`：具体元素A
+
+  ```java
+  package com.self.designmode.visitor;
+  
+  /**
+   * 具体元素类, 用于访问者访问
+   * @author PJ_ZHANG
+   * @create 2020-12-10 17:20
+   **/
+  public class ElementA implements IElement {
+  
+      private String name;
+  
+      public ElementA(String name) {
+          this.name = name;
+      }
+  
+      /**
+       * 接受访问者访问自己
+       * @param visitor
+       */
+      @Override
+      public void accept(IVisitor visitor) {
+          visitor.viewElementA(this);
+      }
+  
+      @Override
+      public String getName() {
+          return name;
+      }
+  }
+  ```
+
+* `ElementB`：具体元素B
+
+  ```java
+  package com.self.designmode.visitor;
+  
+  /**
+   * 具体元素类, 用于访问者访问
+   * @author PJ_ZHANG
+   * @create 2020-12-10 17:20
+   **/
+  public class ElementB implements IElement {
+  
+      private String name;
+  
+      public ElementB(String name) {
+          this.name = name;
+      }
+  
+      /**
+       * 接受访问者访问自己
+       * @param visitor
+       */
+      @Override
+      public void accept(IVisitor visitor) {
+          visitor.viewElementB(this);
+      }
+  
+      @Override
+      public String getName() {
+          return name;
+      }
+  
+  }
+  ```
+
+* `IVisitor`：访问者顶级接口
+
+  ```java
+  package com.self.designmode.visitor;
+  
+  /**
+   * 访问者模式_访问者顶层接口.
+   * @author PJ_ZHANG
+   * @create 2020-12-10 17:18
+   **/
+  public interface IVisitor {
+      
+      // 元素访问可以根据实际情况通过反射进行分发
+      
+      /**
+       * 访问元素A
+       * @param elementA
+       */
+      void viewElementA(ElementA elementA);
+  
+      /**
+       * 访问元素B
+       * @param elementB
+       */
+      void viewElementB(ElementB elementB);
+  
+  }
+  ```
+
+* `VisitorA`：访问者具体角色A
+
+  ```java
+  package com.self.designmode.visitor;
+  
+  /**
+   * 具体访问者类, 用于访问元素
+   * @author PJ_ZHANG
+   * @create 2020-12-10 17:22
+   **/
+  public class VisitorA implements  IVisitor{
+  
+      @Override
+      public void viewElementA(ElementA elementA) {
+          System.out.println("A访问者 访问 A元素: " + elementA.getName());
+      }
+  
+      @Override
+      public void viewElementB(ElementB elementB) {
+          System.out.println("A访问者 访问 B元素: " + elementB.getName());
+      }
+  }
+  ```
+
+* `VisitorB`：访问者具体角色B
+
+  ```java
+  package com.self.designmode.visitor;
+  
+  /**
+   * 具体访问者类, 用于访问元素
+   * @author PJ_ZHANG
+   * @create 2020-12-10 17:22
+   **/
+  public class VisitorB implements  IVisitor{
+  
+      @Override
+      public void viewElementA(ElementA elementA) {
+          System.out.println("B访问者 访问 A元素: " + elementA.getName());
+      }
+  
+      @Override
+      public void viewElementB(ElementB elementB) {
+          System.out.println("B访问者 访问 B元素: " + elementB.getName());
+      }
+  
+  }
+  ```
+
+* `ElementStructure`：元素数据结构集，暴露统一的访问者访问接口
+
+  ```java
+  package com.self.designmode.visitor;
+  
+  import java.util.ArrayList;
+  import java.util.List;
+  
+  /**
+   * 元素对象结构集合
+   * @author PJ_ZHANG
+   * @create 2020-12-10 17:27
+   **/
+  public class ElementStructure {
+  
+      List<IElement> lstElement = new ArrayList<>(10);
+  
+      public void addElement(IElement element) {
+          lstElement.add(element);
+      }
+  
+      public void show(IVisitor visitor) {
+          for (IElement element : lstElement) {
+              element.accept(visitor);
+          }
+      }
+  
+  }
+  ```
+
+* `Client`：客户端，进行访问
+
+  ```java
+  package com.self.designmode.visitor;
+  
+  /**
+   * 客户端
+   * @author PJ_ZHANG
+   * @create 2020-12-10 17:29
+   **/
+  public class Client {
+  
+      public static void main(String[] args) {
+          // 创建元素集合类
+          ElementStructure elementStructure = new ElementStructure();
+          // 添加元素
+          elementStructure.addElement(new ElementA("AAAAA"));
+          elementStructure.addElement(new ElementB("BBBBB"));
+  
+          // 创建两个访问者
+          IVisitor visitorA = new VisitorA();
+          IVisitor visitorB = new VisitorB();
+  
+          // 访问元素
+          elementStructure.show(visitorA);
+          elementStructure.show(visitorB);
+      }
+  
+  }
+  ```
+
+## 17.5，访问者模式注意事项和细节
+
+* 访问者模式符合单一职责原则，让程序具有优秀的扩展性，灵活性比较高
+* 访问者模式可以对功能进行统一，可以做报表，UI，拦截器适配器等，使用与数据结构相对稳定的系统
+* <font color=red>具体元素对访问者公布细节，也就是访问者类关注了其他类的内部细节，不符合迪米特法则，造成具体元素修改困难</font>
+* <font color=red>违背了依赖倒转原则，访问者依赖的是具体元素，而不是抽象接口</font>
+* 初次之外，如果系统中有比较稳定的数据结构，又有经常变化的功能需求，访问者模式是比较适合的，<font color=red>但是确实用的不多</font>
+
+# 18，迭代器模式（Iterator）
+
+## 18.1，问题引入_学校体系结构
+
+* 在 [组合模式](#11，组合模式（Composite）) 中引入了学校体系结构，并通过 `List` 集合对各个层级进行定义，可以很方便的对整个结构进行遍历
+* 但是如果各个层级的下属部门集合不一定都是用 `List` 集合定义，而是通过 `Set`，`array` 或者其他自定义方式进行存储，那就没有一个统一的方式进行结构遍历
+* 此时可以引入迭代器模式
+
+## 18.2，基本介绍
+
+* 迭代器模式（Iterator Pattern）是一种常用的设计模式，属于行为型模式
+* 如果我们的集合是通过不同的方式实现的，如Java集合，数组或者自定义集合等，当客户需要遍历这些集合时理论上就需要使用多种遍历方式，而且还会暴露出数据结构的内部规则，此时可以使用迭代器模式进行统一处理
+* 迭代器模式，提供了一种遍历集合的统一接口，用一致的方式遍历元素，不需要知道元素内部数据结构
+* <font color=red>迭代器模式在Java集合中应用较多</font>
+
+## 18.3，类图
+
+![1607680158553](E:\gitrepository\study\note\image\designMode\1607680158553.png)
+
+* `Department`：基础元素类，实体类
+* `Iterator`：顶层迭代器接口，取自 `java.util.Iterator`，不需要自行定义，直接从JDK中取即可
+* `XXXCollegeIterator`：具体迭代器类，对应每一个需要遍历的实体集合，重写迭代器方法，进行元素发现和元素获取
+* `College`：顶层集合类接口，定义自定义集合的基本方法，并提供统一的获取迭代器方式
+* `XXXCollege`：具体集合类，重写各自的迭代器获取方式，每一个集合类对应一个迭代器类，各自独立
+* `PrintCollege`：集合类的管理类，即`List<List>`，可以对集合类进行统一输出
+
+## 18.4，代码实现
+
+* `Department`：实体类
+
+  ```java
+  package com.self.designmode.iterator;
+  
+  /**
+   * 基础部门对象, 迭代器模式的基础对象
+   * @author PJ_ZHANG
+   * @create 2020-12-11 17:24
+   **/
+  public class Department {
+  
+      private String name;
+  
+      private String des;
+  
+      public Department(String name, String des) {
+          this.name = name;
+          this.des = des;
+      }
+  
+      public String getName() {
+          return name;
+      }
+  
+      public void setName(String name) {
+          this.name = name;
+      }
+  
+      public String getDes() {
+          return des;
+      }
+  
+      public void setDes(String des) {
+          this.des = des;
+      }
+  
+  }
+  ```
+
+* `Iterator`：`java.util.Iterator`类
+
+  ```java
+  package java.util;
+  
+  import java.util.function.Consumer;
+  
+  public interface Iterator<E> {
+      boolean hasNext();
+  
+      E next();
+  
+      default void remove() {
+          throw new UnsupportedOperationException("remove");
+      }
+  
+      default void forEachRemaining(Consumer<? super E> var1) {
+          Objects.requireNonNull(var1);
+  
+          while(this.hasNext()) {
+              var1.accept(this.next());
+          }
+  
+      }
+  }
+  ```
+
+* `ComputerCollegeIterator`：计算机学院迭代器类
+
+  ```java
+  package com.self.designmode.iterator;
+  
+  import java.util.Iterator;
+  
+  /**
+   * 计算机学院迭代器
+   * @author PJ_ZHANG
+   * @create 2020-12-11 17:25
+   **/
+  public class ComputerCollegeIterator implements Iterator {
+  
+      private Department[] departmentArr;
+  
+      private int index = 0;
+  
+      public ComputerCollegeIterator(Department[] departmentArr) {
+          this.departmentArr = departmentArr;
+      }
+  
+      @Override
+      public boolean hasNext() {
+          // 如果当前索引以后到最后了, 则条件不成立,返回false
+          // 如果数组中有一个元素, 则index = 0 == 1 - 1 = 0, 成立, 可以取第0个
+          // 此处if判断不严谨, 没有加数组长度, 说明问题即可
+          if (index <= departmentArr.length - 1 && null != departmentArr[index]) {
+              return true;
+          }
+          return false;
+      }
+  
+      @Override
+      public Object next() {
+          // 取当前元素数据, 并推进索引位置
+          return departmentArr[index++];
+      }
+  }
+  ```
+
+* `InfoCollegeIterator`：信息工程学院迭代器类
+
+  ```java
+  package com.self.designmode.iterator;
+  
+  import java.util.Iterator;
+  import java.util.List;
+  
+  /**
+   * 信息工程学院迭代器
+   * @author PJ_ZHANG
+   * @create 2020-12-11 17:25
+   **/
+  public class InfoCollegeIterator implements Iterator {
+  
+      private List<Department> lstDepartment;
+  
+      private int index = 0;
+  
+      public InfoCollegeIterator(List<Department> lstDepartment) {
+          this.lstDepartment = lstDepartment;
+      }
+  
+      @Override
+      public boolean hasNext() {
+          // 如果当前索引以后到最后了, 则条件不成立,返回false
+          // 如果数组中有一个元素, 则index = 0 == 1 - 1 = 0, 成立, 可以取第0个
+          if (index <= lstDepartment.size() - 1) {
+              return true;
+          }
+          return false;
+      }
+  
+      @Override
+      public Object next() {
+          // 取当前元素数据, 并推进索引位置
+          return lstDepartment.get(index++);
+      }
+  }
+  ```
+
+* `College`：学院顶层接口
+
+  ```java
+  package com.self.designmode.iterator;
+  
+  import java.util.Iterator;
+  
+  /**
+   * 学校顶层接口
+   * @author PJ_ZHANG
+   * @create 2020-12-11 17:30
+   **/
+  public interface College {
+  
+      void addDepartment(Department department);
+  
+      Iterator iterator();
+  
+  }
+  ```
+
+* `ComputerCollege`：计算机学院
+
+  ```java
+  package com.self.designmode.iterator;
+  
+  import java.util.Iterator;
+  
+  /**
+   * 计算机学院
+   * @author PJ_ZHANG
+   * @create 2020-12-11 17:31
+   **/
+  public class ComputerCollege implements College {
+  
+      // 构造学院下专业集合
+      private Department[] departmentArr;
+  
+      // 推进索引
+      private int index = 0;
+  
+      public ComputerCollege() {
+          departmentArr = new Department[5];
+      }
+  
+      /**
+       * 添加专业
+       * @param department
+       */
+      @Override
+      public void addDepartment(Department department) {
+          departmentArr[index++] = department;
+      }
+  
+      /**
+       * 生成计算机学院遍历的迭代器,准备进行遍历
+       * @return
+       */
+      @Override
+      public Iterator iterator() {
+          return new ComputerCollegeIterator(departmentArr);
+      }
+  }
+  ```
+
+* `InfoCollege`：信息工程学院
+
+  ```java
+  package com.self.designmode.iterator;
+  
+  import java.util.ArrayList;
+  import java.util.Iterator;
+  import java.util.List;
+  
+  /**
+   * 信息工程学院
+   * @author PJ_ZHANG
+   * @create 2020-12-11 17:31
+   **/
+  public class InfoCollege implements College {
+  
+      // 构造学院下专业集合
+      private List<Department> lstDepartment;
+  
+      public InfoCollege() {
+          lstDepartment = new ArrayList<>(10);
+      }
+  
+      /**
+       * 添加专业
+       * @param department
+       */
+      @Override
+      public void addDepartment(Department department) {
+          lstDepartment.add(department);
+      }
+  
+      /**
+       * 生成信息工程学院遍历的迭代器,准备进行遍历
+       * @return
+       */
+      @Override
+      public Iterator iterator() {
+          return new InfoCollegeIterator(lstDepartment);
+      }
+  }
+  ```
+
+* `PrintCollege`：学院管理类
+
+  ```java
+  package com.self.designmode.iterator;
+  
+  import java.util.ArrayList;
+  import java.util.Iterator;
+  import java.util.List;
+  
+  /**
+   * 学院遍历类
+   * @author PJ_ZHANG
+   * @create 2020-12-11 17:35
+   **/
+  public class PrintCollege {
+  
+      private List<College> lstCollege = new ArrayList<>(10);
+  
+      /**
+       * 添加学院对象
+       * @param college
+       */
+      public void addCollege(College college) {
+          lstCollege.add(college);
+      }
+  
+      /**
+       * 进行遍历
+       */
+      public void showCollege() {
+          for (College college : lstCollege) {
+              Iterator iterator = college.iterator();
+              showIterator(iterator);
+          }
+      }
+  
+      public void showIterator(Iterator iterator) {
+          for (;iterator.hasNext();) {
+              Department department = (Department) iterator.next();
+              System.out.println(department.getName());
+          }
+      }
+  
+  }
+  ```
+
+* `Client`：客户端
+
+  ```java
+  package com.self.designmode.iterator;
+  
+  /**
+   * 客户端, 进行执行
+   * @author PJ_ZHANG
+   * @create 2020-12-11 17:38
+   **/
+  public class Client {
+  
+      public static void main(String[] args) {
+          // 总体展示类
+          PrintCollege printCollege = new PrintCollege();
+  
+          // 构建计算机学院
+          ComputerCollege computerCollege = new ComputerCollege();
+          computerCollege.addDepartment(new Department("Java专业", "Java专业"));
+  
+          // 构造信息工程学院
+          InfoCollege infoCollege = new InfoCollege();
+          infoCollege.addDepartment(new Department("信息工程", "信息工程"));
+  
+          // 添加学院
+          printCollege.addCollege(computerCollege);
+          printCollege.addCollege(infoCollege);
+          // 展示
+          // 注意: 计算机学院使用数组, 信息工程学院使用的是集合
+          printCollege.showCollege();
+      }
+  
+  }
+  ```
+
+## 18.5，迭代器模式的注意事项和细节
+
+* 提供了统一的元素遍历方式，客户端不用再考虑聚合的类型，通过统一的方式即可遍历
+* 隐藏了聚合的内部结构，客户端进行遍历只能获取到迭代器，隐藏了内部构造
+* 提供了一个设计思想，即一个类中只有一个引起变化的原因（单一职责原则）。在聚合类中，将迭代器分开，就是当管理对象集合和遍历对象集合分开。这样在集合改变的话，只影响聚合对象；遍历方式改变的话，只影响迭代器
+* 当要展示一组相似对象，或者遍历一组相同对象时，需要使用到迭代器模式
+* <font color=red>缺点：每个聚合对象都需要一个迭代器，则过多的聚合对象势必面临过多的迭代器类，不方便管理。</font>
+
+# 19，观察者模式
+
