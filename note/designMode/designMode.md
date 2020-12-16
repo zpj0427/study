@@ -1,4 +1,4 @@
-1，设计模式的七大原则
+# 1，设计模式的七大原则
 
 ## 1.1，设计模式的目的
 
@@ -3261,7 +3261,7 @@ public class Client {
 
 # 12，外观模式（Facade）
 
-## 12.1，问题引入
+## 12.1，问题引入_家庭影院
 
 * 组建一个家庭影院，需要准备屏幕，投影仪，灯光。此时看一场电影的大概过程为：放下屏幕，打开投影仪，调暗灯光；等电影看完后，大致过程为：调两灯光，关闭投影仪，收回屏幕。
 * 此时如果不进行各种模式统筹管理，在实际操作中，需要通过三个开关对三种设备进行单独控制，此时如果设备过多，会造成过程混乱，还有可能出现顺序（逻辑）错误
@@ -4497,6 +4497,8 @@ public class Client {
 * 一般模板方法需要加上final关键字，防止算法结构被子类重写打散
 * 使用场景：需要完成某个过程，该过程需要一系列步骤，步骤逻辑基本一致，但存在个别步骤实现方式不同，可以考虑使用模板方法模式处理
 
+
+
 # 16，命令模式（Command）
 
 ## 16.1，问题引入_智能生活项目需求
@@ -4768,6 +4770,8 @@ public class Client {
 * 命令模式的应用场景：界面的一个按钮都是一个命令，模拟基于命令的订单撤销、恢复、触发、反馈机制
 * **命令模式不足：可能导致某些系统有过多的具体命令类，增加系统复杂性**
 
+
+
 # 17，访问者模式（Visitor）
 
 ## 17.1，问题引入_账本查看
@@ -5036,13 +5040,15 @@ public class Client {
 * <font color=red>违背了依赖倒转原则，访问者依赖的是具体元素，而不是抽象接口</font>
 * 初次之外，如果系统中有比较稳定的数据结构，又有经常变化的功能需求，访问者模式是比较适合的，<font color=red>但是确实用的不多</font>
 
+
+
 # 18，迭代器模式（Iterator）
 
 ## 18.1，问题引入_学校体系结构
 
 * 在 [组合模式](#11，组合模式（Composite）) 中引入了学校体系结构，并通过 `List` 集合对各个层级进行定义，可以很方便的对整个结构进行遍历
 * 但是如果各个层级的下属部门集合不一定都是用 `List` 集合定义，而是通过 `Set`，`array` 或者其他自定义方式进行存储，那就没有一个统一的方式进行结构遍历
-* 此时可以引入迭代器模式
+* 此时可以引入迭代器模式进行统一
 
 ## 18.2，基本介绍
 
@@ -5410,5 +5416,452 @@ public class Client {
 * 当要展示一组相似对象，或者遍历一组相同对象时，需要使用到迭代器模式
 * <font color=red>缺点：每个聚合对象都需要一个迭代器，则过多的聚合对象势必面临过多的迭代器类，不方便管理。</font>
 
+
+
 # 19，观察者模式
+
+## 19.1，问题引入_天气预报问题
+
+* 气象站可以将每天测量到的温度、湿度、气压等发布出去，发布到自己的页面或者第三方系统
+* 发布的形式可以采用两种方式：修改数据等待获取和直接数据推送
+* 在进行数据推送时，需要明确对端系统，然后在变更时调用对端接口进行数据修改
+* 对端系统肯定是不确定多个，并且随时可能存在增减，如何对多系统进行管理，并进行数据推送，**可以使用观察者模式**
+
+## 19.2，基本介绍
+
+* 观察者模式（Observer Pattern）：是解决对象间关系一对多依赖的一种设计方案。被依赖的对象为 `Subject`，为1的一方；依赖对象为 `Observer`，是多的一方；
+* `Subject` 提供对 `Observer` 的管理方式和消息通知，由 `Observer` 进行自定义数据变更
+* `Observer` 需要按规则定义统一的数据修改方式，在 `Subject` 调用通知后，能进行数据变更通知
+
+## 19.3，类图
+
+![1608108230147](E:\gitrepository\study\note\image\designMode\1608108230147.png)
+
+* `Subject`：顶层发布者接口，提供观察者的订阅、去订阅和通知接口
+* `SubjectImpl`：具体发布者实现类，除实现订阅、去订阅和通知接口外，单独提供对应的数据修改接口，修改完成后进行观察者通知
+* `Observer`：顶层观察者接口，提供统一的数据修改方式
+* `XXXObserver`：具体观察者类，实现自定义数据修改方式
+
+## 19.4，代码实现
+
+* `Subject`：顶层发布者接口
+
+  ```java
+  package com.self.designmode.observer;
+  
+  /**
+   * 观察者模式_信息发布者顶层接口
+   * @author PJ_ZHANG
+   * @create 2020-12-16 16:09
+   **/
+  public interface Subject {
+  
+      void addObserver(Observer observer);
+  
+      void removeObserver(Observer observer);
+  
+      void notifyObserver();
+  
+  }
+  ```
+
+* `SubjectImpl`：具体发布者
+
+  ```java
+  package com.self.designmode.observer;
+  
+  import java.util.ArrayList;
+  import java.util.List;
+  
+  /**
+   * 发布者具体实现类, 进行观察者注册和通知
+   * @author PJ_ZHANG
+   * @create 2020-12-16 16:15
+   **/
+  public class SubjectImpl implements Subject {
+  
+      // 温度
+      private double temperature;
+  
+      // 湿度
+      private double humidity;
+  
+      // 气压
+      private double pressure;
+  
+      // 观察者集合
+      private List<Observer> lstObserver = new ArrayList<>(10);
+  
+      // 添加观察者
+      @Override
+      public void addObserver(Observer observer) {
+          lstObserver.add(observer);
+      }
+  
+      // 移除观察者
+      @Override
+      public void removeObserver(Observer observer) {
+          lstObserver.remove(observer);
+      }
+  
+      @Override
+      public void notifyObserver() {
+          // 遍历每一个观察者, 进行数据通知
+          for (Observer observer : lstObserver) {
+              observer.update(temperature, humidity, pressure);
+          }
+      }
+  
+      // 发生数据变更
+      public void changeData(double temperature, double humidity, double pressure) {
+          // 进行数据变更
+          this.temperature = temperature;
+          this.humidity = humidity;
+          this.pressure = pressure;
+          // 变更完成, 进行观察者通知
+          notifyObserver();
+      }
+  
+  }
+  ```
+
+* `Observer`：顶层观察者接口
+
+  ```java
+  package com.self.designmode.observer;
+  
+  /**
+   * 观察者模式_观察者顶层接口
+   * @author PJ_ZHANG
+   * @create 2020-12-16 16:10
+   **/
+  public interface Observer {
+  
+      /**
+       * 修改温度, 湿度, 气压
+       * @param temperature
+       * @param humidity
+       * @param pressure
+       */
+      void update(double temperature, double humidity, double pressure);
+  
+  }
+  ```
+
+* `BaiDuObserver`：具体观察者_百度
+
+  ```java
+  package com.self.designmode.observer;
+  
+  /**
+   * 百度接收天气数据
+   * @author PJ_ZHANG
+   * @create 2020-12-16 16:21
+   **/
+  public class BaiDuObserver implements Observer {
+  
+      @Override
+      public void update(double temperature, double humidity, double pressure) {
+          System.out.println("百度接收, 温度: " + temperature);
+          System.out.println("百度接收, 湿度: " + humidity);
+          System.out.println("百度接收, 气压: " + pressure);
+      }
+  
+  }
+  ```
+
+* `MeiTuanObserver`：具体观察者_美团
+
+  ```java
+  package com.self.designmode.observer;
+  
+  /**
+   * 美团接收天气数据
+   * @author PJ_ZHANG
+   * @create 2020-12-16 16:21
+   **/
+  public class MeiTuanObserver implements Observer {
+  
+      @Override
+      public void update(double temperature, double humidity, double pressure) {
+          System.out.println("美团接收, 温度: " + temperature);
+          System.out.println("美团接收, 湿度: " + humidity);
+          System.out.println("美团接收, 气压: " + pressure);
+      }
+  
+  }
+  ```
+
+* `Client`：客户端
+
+  ```java
+  package com.self.designmode.observer;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-12-16 16:22
+   **/
+  public class Client {
+  
+      public static void main(String[] args) {
+          // 创建发布者
+          SubjectImpl subject = new SubjectImpl();
+          // 创建观察者
+          Observer baiduObserver = new BaiDuObserver();
+          Observer meiTuanObserver = new MeiTuanObserver();
+          // 注册观察者到发布者
+          subject.addObserver(baiduObserver);
+          subject.addObserver(meiTuanObserver);
+          // 发布者改变数据
+          subject.changeData(10, 20, 40);
+      }
+  
+  }
+  ```
+
+
+
+# 20，中介者模式
+
+## 20.1，问题引入_租房中介
+
+* 在一个租房者去市场上租房的时候，面临的是众多的被租房子，及每一套房子后面的房东
+* 首先，租房者需要跟每一个房东打交道，去确认房子，去议价
+* 其次，房东间可能也会存在沟通，形成一张沟通网
+* 在整个沟通过程中，各方都会很累，没有效率，此时需要一个承上启下的角色存在，就是租房中介
+* 这就可以用中介者模式进行处理
+
+## 20.2，基本介绍
+
+* 中介者模式（Mediator Pattern）：是行为模式的一种。用一个中介对象，封装一系列的对象交互（发送东）。中介者使各个对象不需要显式的相互引用，从而使其耦合松散，而且可以独立的改变他们之间的交互
+* 比如在MVC模式中，C（`Controller`）是M（`Model`）和V（`View`）的中介者，在前后端交互时候起到了中间人的作用
+* 中介者模式中包括**中介者**和**同事类**两个基本角色，在MVC中，C表示中介者，MV就是同事类，由一个同事类通过中介者发送数据给一个或者几个同事类
+
+## 20.3，类图
+
+![1608131097228](E:\gitrepository\study\note\image\designMode\1608131097228.png)
+
+* `Mediator`：中介者顶层抽象类，定义同事类的注册方式和数据的传递方式
+* `ConcreteMediator`：具体中介者对象，内部组合了同事类集合，可通过中介者进行消息分发
+* `Colleague`：同事类顶层抽象类，内部聚合中介者对象
+* `XXXColleague`：具体同事类对象，定义具体的发送和接收方式
+
+## 20.4，代码实现
+
+* `Mediator`：中介者顶层抽象类
+
+  ```java
+  package com.self.designmode.mediator;
+  
+  /**
+   * 中介者顶层抽象类
+   * @author PJ_ZHANG
+   * @create 2020-12-16 22:46
+   **/
+  public abstract class Mediator {
+  
+      /**
+       * 同事类注册
+       * @param colleague 注册的同事对象
+       */
+      abstract void registry(Colleague colleague);
+  
+      /**
+       * 同事类消息传递
+       * @param senderType 消息发送者
+       * @param receiverType 消息接受者
+       * @param msg 消息内容
+       */
+      abstract void relay(String senderType, String receiverType, String msg);
+  
+  }
+  ```
+
+* `ConcreteMediator`：中介者具体类
+
+  ```java
+  package com.self.designmode.mediator;
+  
+  import java.util.ArrayList;
+  import java.util.HashMap;
+  import java.util.List;
+  import java.util.Map;
+  
+  /**
+   * 具体中介者类
+   * @author PJ_ZHANG
+   * @create 2020-12-16 22:47
+   **/
+  public class ConcreteMediator extends Mediator {
+  
+      Map<String, Colleague> colleagueMap = new HashMap<>(16);
+  
+      @Override
+      void registry(Colleague colleague) {
+          if (!colleagueMap.containsKey(colleague.getColleagueType())) {
+              colleagueMap.put(colleague.getColleagueType(), colleague);
+              colleague.setMediator(this);
+          }
+      }
+  
+      @Override
+      void relay(String senderType, String receiverType, String msg) {
+          if (!colleagueMap.containsKey(senderType) || !colleagueMap.containsKey(receiverType)) {
+              return;
+          }
+          colleagueMap.get(receiverType).receiverMsg(senderType, msg);
+      }
+  }
+  ```
+
+* `Colleague`：同事类顶层抽象类
+
+  ```java
+  package com.self.designmode.mediator;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-12-16 22:46
+   **/
+  public abstract class Colleague {
+  
+      private Mediator mediator;
+  
+      private String name;
+  
+      public Colleague(String name) {
+          this.name = name;
+      }
+  
+      public Mediator getMediator() {
+          return mediator;
+      }
+  
+      public void setMediator(Mediator mediator) {
+          this.mediator = mediator;
+      }
+  
+      public String getName() {
+          return name;
+      }
+  
+      public void setName(String name) {
+          this.name = name;
+      }
+  
+      abstract void sendMsg(String receiverType, String msg);
+  
+      abstract void receiverMsg(String senderType, String msg);
+  
+      abstract String getColleagueType();
+  }
+  ```
+
+* `ConcreteColleagueA`：同事类具体类
+
+  ```java
+  package com.self.designmode.mediator;
+  
+  /**
+   * 具体同事类
+   * @author PJ_ZHANG
+   * @create 2020-12-16 22:54
+   **/
+  public class ConcreteColleagueA extends Colleague {
+  
+      public ConcreteColleagueA(String name) {
+          super(name);
+      }
+  
+      @Override
+      void sendMsg(String receiverType, String msg) {
+          System.out.println(getName() + " 发送消息 {" + msg + "} 到 " + receiverType);
+          getMediator().relay(getColleagueType(), receiverType, msg);
+      }
+  
+      @Override
+      void receiverMsg(String senderType, String msg) {
+          System.out.println(getName() + " 接收到" + senderType + " 发送的消息: " + msg);
+      }
+  
+      @Override
+      String getColleagueType() {
+          return "A";
+      }
+  
+  }
+  ```
+
+* `ConcreteColleagueB`：同事类具体类
+
+  ```java
+  package com.self.designmode.mediator;
+  
+  /**
+   * 具体同事类
+   * @author PJ_ZHANG
+   * @create 2020-12-16 22:54
+   **/
+  public class ConcreteColleagueB extends Colleague {
+  
+      public ConcreteColleagueB(String name) {
+          super(name);
+      }
+  
+      @Override
+      void sendMsg(String receiverType, String msg) {
+          System.out.println(getName() + " 发送消息 {" + msg + "} 到 " + receiverType);
+          getMediator().relay(getColleagueType(), receiverType, msg);
+      }
+  
+      @Override
+      void receiverMsg(String senderType, String msg) {
+          System.out.println(getName() + " 接收到" + senderType + " 发送的消息: " + msg);
+      }
+  
+      @Override
+      String getColleagueType() {
+          return "B";
+      }
+  
+  }
+  ```
+
+* `Client`：客户端
+
+  ```java
+  package com.self.designmode.mediator;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-12-16 23:03
+   **/
+  public class Client {
+  
+      public static void main(String[] args) {
+          // 构建中介者
+          Mediator mediator = new ConcreteMediator();
+          // 非单例模式可以指定类型, 比如用用户编号制定
+          // 构建同事类
+          Colleague colleagueA = new ConcreteColleagueA("A");
+          Colleague colleagueB = new ConcreteColleagueB("B");
+          // 注册同事类到中介者
+          mediator.registry(colleagueA);
+          mediator.registry(colleagueB);
+          // A发送消息给B
+          colleagueA.sendMsg(colleagueB.getColleagueType(), "A发送给B");
+          // B发送消息给A
+          colleagueB.sendMsg(colleagueA.getColleagueType(), "B发送给A");
+      }
+  
+  }
+  ```
+
+## 20.5，中介者模式的注意事项和细节
+
+* 多个同事相互耦合，会形成网状结构；使用中介者会将网状结构分解为星状结构，进行解耦
+* 减少类之间依赖关系，进行解耦，符合迪米特法则（最少知道原则）
+* <font color=red>中介者承担了较多的责任，如果中介者出现问题，整个系统会出现影响</font>
+* <font color=red>如果涉及不当，中介者对象本身会变得非常复杂，这点应该特别注意</font>
+* 在最近项目中实现即时通讯，通过Netty构建基本框架，类似Spring容器管理对Channel进行管理并进行数据分发，符合中介者模式的基本原则；即Channel容器是一个中介者类，每一个连接Channel是一个个同事类
 
