@@ -1,4 +1,4 @@
-# 1，设计模式的七大原则
+1，设计模式的七大原则
 
 ## 1.1，设计模式的目的
 
@@ -7,7 +7,7 @@
 * 代码可读性：编程规范性，便于其他程序员对代码的阅读和理解
 * 可扩展性：当需求变更，需要增加新的功能时，能最小改动，最快时间实现
 * 可靠性：增加新的功能时，对现有功能没有影响
-* 使程序呈现出高内聚，低耦合的特性
+* 通过设计，使程序呈现出高内聚，低耦合的特性
 
 ## 1.2，设计模式的七大原则
 
@@ -19,7 +19,7 @@
 * 迪米特法则
 * 合成复用原则
 
-## 1.3，单一职责原则
+## 1.3，单一职责原则（Single Responsibility）
 
 ### 1.3.1，单一职责介绍
 
@@ -61,9 +61,9 @@
    }
    ```
 
-2. 从1中可以看出来，让`Vehicle.run(..)`一个类处理交通工具跑的方式是不够的，此时需要对功能进行分解，可以先从类角度进行分解
+2. 从1中可以看出来，让 `Vehicle.run(..)` 一个类处理交通工具跑的方式是不够的，此时需要对功能进行分解，可以先从类角度进行分解
 
-   * 此时可以看到，一个交通类`Vehicle`被分解成为三个交通类`CarVehicle`，`SteamerVehicle`，`AirVehicle`，三个交通类各司其职，如果如果还有其他交通需求，可以再加对应的交通类进行处理
+   * 此时可以看到，一个交通类 `Vehicle` 被分解成为三个交通类 `CarVehicle`，`SteamerVehicle`，`AirVehicle`，三个交通类各司其职，如果如果还有其他交通需求，可以再加对应的交通类进行处理
    * 该处理方式，将功能的职责可以完全区分开，但是从一定程度上无疑会造成类爆炸
 
    ```java
@@ -117,7 +117,7 @@
    
    ```
 
-3. 第2点从类拆分角度给出方案，此外在简单的相似功能拆分下，也可以使用方法拆分的原则，各个方法处理不同的场景，对于类来讲，处理的也算是一项职责，没有未被单一职责原则
+3. 第2点从类拆分角度给出方案，此外在简单的相似功能拆分下，也可以使用方法拆分的原则，各个方法处理不同的场景，对于类来讲，处理的也算是一项职责，没有违背单一职责原则
 
    ```java
    package com.self.designmode.discipline;
@@ -168,8 +168,8 @@
 * 提高类的可读性和可维护性
 * 降低需求变更引发的风险
 * 通常情况下，我们需要保持类的职责单一
-  * 只有逻辑足够简单，才可以在代码级别违反单一职责原则
-  * 只有类中方法数量足够少，才可以在方法维度保持单一职责原则
+  * <font color=red>只有逻辑足够简单，才可以在代码级别违反单一职责原则</font>
+  * <font color=red>只有类中方法数量足够少，才可以在方法维度保持单一职责原则</font>
 
 ## 1.4，接口隔离原则（Interface Segregation Principle）
 
@@ -177,13 +177,13 @@
 
 * 客户端不一定依赖它不需要的接口，即一个类对另一个类的依赖应该建立在最小接口之上
 
-  ![1594893273606](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1594893273606.png)
+  ![1594893273606](E:\gitrepository\study\note\image\designMode\1594893273606.png)
 
 * 在上图中，可以看到类A通过接口`Interface`依赖类B，类C通过接口`Interface`依赖类D，如果接口`Interface`对应类B和类D来说不是最小接口，那么类B和类D必须实现他们不需要的方法
 
 * 按照隔离原则：需要将接口`Interface`拆分为独立的几个接口，类B和类D分别实现对应的接口并只需要实现各自需要的方法，而类A和类C也分别于他们需要的接口建立依赖关系，也就是采用接口隔离原则
 
-  ![1594893493754](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1594893493754.png)
+  ![1594893493754](E:\gitrepository\study\note\image\designMode\1594893493754.png)
 
 ### 1.4.2，应用示例
 
@@ -485,7 +485,7 @@
 * 高层模块不应该依赖底层模块，二者都应该依赖其抽象
 * **抽象不应该依赖细节，细节应该依赖抽象**
 * 依赖倒转的核心思想是面向接口编程，即面向对象的多态特性
-* 依赖倒转原则基于的设计理念是：**相对于细节的多边形，抽象的东西相对稳定很多**。所以以抽象为基础搭建的框架会比以细节为基础搭建的框架稳定很多。在java中，抽象指的是抽象类或者接口，细节就是对应的子类和实现类
+* 依赖倒转原则基于的设计理念是：**相对于细节的多变形，抽象的东西相对稳定很多**。所以以抽象为基础搭建的框架会比以细节为基础搭建的框架稳定很多。在java中，抽象指的是抽象类或者接口，细节就是对应的子类和实现类
 * 使用**接口和抽象类**的目的是指定好规范，而把具体的细节交给它们的实现类和子类去完成，在调用方不涉及任何具体的操作
 
 ### 1.5.2，应用示例
@@ -733,7 +733,7 @@
 
 * 继承中有这样一层含义：父类中已经定义好的方法，其实是在定义一种规范和契约，虽然他不强制要求所有的子类都必须遵循这种契约，但是如果子类对这些已经实现的方法任意重写修改，则就会对整个继承体系造成影响
 * **继承在带来便利的同时，也带来了弊端**。比如使用继承会给程序带来侵入性，程序的可移植性降低，增加对象之间的耦合性。在继承体系中，如果需要对父类进行修改，则必须考虑其子类实现，所有涉及到的子类都可能产生故障
-* 那在编程中，应该如何更好的使用继承 -> **里式替换原则**
+* 那在编程中，应该如何更好的使用继承：**里式替换原则**
 
 ### 1.6.2，里式替换原则基本介绍
 
@@ -771,6 +771,7 @@ public class SimpleExtend {
     static class B extends A {
         // 在B中, 该方法是求两个数之差
         // B中可以理解为对A中的该方法不小心触发重写
+        @Override
         public void func_1(int num1, int num2) {
             System.out.println("result: " + (num1 - num2));
         }
@@ -911,7 +912,7 @@ public class SimpleExtend {
 2. 优缺点分析
 
    * 该方法是一个比较标准的顺序代码，逻辑清晰，容易理解，简单易操作
-   * 但事其明显违反了OCP原则，在后期需要添加实现方式，如绘制其他图形时，需要对各个部分进行修改
+   * 但是其明显违反了OCP原则，在后期需要添加实现方式，如绘制其他图形时，需要对各个部分进行修改
    * 此时我们可以在客户端做一个统一的抽象（对修改关闭），在提供方进行不同的细节扩展（对扩展开放）
 
 3. 改进代码：将具体绘制方式向上抽取，抽取一个公共的父类，交给客户端进行引用，扩展部分根据引用的实际对象进行多态调用
@@ -973,7 +974,7 @@ public class SimpleExtend {
    }
    ```
 
-## 1.8，迪米特法则
+## 1.8，迪米特法则（Demeter）_最少知道原则
 
 ### 1.8.1，迪米特法则基本介绍
 
@@ -1128,15 +1129,15 @@ public class SimpleExtend {
 
 ### 1.9.1，基本介绍
 
-* 原则上是尽量使用合成/集合/依赖等方式，而不是继承的方式
+* 原则上是尽量使用关联、依赖、聚合、组合等方式，而不是继承的方式
 
-  ![1594979908593](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\1594979908593.png)
+  ![1594979908593](E:\gitrepository\study\note\image\designMode\1594979908593.png)
 
 ## 1.10，设计原则核心思想
 
 * 找出应用中可能需要变化之处，把这部分进行独立，不要和不需要变化的代码混在一起
 * 针对接口编程，而不是针对实现编程
-* 为了交互对象之间的送耦合而努力
+* 为了交互对象之间的松耦合而努力
 
 
 
@@ -1154,7 +1155,8 @@ public class SimpleExtend {
   * 方法参数传递可以作为类依赖关系
   * 局部变量定义可以作为类依赖关系
   * 凡是在该类中出现的其他类，都可以作为该类的依赖类
-
+* 依赖类是关联关系最弱的关系，只要在类中有出现其他类，都可以首先定义为该类的依赖类
+  
 * 代码示例
 
   ```java
@@ -1295,7 +1297,7 @@ public class SimpleExtend {
 * 聚合关系介绍
 
   * **聚合关系是整体和部分的关系，且整体和部分可以分开，是依赖关系的特例**
-  * 在实现层面上，如果类A依赖类B，且类B对象不会随着类B对象的初始化而初始化，则可以称为聚合关系，说明它们没有强相关
+  * 在实现层面上，如果类A依赖类B，且类A对象不会随着类B对象的初始化而初始化，则可以称为聚合关系，说明它们没有强相关
 
 * 代码示例
 
@@ -1368,8 +1370,8 @@ public class SimpleExtend {
 
 ## 3.1，设计模式基本介绍
 
-* 设计模式是某类通用问题的进本解决方式，设计模式不是代码，设计模式代表了最佳实践
-* 设计模式的本质提高**软件的维护性，通用性和扩展性，并降低软件的复杂度**
+* 设计模式是某类通用问题的基本解决方式，设计模式不是代码，设计模式代表了最佳实践
+* 设计模式的本质是提高**软件的维护性，通用性和扩展性，并降低软件的复杂度**
 
 ## 3.2，设计模式的类型
 
@@ -1378,13 +1380,15 @@ public class SimpleExtend {
 * **结构型模式**：适配器模式，桥接模式，装饰者模式，组合模式，外观模式，享元模式，代理模式
 * **行为型模式**：模板方法模式，命令模式，访问者模式，迭代器模式，观察者模式，中介者模式，备忘录模式，解释器模式，状态模式，策略模式，职责链模式（责任链模式）
 
+
+
 # 4，单例模式（Singleton）
 
 ## 4.1，单例模式基本介绍
 
 * 所谓单例模式，就是通过一定的方式保证在系统中，对某一个类只存在一个对象实例，并且该类只提供一个获取该对象的方法（静态方法）
 
-* 单例模式创建方式比较多，目前大致可以分为五类八种，后面为一一分析，<font color=red>其中标红表明不可取方式</font>，分别如下：
+* 单例模式创建方式比较多，目前大致可以分为五类八种，后面会一一分析，<font color=red>其中标红表明不可取方式</font>，分别如下：
   * 饿汉式：静态常量，静态代码块
   * 懒汉式：<font color=red>线程不安全方式</font>，同步方法，<font color=red>同步代码块</font>
   * 双重检查方式（推荐）
@@ -1502,12 +1506,20 @@ class SynMethod {
 
 ```java
 class SynMethod {
-    private SynMethod() {}
+    private SynCodeBlock() {}
 
-    private static SynMethod synMethod;
+    private static SynCodeBlock synCodeBlock;
 
-    public static synchronized SynMethod getInstance() {
-        return null == synMethod ? synMethod = new SynMethod() : synMethod;
+    public static SynCodeBlock getInstance() {
+        // 加载if外面, 基本同步了整个方法, 与同步方法一致
+        synchronized (SynCodeBlock.class) {
+        	if (null == synCodeBlock) {
+            // 加在if判断里面, 与线程不安全的方式基本一致
+            //synchronized (SynCodeBlock.class) {
+                synCodeBlock = new SynCodeBlock();
+            }
+        }
+        return synCodeBlock;
     }
 }
 ```
@@ -1515,7 +1527,7 @@ class SynMethod {
 ### 4.5.2，优缺点分析
 
 * <font color=red>这个也不要用，没有优点</font>
-* **缺点**：同步代码块，就是通过`synchronized`关键字，对一段代码进行包裹，在该段代码内，保证线程同步。在创建单例对象时，能满足同步的代码块就是创建对象的代码块。而`synchronized`能同步的代码， 也就是是分为带判断和不带判断语句两种。
+* **缺点**：同步代码块，就是通过`synchronized`关键字，对一段代码进行包裹，在该段代码内，保证线程同步。在创建单例对象时，能满足同步的代码块就是创建对象的代码块。而`synchronized`能同步的代码， 也就是分为带判断和不带判断语句两种。
   * 带判断语句：等同于整个方法同步，与同步方法方式完全一致
   * 不带判断语句：就是在线程不安全方式的基础上，加了个不安全部分的同步，其实没有任何意义，还是不安全
   * <font color=red>这个也是凑数的</font>
@@ -1574,7 +1586,7 @@ class OuterClass {
 
 * 与饿汉式加载原理基本一致，依托类加载机制，通过类加载机制保证线程同步
 * 与饿汉式不同的是，在单例类里面会通过一个静态内部类来创建该类对象，在外部类（单例类）加载时，此时不会加载外部类，只有在进行对象创建，需要调用到内部类，此时内部类才会被加载，并同步创建外部类对象，通过外部类的对象获取方法返回
-* <font color=red>个人感觉该方法由于双重校验，也是单例模式的推荐方式</font>
+* <font color=red>个人感觉该方法优于双重校验，也是单例模式的推荐方式</font>
 
 ## 4.8，枚举方式
 
@@ -1590,6 +1602,8 @@ enum EnumSingleton {
 
 * 通过JDK1.5引入的枚举机制来实现单例化。不仅能避免多线程同步问题，而且还能防止反序列化重新创建新的对象
 * <font color=red>这种方式也是Effective Java作者Josh Bloch推荐的方式</font>
+
+
 
 # 5，工厂模式（Factory）
 
@@ -1704,7 +1718,7 @@ public class Client {
 ### 5.1.5，优缺点分析
 
 * **优点**：简单工厂模式将具体对象的创建交由工厂来完成，在一定程度上精简了代码结构，从整体上对具体的创建提供了一个范式。
-* **缺点**：简单工厂模式只是将创建对象的动作进行了向上抽取。如果店铺中添加了其他产品，则对应的需要在工厂类中添加分支，不符合开闭原则
+* <font color=red>**缺点**：简单工厂模式只是将创建对象的动作进行了向上抽取。如果店铺中添加了其他产品，则对应的需要在工厂类中添加分支，不符合开闭原则</font>
 
 ## 5.2，工厂方法模式
 
@@ -1904,7 +1918,10 @@ public class Client {
 ### 5.2.5，优缺点分析
 
 * 抽象工厂模式，提出了产品族的概念，对同一模块下的产品行为进行了整合，有利于模块化的业务模型处理
+
 * 不可否认，不合理的应用抽象工厂模式，极易产生类结构爆炸。<font color=red>合理的也会</font>
+
+  
 
 # 6，原型模式（Prototype）
 
@@ -1913,8 +1930,8 @@ public class Client {
 * 原型模式是通过原型实例指定创建对象的种类，并通过拷贝这些原型，创建新的对象
 * 原型模式是一种**创建型设计模式**，允许通过一个对象再创建一个可定制的对象，且不用对外暴露创建过程
 * 原型模式拷贝对象的方式，分为浅拷贝和深拷贝两种：
-* 浅拷贝通过JDK提供的API可直接进行处理，只会改变外部对象的地址，对内部引用对象地址不会改变
-* 深拷贝需要通过一些其他途径，如序列化，递归拷贝等，关联对内部引用对象地址进行改变，新对象与原对象不会再有任何联系
+  * 浅拷贝通过JDK提供的API可直接进行处理，只会改变外部对象的地址，对内部引用对象地址不会改变
+  * 深拷贝需要通过一些其他途径，如序列化，递归拷贝等，关联对内部引用对象地址进行改变，新对象与原对象不会再有任何联系
 * <font color=red>在Spring中的使用：Bean创建方式，单例/原型</font>
 
 ## 6.2，类图
@@ -2135,12 +2152,14 @@ public class Client {
 
 ## 6.4，注意事项和细节
 
-* 创建的新对象比较复杂时，可以通过原型模式简化创建过程，提示也能够提高效率
+* 创建的新对象比较复杂时，可以通过原型模式简化创建过程，也能够提高效率
 * 不用重新初始化对象，而是动态的获得对象运行时的状态
 * 如果原始对象发生变化（属性增减），其克隆对象也会对应的对该部分变更属性进行处理，无需修改代码
 * 在实现深拷贝的时候可能会需要比较复杂的代码（如递归处理，序列化处理）
 * **缺点**：需要为每一个类配备一个克隆方法，对新增类影响不大，如果项目中突然引入，需要对全项目进行修改，势必修改大量源代码
 * <font color=red>原型模式可完全通过JSON转换来实现，先序列化为字符串，再由字符串转为对象，即可实现一次深拷贝，对实体类零入侵，前面一大堆就是演示过程！！！</font>
+
+
 
 # 7，建造者模式（Build）
 
@@ -2165,7 +2184,7 @@ public class Client {
 
 * 建造者的层次结构，定义一个抽象的建造者`AbstractBuilder`，并抽象化构造细节；子类即具体建造者类`ConcreteBuilder`，继承抽象类并重写这部分方法，建造完成后，通过抽象类的`build()`方法直接返回构造完成的对象。
   * 此处抽象类组合了产品类`Product`，是在抽象类进行产品对象的直接初始化
-  * 字节依赖产品类`Product`，是在子类中给父类构建好的产品对象赋值
+  * 子类依赖产品类`Product`，是在子类中给父类构建好的产品对象赋值
 * 指挥者类`Director`中，组合了抽象建造者`AbstractBuilder`，是需要通过具体建造者类进行对象建造，体现了**对内连接建造者**，同时被客户端`Client`依赖，体现了**对外连接客户端**
 * 客户端`Client`中，依赖指挥者`Director`创建产品，在创建时传递一系列基本属性，指挥类`Director`对属性进行基本组装，并通过实际建造者类`ConcreteBuilder`传递到对应的实现细节进行细节装配，最后通过`AbstractBuilder.build()`方法返回具体构建完成的产品`Product`
 
@@ -2320,6 +2339,8 @@ public class Client {
   * 抽象工厂模式是对产品族的管理，不需要关心构建过程，只需要知道什么工厂生产什么产品即可
   * 建造者模式则要求按照指定的蓝图设计产品，主要目的是经过配件组装成为新的产品
 
+
+
 # 8，适配器模式（Adapter）
 
 ## 8.1，基本介绍
@@ -2471,7 +2492,7 @@ public class Client {
    * @author PJ_ZHANG
    * @create 2020-07-27 14:17
    **/
-      public class PhoneVoltageAdapter implements IVoltageAdapter {
+  public class PhoneVoltageAdapter implements IVoltageAdapter {
   
       private NormalVoltage normalVoltage;
   
@@ -2608,9 +2629,11 @@ public class Client {
 * 适配器模式的最大作用还是将原本不兼容的类融合到一起进行工作
 * 三种适配器方式只是说法和实现方式不同，具体工作中可随意选择
 
+
+
 # 9，桥接模式（Bridge）
 
-## 9.1，问题引入
+## 9.1，问题引入_手机类型
 
 * 现在对不同类型不同品牌的手机实现操作编程，如下手机外观类型和对应品牌：
 
@@ -2628,11 +2651,11 @@ public class Client {
 ## 9.2，基本介绍
 
 * 桥接模式是指将**实现**和**抽象**放在两个不同的类层次中，并可以进行独立改变。桥接模式是一种结构性设计模式
-* 桥接模式基于类的最小设计原则，使用封装，聚合和继承等行为让不同的类承担不同的职责。主要特点是把**抽象（Abstraction）**和**实现（Implementation）**分离开来，从而保证各部分的独立性及功能扩展
+* 桥接模式基于类的最小设计原则，使用封装、聚合和继承等行为让不同的类承担不同的职责。主要特点是把**抽象（Abstraction）**和**实现（Implementation）**分离开来，从而保证各部分的独立性及功能扩展
 
 ## 9.3，类图
 
-![1595844812102](E:\gitrepository\study\note\image\designMode\1595844812102.png)
+![1608282725753](E:\gitrepository\study\note\image\designMode\1608282725753.png)
 
 * 对抽象和实现进行拆分，拆分为两个独立的模块，并通过组合关系关联在一起
 * 抽象模块是手机类型模块，以`PhoneType`为顶层抽象类，并派生出`UpRightType`和`FlodedType`等具体类型类
@@ -2842,6 +2865,8 @@ public class Client {
   * 消息类型：即时消息，延时消息
   * 消息分类：手机短信，右键信息，QQ消息...
 
+
+
 # 10，装饰者模式（Decorator）
 
 ## 10.1，问题引入
@@ -2849,7 +2874,7 @@ public class Client {
 ### 10.1.1，星巴克咖啡订单项目
 
 * **咖啡种类**：Espresso（意大利浓咖啡），LongBlack（美式咖啡），Decaf（无因咖啡）
-* **调料**：Mild，Soy，Chocolate
+* **调料**：Milk（牛奶），Soy（豆浆），Chocolate（巧克力）
 * 要求在增加新的咖啡时能有更好的扩展性，改动方便，维护方便
 * 使用OO计算不同种类咖啡的价格：包括咖啡价格和调料价格
 
@@ -2860,7 +2885,7 @@ public class Client {
 * `Drink`：是顶层抽象类，表示饮品，`price`是咖啡价格， `description`是对咖啡的描述，`cost()`方法是计算最终咖啡价格
 * 图中第一层的子类表示单品咖啡，即列举出所有的单品咖啡以供单点
 * 图中第二层的子类表示单品咖啡+调料，即对所有可能的咖啡+调料进行组合列举
-* 这种设计方式会造成绝对的类爆炸，优点扯淡，我也不知道我要列它。。。
+* 这种设计方式会造成绝对的类爆炸，优点扯淡，我也不知道我为什么要列它。。。
 
 ### 10.1.3，方式二：聚合方式
 
@@ -3078,9 +3103,11 @@ public class Client {
   }
   ```
 
+
+
 # 11，组合模式（Composite）
 
-## 11.1，问题引入
+## 11.1，问题引入_学院系统
 
 * 展示一个学校的体系结构，一个学校有多个学院，一个学院有多个专业
 
@@ -3259,12 +3286,14 @@ public class Client {
 * <font color=red>对于组织结构，或者其他类似的树形结构，非常实用组合模式</font>
 * <font color=red>对于抽象性较高，差异性较大的节点，不适合实用组合模式</font>
 
+
+
 # 12，外观模式（Facade）
 
 ## 12.1，问题引入_家庭影院
 
 * 组建一个家庭影院，需要准备屏幕，投影仪，灯光。此时看一场电影的大概过程为：放下屏幕，打开投影仪，调暗灯光；等电影看完后，大致过程为：调两灯光，关闭投影仪，收回屏幕。
-* 此时如果不进行各种模式统筹管理，在实际操作中，需要通过三个开关对三种设备进行单独控制，此时如果设备过多，会造成过程混乱，还有可能出现顺序（逻辑）错误
+* 此时如果不进行各种模式统筹管理，在实际操作中，需要通过三个开关对三种设备进行单独控制。如果设备过多，会造成过程混乱，还有可能出现顺序（逻辑）错误
 * 这时候可以引入**外观模式**，通过外观类，进行具体操作流程进行管理，面向客户端只包括打开，关闭等基本操作，提高用户体验
 
 ## 12.2，基本介绍
@@ -3417,6 +3446,8 @@ public class Client {
 * 当系统需要进行分层设计时，可以考虑使用**Facade模式**
 * 当需要维护一个大型系统，且系统已经变得非常难以维护和扩展，可以考虑为新系统提供`Facade`类，让新系统与该类交互，提供可复用性
 
+
+
 # 13，享元模式（FlyWeight）
 
 ## 13.1，问题引入
@@ -3459,7 +3490,7 @@ public class Client {
 
 ## 13.4，内部状态和外部状态
 
-* 享元模式提出了两个要求：细粒度和共享对象，这就设计到内部状态和外部状态了
+* 享元模式提出了两个要求：细粒度和共享对象，这就涉及到内部状态和外部状态了
 * 内部状态是对象共享出来的信息，存储在享元对象内并不会随着环境的不同而改变
 * 外部状态是对象得以依赖的一个标记，随环境改变而改变，不可共享的状态
 * 举例：围棋理论上是有361个空位可以放棋子，每盘棋都有可能有两三百个棋子产生，因为内存空间有限，一台服务器很难支撑更多的玩家玩围棋游戏，如果用享元模式来处理棋子，则棋子对象减少到两个，空棋盘共用，具体的棋盘布局是特殊角色
@@ -3630,14 +3661,16 @@ public class Client {
 
 * 当系统中存在大量对象，这些对象消耗大量内存，并且对象的状态大部分可以外部化时，可以考虑使用享元模式
 * 享元模式可以大大减少对象的创建，降低了程序内存的占用，提高效率
-* 享元模式提高了**系统复杂度**。需要分离出内部状态和外部状态，外部状态具有固化特性，不会随着内部状态的改变而改变，这是使用享元模式需要注意的问题
+* <font color=red>享元模式提高了**系统复杂度**。需要分离出内部状态和外部状态，外部状态具有固化特性，不会随着内部状态的改变而改变，这是使用享元模式需要注意的问题</font>
 * 享元模式的经典使用场景：String常量池，数据库连接池，线程池
+
+
 
 # 14，代理模式（Proxy）
 
 ## 14.1，代码模式基本介绍
 
-* 代理对象为对象提供一个替身，以控制对这个对象的访问，即通过代理对象去访问目标对象
+* 代理对象为对象提供一个中介，以控制对这个对象的访问，即通过代理对象去访问目标对象
 * 被代理的对象可以是远程对象，开销大的对象或者是需要安全控制的对象
 * 代理模式有不同的形式，大体可以分为三种：静态代理，JDK动态代理（接口代理）和CGLIB动态代理（不需要接口）
 * 对象被代理后，可以在目标对象现有的基础上，增加额外的功能操作，即对现有目标对象的扩展。如执行前后日志打印，方法鉴权等等，是AOP的基本思想
@@ -3715,7 +3748,7 @@ public class Client {
   
       @Override
       public void realMethod(String name) {
-          System.out.println("静态代码执行...");
+          System.out.println("静态代理执行...");
           proxy.realMethod(name);
           System.out.println("静态代理执行完成...");
       }
@@ -3748,7 +3781,7 @@ public class Client {
 ### 14.2.4，静态代理优缺点
 
 * 优点：在不修改目标对象的前提下，能实现代理对象对目标对象的功能扩展
-* 缺点：因为代理对象需要与目标对象实现同样的接口，所以会产生太多的代理类。同样，一旦接口方法增加，同时需要处理代理类和目标类
+* <font color=red>缺点：因为代理对象需要与目标对象实现同样的接口，所以会产生太多的代理类。同样，一旦接口方法增加，同时需要处理代理类和目标类</font>
 * 可通过静态代理进行继续优化
 
 ## 14.3，JDK动态代理
@@ -4391,6 +4424,8 @@ public class Client {
 * 远程代理：远程对象的本地使用，通过远程代理将远程对象本地化。远程代理通过网络和真正的远程对象沟通
 * 同步代理：多线程编程中，完成线程间同步
 
+
+
 # 15，模板方法模式（TemplateMethod）
 
 ## 15.1，基本介绍
@@ -4493,8 +4528,8 @@ public class Client {
 * 基本思想：基础算法只存在在一个地方，即父类中。需要进行算法基础算法修改时，只需要修改一处，子类中会默认继承
 * 实现代码最大化复用，父类中的模板方法和已经实现的基础算法会被子类所共用
 * 在统一了算法的同时，提供了算法的灵活性。父类模板方法保证算法结构不变，同时子类提供部分算法步骤的实现
-* 不足之处：每一个不同的实现都要重写一个子类实现，导致类个数增加，系统庞大
-* 一般模板方法需要加上final关键字，防止算法结构被子类重写打散
+* <font color=red>不足之处：每一个不同的实现都要重写一个子类实现，导致类个数增加，系统庞大</font>
+* <font color=red>一般模板方法需要加上final关键字，防止算法结构被子类重写打散</font>
 * 使用场景：需要完成某个过程，该过程需要一系列步骤，步骤逻辑基本一致，但存在个别步骤实现方式不同，可以考虑使用模板方法模式处理
 
 
@@ -4511,7 +4546,7 @@ public class Client {
 
 ## 16.2，基本介绍
 
-* 命令模式（Command Pattern）：在软件设计中，我们经常需要向某些对象发送请求，但是并不知道请求的接受者是谁，也不知道请求的操作是哪个，我们只需要在程序运行时指定具体的请求接收者即可。此时，可以使用命令模式设计
+* 命令模式（Command Pattern）：在软件设计中，我们经常需要向某些对象发送请求，但是并不知道请求的接收者是谁，也不知道请求的操作是哪个，我们只需要在程序运行时指定具体的请求接收者即可。此时，可以使用命令模式设计
 * 命令模式使得请求发送者和请求接收者消除彼此之间的耦合，让对象间的调用关系更加灵活，实现解耦
 * 命令模式中，会将一个请求封装为一个对象，使用不同的参数来表示不同的请求，同时命令模式也支持撤销操作
 * 用一个简单的解释：将军发送命令，士兵去执行。其中**将军就是请求发送者，士兵是请求接收者，命令连接了将军和士兵**
@@ -4768,7 +4803,7 @@ public class Client {
 * 比较容易的实现对请求的撤销和重做
 * 空命令也是命令模式的一种设计，省去了判空操作，对命令进行了基础的空实现
 * 命令模式的应用场景：界面的一个按钮都是一个命令，模拟基于命令的订单撤销、恢复、触发、反馈机制
-* **命令模式不足：可能导致某些系统有过多的具体命令类，增加系统复杂性**
+* <font color=red>命令模式不足：可能导致某些系统有过多的具体命令类，增加系统复杂性</font>
 
 
 
@@ -4776,7 +4811,7 @@ public class Client {
 
 ## 17.1，问题引入_账本查看
 
-* 财务系统是存在财务账本，财务账本有很多分类，而其中大体可以分为两种元素：支出和收入
+* 财务系统是存在财务账本，财务账本有很多分类，而其中大体可以分为两种：支出和收入
 * 查看账本的人也分为好几种：老板，注会等等，每一个人查看账本的目的也是不相同的
 * 这时候对有多个固定元素的账本和多个角色的访问者，可以考虑使用访问者模式
 
@@ -5418,7 +5453,7 @@ public class Client {
 
 
 
-# 19，观察者模式
+# 19，观察者模式（Observer）
 
 ## 19.1，问题引入_天气预报问题
 
@@ -5621,7 +5656,7 @@ public class Client {
 
 
 
-# 20，中介者模式
+# 20，中介者模式（Mediator）
 
 ## 20.1，问题引入_租房中介
 
@@ -5865,3 +5900,1287 @@ public class Client {
 * <font color=red>如果涉及不当，中介者对象本身会变得非常复杂，这点应该特别注意</font>
 * 在最近项目中实现即时通讯，通过Netty构建基本框架，类似Spring容器管理对Channel进行管理并进行数据分发，符合中介者模式的基本原则；即Channel容器是一个中介者类，每一个连接Channel是一个个同事类
 
+
+
+# 21，备忘录模式（Memento）
+
+## 21.1，问题引入_游戏角色恢复问题
+
+* 游戏角色有攻击力和防御力，在大战BOSS前保存自身的状态，当大战BOSS后攻击力和防御力下降，从备忘录中恢复初始状态
+* 在传统方式中，new对象简单做备份，再需要恢复数据时，从新对象中取初始数据进行覆盖，这样会暴露对象的内部实现细节
+* 这时候可以通过备忘录模式实现
+
+## 21.2，基本介绍
+
+* 备忘录模式（Memento Pattern）：行为型模式；在不破坏封装性的前提下，捕获一个对象的内部状态，并在该对象之外保存这个状态，以便于在后续对该对象进行恢复
+* 备忘录模式可以对对象状态变更的全过程进行记录，可以随时恢复到指定时期状态
+
+## 21.3，类图
+
+![1608175450409](E:\gitrepository\study\note\image\designMode\1608175450409.png)
+
+* `Origination`：原始类，定义基本数据结构，及备忘录对象的生成方式及恢复方式
+* `Memento`：备忘录类，进行原始基础数据保存
+* `Caretaker`：备忘录对象守护者类，进行备忘录对象的保存和获取
+
+## 21.4，代码实现
+
+* `Origination`：原始类
+
+  ```java
+  package com.self.designmode.memento;
+  
+  /**
+   * 备忘录模式: 原型类
+   * @author PJ_ZHANG
+   * @create 2020-12-17 10:39
+   **/
+  public class Origination {
+  
+      // 攻击力
+      private int vit;
+  
+      // 防御力
+      private int def;
+  
+      public int getVit() {
+          return vit;
+      }
+  
+      public void setVit(int vit) {
+          this.vit = vit;
+      }
+  
+      public int getDef() {
+          return def;
+      }
+  
+      public void setDef(int def) {
+          this.def = def;
+      }
+  
+      public Origination(int vit, int def) {
+          this.vit = vit;
+          this.def = def;
+      }
+  
+      /**
+       * 保存当前对象状态到备忘类
+       * @return
+       */
+      public Memento saveMemento() {
+          return new Memento(vit, def);
+      }
+  
+      /**
+       * 从备忘录中恢复状态
+       * @param memento
+       */
+      public void recoverMemento(Memento memento) {
+          this.def = memento.getDef();
+          this.vit = memento.getVit();
+      }
+  
+      public void show() {
+          System.out.println("vit: " + this.vit + ", def: " + this.getDef());
+      }
+  
+  }
+  ```
+
+* `Memento`：备忘类
+
+  ```java
+  package com.self.designmode.memento;
+  
+  /**
+   * 备忘录模式: 备忘类
+   * @author PJ_ZHANG
+   * @create 2020-12-17 10:39
+   **/
+  public class Memento {
+  
+      // 攻击力
+      private int vit;
+  
+      // 防御力
+      private int def;
+  
+      public Memento(int vit, int def) {
+          this.vit = vit;
+          this.def = def;
+      }
+  
+      public Memento(Origination origination) {
+          this.vit = origination.getVit();
+          this.def = origination.getDef();
+      }
+  
+      public int getVit() {
+          return vit;
+      }
+  
+      public void setVit(int vit) {
+          this.vit = vit;
+      }
+  
+      public int getDef() {
+          return def;
+      }
+  
+      public void setDef(int def) {
+          this.def = def;
+      }
+  }
+  ```
+
+* `Caretakder`：备忘类管理类
+
+  ```java
+  package com.self.designmode.memento;
+  
+  import java.util.ArrayList;
+  import java.util.List;
+  
+  /**
+   * 备忘录模式:守护者
+   * @author PJ_ZHANG
+   * @create 2020-12-17 10:44
+   **/
+  public class Caretaker {
+  
+      private List<Memento> lstMemento = new ArrayList<>(10);
+  
+      public void addMemento(Memento memento) {
+          lstMemento.add(memento);
+      }
+  
+      public Memento getMemento(int index) {
+          if (lstMemento.size() <= index) {
+              throw new IndexOutOfBoundsException();
+          }
+          return lstMemento.get(index);
+      }
+  
+  }
+  ```
+
+* `Client`：客户端
+
+  ```java
+  package com.self.designmode.memento;
+  
+  /**
+   * 备忘录模式:
+   * @author PJ_ZHANG
+   * @create 2020-12-17 10:51
+   **/
+  public class Client {
+  
+      public static void main(String[] args) {
+          // 创建原对象
+          Origination origination = new Origination(100, 100);
+          // 生成备忘对象并保存
+          Caretaker caretaker = new Caretaker();
+          caretaker.addMemento(new Memento(origination));
+          System.out.println("初始状态...");
+          origination.show();
+          // 战斗
+          origination.setDef(80);
+          origination.setVit(80);
+          System.out.println("战斗完成状态...");
+          origination.show();
+          // 恢复
+          origination.recoverMemento(caretaker.getMemento(0));
+          System.out.println("恢复初始状态...");
+          origination.show();
+      }
+  
+  }
+  ```
+
+## 21.5，备忘录模式的注意事项和细节
+
+* 给用户提供了一种可恢复的机制，可以使用户能够方便的回到上一次操作
+* 实现了信息的封装，使用户不需要知道恢复的细节
+* 使用场景：游戏存档；Ctrl + Z；浏览器后退；数据库事务管理
+* <font color=red>如果类的数量过度，势必会占用较大的资源，而且每一次保存都会造成一定的内存消耗</font>
+* 为了节约内存，备忘录模式可以与原型模式配合使用
+
+
+
+# 22，解释器模式（Interpreter）
+
+## 22.1，问题引入_计算器问题
+
+* 在界面输入计算表达式，如：`a+b+c+d`，然后针对每一个元素输入具体值并保存，对该表达式进行填充求值，得到结果
+* 在固有表达式中，如果需要加入新的运算符，如`* / （）`等，可能会造成功能扩展困难
+* 此时可以考虑引入解释器模式，对运算符等进行隔离，对每一种类型进行单独的解释计算
+
+## 22.2，基本介绍
+
+* 在编译原理中，一个算术表达式通过词法分析器形成词法单元，而后这些词法单元再根据语法分析器构建语法分析树，最终形成一颗抽象的语法分析树。*这里的词法分析器和语法分析器都可以看成是解释器*
+* 解释器模式（Interpreter Pattern）：是指给定一个语言，并定义语言的表达方式。通过定义一个解释器，使用该解释器解释该语言的一种设计
+* 应用场景：编译器；运算表达式计算；正则表达式
+
+## 22.3，类图
+
+![1608193418327](E:\gitrepository\study\note\image\designMode\1608193418327.png)
+
+* `Expression`：解释器模式顶层解释器接口，定义基本的解释方式
+* `VarExpression`：标准的解释器具体实现类，进行一些标准数据的解释执行，此处表示计算元素数据
+* `SymbolExpression`：非标准的具体解释器顶层抽象类，定义了非标的解释器属性，由具体非标解释器执行，该抽象类聚合解释器顶层接口，可能其他解释器进行递归解释。此处表示计算符号数据
+* `XXXSymbolExpression`：非标准的解释器具体类，提供了非标部分数据的具体解释方式，此处包括加法解释和减法解释
+* `Calculator`：解释器上下文类，对过程中的基础数据进行存储，此处进行计算及计算元素存储
+
+## 22.4，代码实现
+
+* `Expression`：顶层解释器接口
+
+  ```java
+  package com.self.designmode.interpreter;
+  
+  import java.util.Map;
+  
+  /**
+   * 解释器模式: 实现计算器, 顶层表达式接口
+   * @author PJ_ZHANG
+   * @create 2020-12-17 15:39
+   **/
+  public interface Expression {
+  
+      int interpreter(Map<String, Integer> dataMap);
+  
+  }
+  ```
+
+* `VarExpression`：标准解释器类
+
+  ```java
+  package com.self.designmode.interpreter;
+  
+  import java.util.Map;
+  
+  /**
+   * 解释器模式: 实现计算器, 元素解释器类
+   * @author PJ_ZHANG
+   * @create 2020-12-17 15:41
+   **/
+  public class VarExpression implements Expression {
+  
+      private String name;
+  
+      public VarExpression(String name) {
+          this.name = name;
+      }
+  
+      @Override
+      public int interpreter(Map<String, Integer> dataMap) {
+          return dataMap.get(name);
+      }
+  }
+  ```
+
+* `SymbolExpression`：非标解释器类顶层抽象类
+
+  ```java
+  package com.self.designmode.interpreter;
+  
+  /**
+   * 解释器模式: 实现计算器, 符号解释器类
+   * @author PJ_ZHANG
+   * @create 2020-12-17 15:43
+   **/
+  public abstract class SymbolExpression implements Expression {
+  
+      /**
+       * 左侧元素解释器
+       */
+      protected Expression leftExpression;
+  
+      /**
+       * 右侧元素解释器
+       */
+      protected Expression rightExpression;
+  
+      public SymbolExpression(Expression leftExpression, Expression rightExpression) {
+          this.leftExpression = leftExpression;
+          this.rightExpression = rightExpression;
+      }
+  
+  }
+  ```
+
+* `AddSymbolExpression`：具体非标解释器类，加法类
+
+  ```java
+  package com.self.designmode.interpreter;
+  
+  import java.util.Map;
+  
+  /**
+   * 解释器模式: 计算器问题, 符号_加法解释器
+   * @author PJ_ZHANG
+   * @create 2020-12-17 15:44
+   **/
+  public class AddSymbolExpression extends SymbolExpression {
+  
+      public AddSymbolExpression(Expression leftExpression, Expression rightExpression) {
+          super(leftExpression, rightExpression);
+      }
+  
+      @Override
+      public int interpreter(Map<String, Integer> dataMap) {
+          return super.leftExpression.interpreter(dataMap) + super.rightExpression.interpreter(dataMap);
+      }
+  }
+  ```
+
+* `SubSymbolExpression`：具体非标解释器类，减法类
+
+  ```java
+  package com.self.designmode.interpreter;
+  
+  import java.util.Map;
+  
+  /**
+   * 解释器模式: 计算器问题, 符号_减法解释器
+   * @author PJ_ZHANG
+   * @create 2020-12-17 15:44
+   **/
+  public class SubSymbolExpression extends SymbolExpression {
+  
+      public SubSymbolExpression(Expression leftExpression, Expression rightExpression) {
+          super(leftExpression, rightExpression);
+      }
+  
+      @Override
+      public int interpreter(Map<String, Integer> dataMap) {
+          return super.leftExpression.interpreter(dataMap) - super.rightExpression.interpreter(dataMap);
+      }
+  }
+  ```
+
+* `Calculator`：上下文，计算类
+
+  ```java
+  package com.self.designmode.interpreter;
+  
+  import java.util.Map;
+  import java.util.Stack;
+  
+  /**
+   * 解释器模式: 实现计算器, 上下文类_计算器
+   * @author PJ_ZHANG
+   * @create 2020-12-17 15:45
+   **/
+  public class Calculator {
+  
+      private Expression expression;
+  
+      /**
+       * 解析表达式, 生成解释器表达式, 为后续计算做准备
+       * @param expressionStr 计算器串
+       * @return
+       */
+      public void parseExpression(String expressionStr) {
+          // 通过一个栈对数据进行存储
+          Stack<Expression> stack = new Stack<>();
+          // 转换表达式为char数组, 没有做复杂处理, 说明问题即可
+          char[] charArray = expressionStr.toCharArray();
+          // 遍历元素组进行处理
+          for (int i = 0; i < charArray.length; i++) {
+              Expression leftExpression;
+              Expression rightExpression;
+              switch (charArray[i]) {
+                  // 加法处理
+                  // 遍历到符号, 说明左侧已经处理(不考虑第一位+-)
+                  // 取左侧数据, 作为符号处理的左侧表达式
+                  // 取右侧元素, 作则符号处理的右侧表达式
+                  // 构建符号解释器, 加入栈中
+                  case '+':
+                      leftExpression = stack.pop();
+                      rightExpression = new VarExpression(charArray[++i] + "");
+                      stack.push(new AddSymbolExpression(leftExpression, rightExpression));
+                      break;
+                  // 减法处理
+                  // 减法同上
+                  case '-':
+                      leftExpression = stack.pop();
+                      rightExpression = new VarExpression(charArray[++i] + "");
+                      stack.push(new SubSymbolExpression(leftExpression, rightExpression));
+                      break;
+                  // 元素处理
+                  // 直接将元素构建表达式添加到栈中
+                  default:
+                      stack.push(new VarExpression(charArray[i] + ""));
+              }
+          }
+          // 最终生成的抽象语法树
+          expression = stack.pop();
+      }
+  
+      /**
+       * 根据生成的解释器表达式, 计算最终结果
+       * @param dataMap 数组的元素数据
+       * @return 返回最终结果
+       */
+      public int getValue(Map<String, Integer> dataMap) {
+          // 这部分会是一个递归处理,
+          // 执行该抽象语法树, 生成最终结果
+          return expression.interpreter(dataMap);
+      }
+  
+  }
+  ```
+
+* `Client`：客户端
+
+  ```java
+  package com.self.designmode.interpreter;
+  
+  import org.springframework.expression.Expression;
+  import org.springframework.expression.spel.standard.SpelExpressionParser;
+  
+  import java.util.HashMap;
+  import java.util.Map;
+  import java.util.Scanner;
+  
+  /**
+   * @author PJ_ZHANG
+   * @create 2020-12-17 15:18
+   **/
+  public class Client {
+  
+      public static void main(String[] args) {
+  //        Spring提供了一个计算器, 可以直接计算
+  //        String str = "-1 + 2 * (3 + 4)";
+  //        SpelExpressionParser parser = new SpelExpressionParser();
+  //        Expression expression = parser.parseExpression(str);
+  //        System.out.println(expression.getValue());
+          // 输入表达式, 按a+b-c+d等类型输入
+          System.out.println("请输入表达式: eg: a+b-c+d");
+          Scanner scanner = new Scanner(System.in);
+          String expression = scanner.nextLine();
+          Map<String, Integer> dataMap = parseExpression(expression);
+          Calculator calculator = new Calculator();
+          calculator.parseExpression(expression);
+          System.out.println("最终结果: " + calculator.getValue(dataMap));
+      }
+  
+      private static Map<String,Integer> parseExpression(String expression) {
+          Map<String, Integer> dataMap = new HashMap<>(16);
+          for (char c : expression.toCharArray()) {
+              if (String.valueOf(c).matches("^[a-z]$")) {
+                  System.out.println("请输入 " + c + " 的值");
+                  Scanner scanner = new Scanner(System.in);
+                  int value = scanner.nextInt();
+                  dataMap.put(String.valueOf(c), value);
+              }
+          }
+          return dataMap;
+      }
+  
+  }
+  ```
+
+* 最终生成的抽象语法树，会进行递归调用执行，如下图
+
+  ![1608194035191](E:\gitrepository\study\note\image\designMode\1608194035191.png)
+
+## 22.5，解释器模式的注意事项和细节
+
+* 当一个语言需要解释执行，可将语言中的句子表示为一个抽象语法树，就可以考虑使用解释器模式，让程序具有良好的扩展性，符合OCP原则
+* <font color=red>解释器模式可能为引起类膨胀，采用递归调用的方式，可能会影响程序的最终执行效率。此外解释器模式相对来讲逻辑较复杂，代码难度较大</font>
+
+
+
+# 23，状态模式
+
+## 23.1，问题引入_APP抽奖活动
+
+* 提供一种抽奖活动，每一次抽奖扣除用户50积分，且中奖概率为10%，奖品数量固定，送完为止
+* 活动存在四种状态：
+  * 不能抽奖：未进行积分兑换
+  * 可以抽奖：已经进行积分兑换。抽奖完成后，如果未中奖，转到不能抽奖；如果中奖，转到发放奖品
+  * 发放奖品：对中奖用户发放奖品。奖品发送后，如果还有剩余奖品，转到不能抽奖；如果奖品已经送完，转到奖品领完
+  * 奖品领完：奖品全部领完
+* 这种需求可以通过状态模式完成
+
+## 23.2，基本介绍
+
+* 状态模式（State Pattern）：主要是解决对象在多种间转换时，需要对外输出不同行为的问题。状态和行为是一一对应的，状态之间可以相互切换
+* 当一个对象的内在状态改变时，允许改变其行为，这个对象看起来像是改变了其类
+* 状态模式也是一种行为型模式
+
+## 23.3，类图
+
+![1608212959701](E:\gitrepository\study\note\image\designMode\1608212959701.png)
+
+* `State`：状态类顶层接口，定义了状态全流程的基本行为模式；再状态接口下可以加一层状态类的异常实现，并用具体状态类继承该类通过方法重写进行具体实现
+* `XXXState`：状态类具体实现类，根据各自状态对对应的方法进行实现，实现业务功能
+* `StateTypeEnum`：状态类对应枚举类，用于进行状态合法性判断
+* `Activity`：状态类的环境角色，组合 `State` 状态类，用户进行各个状态之间切换，继续进行业务流转
+
+## 23.4，代码实现
+
+* `StateTypeEnum`：状态类枚举
+
+  ```java
+  package com.self.designmode.state;
+  
+  /**
+   * 状态模式: 抽奖流程状态枚举类
+   * @author PJ_ZHANG
+   * @create 2020-12-17 17:26
+   **/
+  public enum StateTypeEnum {
+  
+      // 0:不能抽奖, 1:可以抽奖, 2:抽奖成功,发放奖品, 3:奖品发放结束
+      NON("0"), CAN("1"), PROVIDE("2"), COMPLETE("3");
+  
+      private String type;
+  
+      private StateTypeEnum(String type) {
+          this.type = type;
+      }
+  
+      public String getStrValue() {
+          return this.type;
+      }
+  }
+  ```
+
+* `State`：状态类顶层接口
+
+  ```java
+  package com.self.designmode.state;
+  
+  /**
+   * 状态模式: 顶层状态类接口
+   * @author PJ_ZHANG
+   * @create 2020-12-17 17:26
+   **/
+  public interface State {
+  
+      /**
+       * 扣除积分
+       * @param activity
+       */
+      void lessPoints(Activity activity);
+  
+      /**
+       * 抽奖
+       * @param activity
+       */
+      boolean raffle(Activity activity);
+  
+      /**
+       * 发放奖品类
+       * @param activity
+       */
+      void awards(Activity activity);
+  
+      /**
+       * 获取状态类型值
+       * @return
+       */
+      String getStateType();
+  }
+  ```
+
+* `NonState`：具体状态类，初始状态类，不能抽奖，需要进行积分兑换
+
+  ```java
+  package com.self.designmode.state;
+  
+  /**
+   * 状态模式: 不能抽奖类
+   * @author PJ_ZHANG
+   * @create 2020-12-17 17:33
+   **/
+  public class NonState implements State {
+  
+      @Override
+      public void lessPoints(Activity activity) {
+          if (!StateTypeEnum.NON.getStrValue().equals(activity.getStateType())) {
+              return;
+          }
+          if (activity.getCount() <= 0) {
+              throw new RuntimeException("兑换积分失败, 领完了...");
+          }
+          // 扣除积分即可以抽奖
+          System.out.println("扣除了积分, 有了一次抽奖机会");
+          // 变更状态为可抽奖
+          activity.setState(new CanState());
+      }
+  
+      @Override
+      public boolean raffle(Activity activity) {
+          throw new RuntimeException("状态不符合....");
+      }
+  
+      @Override
+      public void awards(Activity activity) {
+          throw new RuntimeException("状态不符合....");
+      }
+  
+      @Override
+      public String getStateType() {
+          return StateTypeEnum.NON.getStrValue();
+      }
+  }
+  ```
+
+* `CanState`：具体状态类，抽检类，积分兑换完成，可进行抽奖
+
+  ```java
+  package com.self.designmode.state;
+  
+  import java.util.Random;
+  
+  /**
+   * 状态模式: 可以抽奖类
+   * @author PJ_ZHANG
+   * @create 2020-12-17 17:33
+   **/
+  public class CanState implements State {
+  
+      @Override
+      public void lessPoints(Activity activity) {
+          throw new RuntimeException("状态不符合....");
+      }
+  
+      @Override
+      public boolean raffle(Activity activity) {
+          if (!activity.getStateType().equals(StateTypeEnum.CAN.getStrValue())) {
+              throw new RuntimeException("状态不符合....");
+          }
+          // 进行抽奖
+          int data = new Random().nextInt(10);
+          if (data == 0) {
+              System.out.println("抽奖成功, 可以进行领奖");
+              activity.setState(new ProvideState());
+              return true;
+          } else {
+              System.out.println("抽奖失败, 继续花积分吧");
+              activity.setState(new NonState());
+              return false;
+          }
+      }
+  
+      @Override
+      public void awards(Activity activity) {
+          throw new RuntimeException("状态不符合....");
+      }
+  
+      @Override
+      public String getStateType() {
+          return StateTypeEnum.CAN.getStrValue();
+      }
+  }
+  ```
+
+* `ProvideState`：具体状态类，奖品下发类，抽奖中奖，进行奖品下发
+
+  ```java
+  package com.self.designmode.state;
+  
+  /**
+   * 状态模式: 抽奖成功, 发放奖品
+   * @author PJ_ZHANG
+   * @create 2020-12-17 17:33
+   **/
+  public class ProvideState implements State {
+  
+      @Override
+      public void lessPoints(Activity activity) {
+          throw new RuntimeException("状态不符合....");
+      }
+  
+      @Override
+      public boolean raffle(Activity activity) {
+          throw new RuntimeException("状态不符合....");
+      }
+  
+      @Override
+      public void awards(Activity activity) {
+          if (!StateTypeEnum.PROVIDE.getStrValue().equals(activity.getStateType())) {
+              throw new RuntimeException("状态不符合....");
+          }
+          System.out.println("发放奖品");
+          activity.subCount();
+          if (activity.getCount() <= 0) {
+              activity.setState(new NonState());
+          } else {
+              activity.setState(new CompleteState());
+          }
+      }
+  
+      @Override
+      public String getStateType() {
+          return StateTypeEnum.PROVIDE.getStrValue();
+      }
+  }
+  ```
+
+* `CompleteState`：具体状态类，奖品发放完成类，也就是状态流转结束状态
+
+  ```java
+  package com.self.designmode.state;
+  
+  /**
+   * 状态模式: 奖品发放完成类
+   * @author PJ_ZHANG
+   * @create 2020-12-17 17:33
+   **/
+  public class CompleteState implements State {
+  
+      @Override
+      public void lessPoints(Activity activity) {
+          System.out.println("奖品发放完成...");
+      }
+  
+      @Override
+      public boolean raffle(Activity activity) {
+          throw new RuntimeException("状态不符合....");
+      }
+  
+      @Override
+      public void awards(Activity activity) {
+          throw new RuntimeException("状态不符合....");
+      }
+  
+      @Override
+      public String getStateType() {
+          return StateTypeEnum.COMPLETE.getStrValue();
+      }
+  }
+  ```
+
+* `Activity`：状态流转控制类
+
+  ```java
+  package com.self.designmode.state;
+  
+  /**
+   * 状态模式: 流程控制, 抽奖流程类
+   * @author PJ_ZHANG
+   * @create 2020-12-17 17:30
+   **/
+  public class Activity {
+  
+      private State state;
+  
+      private int count;
+  
+      public Activity(int count) {
+          this.count = count;
+          state = new NonState();
+      }
+  
+      /**
+       * 扣除积分,兑换抽奖机会
+       */
+      public void lessPoints() {
+          state.lessPoints(this);
+      }
+  
+      /**
+       * 抽奖
+       */
+      public boolean raffle() {
+          return state.raffle(this);
+      }
+  
+      /**
+       * 发放奖品
+       */
+      public void awards() {
+         state.awards(this);
+      }
+  
+      public void setState(State state) {
+          this.state = state;
+      }
+  
+      public String getStateType() {
+          return state.getStateType();
+      }
+  
+      public void subCount() {
+          count--;
+      }
+  
+      public int getCount() {
+          return count;
+      }
+  
+  }
+  ```
+
+* `Client`：客户端
+
+  ```java
+  package com.self.designmode.state;
+  
+  /**
+   * 状态模式, 客户端
+   * @author PJ_ZHANG
+   * @create 2020-12-17 17:54
+   **/
+  public class Client {
+  
+      public static void main(String[] args) {
+          Activity activity = new Activity(1);
+          // 抽10次, 可能抽奖失败
+          for (int i = 0; i < 10; i++) {
+              activity.lessPoints();
+              boolean result = activity.raffle();
+              if (result) {
+                  activity.awards();
+              }
+          }
+      }
+  
+  }
+  ```
+
+## 23.5，状态模式的注意事项和细节
+
+* 代码具有很高的可读性，状态模式将每个状态的行为封装到一个对应的类中
+* 方便维护，代码中去除了`if-else`分支，用不同的状态类将业务流转串联起来，不需要每次执行的之后进行分支判断，提高代码的容错率
+* 符合OCP原则，容易对状态进行灵活变更
+* <font color=red>状态模式容易产生很多类，每个状态都会对应一个类，当状态过多的时候，会加大维度难度</font>
+* 应用场景：当一个事件或者对象有多种状态，且存在状态间切换，对不同的状态又存在不同的行为的时候，可以使用状态模式
+
+
+
+# 24，策略模式（Strategy）
+
+## 24.1，问题引入_鸭子问题
+
+* 有各种鸭子（如：北京鸭，野鸭，玩具鸭），鸭子存在各种行为（如：叫，游泳，飞行等）。需要做一个程序，显示鸭子的各种信息
+* 在传统方案中，通过定义一个抽象的 `Duck` 类，用具体鸭子类继承该类，进行相对应的行为实现
+* 首先：通过继承，会让所有具体鸭子类有共同是行为方式，这是明显不合适的
+* 其次：通过方法重写，为不同的鸭子实现不同的实现方式，这样需要覆盖所有的实现方法
+* 可以通过策略模式进行解决
+
+## 24.2，基本介绍
+
+* 策略模式（Strategy Pattern）：定义算法族（策略组），分别封装起来，让算法之间可以相互替换，此模式让算法的变化可以独立于使用算法的客户
+* 策略模式的算法组体现了几个设计原则
+  * 把变化的代码从不变的代码中抽离出来
+  * 针对接口编程而不是具体实现类编程
+  * 多用组合/聚合，少用继承
+* 策略模式也是一种行为型模式
+
+## 24.3，类图
+
+![1608218435754](E:\gitrepository\study\note\image\designMode\1608218435754.png)
+
+* `Duck`：鸭子类顶层抽象类，也就是策略模式中的算法使用客户，不变的部分，通过聚合使用算法族，实现变化部分的具体行为
+* `XXXDuck`：鸭子类具体实现类，各自定义变化的算法族部分，有抽象类实现调用
+* `FlyBehaviour`：飞行策略顶层接口，算法族的顶层接口，也就是策略模式中的算法，变化的部分
+* `XXXFlyBehaviour`：具体的飞行策略，也就是具体的算法，由算法使用客户进行选择使用
+
+## 24.4，代码实现
+
+* `Duck`：抽象鸭子类，抽象的算法使用客户
+
+  ```java
+  package com.self.designmode.strategy;
+  
+  /**
+   * 策略模式: 算法使用客户, 顶层抽象类
+   * @author PJ_ZHANG
+   * @create 2020-12-17 23:13
+   **/
+  public abstract class Duck {
+  
+      /**
+       * 飞行策略
+       */
+      private FlyBehaviour flyBehaviour;
+  
+      /**
+       * 游泳方法, 可以提策略
+       */
+      public void swiming() {
+          System.out.println("鸭子游泳");
+      }
+  
+      /**
+       * 飞行方法
+       */
+      public void fly() {
+          // 通过定义的策略执行相对应行为
+          if (null != flyBehaviour) {
+              flyBehaviour.fly();
+          }
+      }
+  
+      /**
+       * 动态变更策略方式
+       * @param flyBehaviour
+       */
+      public void setFlyBehaviour(FlyBehaviour flyBehaviour) {
+          this.flyBehaviour = flyBehaviour;
+      }
+  
+  }
+  ```
+
+* `WildDuck`：具体的鸭子类，即具体算法使用客户
+
+  ```java
+  package com.self.designmode.strategy;
+  
+  /**
+   * 策略模式: 算法使用客户, 具体实现类_野鸭子
+   * @author PJ_ZHANG
+   * @create 2020-12-17 23:16
+   **/
+  public class WildDuck extends Duck {
+  
+      public WildDuck() {
+          super.setFlyBehaviour(new GoodFlyBehaviour());
+      }
+  
+  }
+  ```
+
+* `ToyDuck`：具体鸭子类
+
+  ```java
+  package com.self.designmode.strategy;
+  
+  /**
+   * 策略模式: 算法使用客户, 具体实现类_玩具鸭子
+   * @author PJ_ZHANG
+   * @create 2020-12-17 23:16
+   **/
+  public class ToyDuck extends Duck {
+  
+      public ToyDuck() {
+          super.setFlyBehaviour(new NoFlyBehaviour());
+      }
+  
+  }
+  ```
+
+* `FlyBehaviour`：飞行策略顶层接口，即该算法族顶层接口
+
+  ```java
+  package com.self.designmode.strategy;
+  
+  /**
+   * 策略模式: 算法组, 飞行策略顶层接口
+   * @author PJ_ZHANG
+   * @create 2020-12-17 23:14
+   **/
+  public interface FlyBehaviour {
+  
+      void fly();
+  
+  }
+  ```
+
+* `GoodFlyBehaviour`：具体飞行策略实现类，即该算法族具体算法
+
+  ```java
+  package com.self.designmode.strategy;
+  
+  /**
+   * 策略模式: 具体飞行算法, 飞的挺好
+   * @author PJ_ZHANG
+   * @create 2020-12-17 23:17
+   **/
+  public class GoodFlyBehaviour implements FlyBehaviour {
+  
+      @Override
+      public void fly() {
+          System.out.println("飞的挺好...");
+      }
+  
+  }
+  ```
+
+* `NoFlyBehavior`：具体飞行策略实现类
+
+  ```java
+  package com.self.designmode.strategy;
+  
+  /**
+   * 策略模式: 具体飞行算法, 不会飞
+   * @author PJ_ZHANG
+   * @create 2020-12-17 23:17
+   **/
+  public class NoFlyBehaviour implements FlyBehaviour {
+  
+      @Override
+      public void fly() {
+          System.out.println("不会飞...");
+      }
+  
+  }
+  ```
+
+* `Client`：客户端
+
+  ```java
+  package com.self.designmode.strategy;
+  
+  /**
+   * 策略模式: 客户端
+   * @author PJ_ZHANG
+   * @create 2020-12-17 23:18
+   **/
+  public class Client {
+  
+      public static void main(String[] args) {
+          // 定义一个野鸭子
+          Duck duck = new WildDuck();
+          duck.fly();
+          // 定义一个玩具鸭子
+          Duck toyDuck = new ToyDuck();
+          toyDuck.fly();
+          // 动态变更野鸭子的策略
+          duck.setFlyBehaviour(new NoFlyBehaviour());
+          duck.fly();
+      }
+  
+  }
+  ```
+
+## 24.5，策略模式的注意事项和细节
+
+* 策略模式的关键是：分析项目中变化的部分和不变的部分
+* 策略模式的核心思想：多用组合和聚合，少用继承
+* 体现了OCP原则，客户端增加一种行为不需要修改原有代码，只需要添加一种策略即可，并动态对客户的策略行为进行变更即可
+* 提供了可以替换继承关系的办法：将策略算法封装为一个独立的 `Strategy`，使得可以独立的进行改变，更易于切换、易于理解、易于扩展
+* <font color=red>策略模式对每一种策略行为都提供一套类结构，被每一种行为方式都提供一个实现类实现，如果行为及行为方式过多，势必会造成类爆炸</font>
+
+
+
+# 25，责任链模式
+
+## 25.1，问题引入_采购需求
+
+* 采购员需要采购一批教学器材，对器材采购金额有分级审批权限
+  * 如果金额小于等于3000元，由教学主任审批（0 < x <= 3000）
+  * 如果金额小于等于10000元，由院长审批（3000 < x <= 10000）
+  * 如果金额大于10000元，由校长审批（x > 10000）
+* 在传递方案中，拿到采购金额后，根据金额不同，推送到不同的处理人进行处理
+  * 客户端需要进行更多的逻辑分支处理，调用不同的审批人进行审批
+  * 如果各个级别的审批金额发生变化，客户端需要同步调整
+  * 客户端必须明确知道，有多少个审批级别和访问
+* 这样对于采购请求和审批人之间就存在强耦合，不利于系统扩展
+* 可以通过职责链模式进行解耦实现
+
+## 25.2，基本介绍
+
+* 职责链模式（Chain of Responsibility Pattern）：又叫责任链模式，为请求创建一个接收者对象的链。这种模式对请求的发送者和接收者进行解耦
+* 职责链模式中通常一个接收者会持有另外一个接收者的引用，如果这个接收者不能处理，则会调用下一个接收者继续进行处理，直接处理或者无法处理为止，以此类推
+* 职责链模式是行为型模式的一种
+
+## 25.3，类图
+
+![1608262287842](E:\gitrepository\study\note\image\designMode\1608262287842.png)
+
+* `Approver`：接收者顶层抽象类，定义接收者链并抽象化请求接收方式
+* `XXXApprover`：具体接收者类，进行请求处理，当无法处理时，调用下一个接收者 `nextApprover` 进行处理
+* `Request`：接收者需要处理的请求，用户进行事件传递
+
+## 25.4，代码实现
+
+* `Approver`：接收者顶层抽象类
+
+  ```java
+  package com.self.designmode.chain;
+  
+  /**
+   * 职责链模式: 顶层抽象类, 定义责任链及请求处理方式的抽象类
+   * @author PJ_ZHANG
+   * @create 2020-12-18 11:33
+   **/
+  public abstract class Approver {
+  
+      /**
+       * 下一个处理器
+       */
+      private Approver nextApprover;
+  
+      public Approver getNextApprover() {
+          return nextApprover;
+      }
+  
+      public void setNextApprover(Approver nextApprover) {
+          this.nextApprover = nextApprover;
+      }
+  
+      /**
+       * 事件处理的抽象类
+       * @param request
+       */
+      public abstract void processRequest(Request request);
+  }
+  ```
+
+* `DepartmentApprover`：主任接收者处理
+
+  ```java
+  package com.self.designmode.chain;
+  
+  import com.self.designmode.iterator.Department;
+  
+  /**
+   * 职责链模式: 主任处理器
+   * @author PJ_ZHANG
+   * @create 2020-12-18 11:36
+   **/
+  public class DepartmentApprover extends Approver {
+  
+      private String name;
+  
+      public DepartmentApprover(String name) {
+          this.name = name;
+      }
+  
+      @Override
+      public void processRequest(Request request) {
+          if (request.getPrice() <= 3000) {
+              System.out.println("主任处理完成: " + request.getPrice());
+          } else {
+              getNextApprover().processRequest(request);
+          }
+      }
+  }
+  ```
+
+* `CollegeApprover`：院长接收者处理
+
+  ```java
+  package com.self.designmode.chain;
+  
+  /**
+   * 职责链模式: 院长处理器
+   * @author PJ_ZHANG
+   * @create 2020-12-18 11:36
+   **/
+  public class CollegeApprover extends Approver {
+  
+      private String name;
+  
+      public CollegeApprover(String name) {
+          this.name = name;
+      }
+  
+      @Override
+      public void processRequest(Request request) {
+          if (request.getPrice() > 3000 && request.getPrice() <= 10000) {
+              System.out.println("院长处理完成: " + request.getPrice());
+          } else {
+              getNextApprover().processRequest(request);
+          }
+      }
+  }
+  ```
+
+* `SchoolMasterApprover`：校长接收者处理
+
+  ```java
+  package com.self.designmode.chain;
+  
+  /**
+   * 职责链模式: 院长处理器
+   * @author PJ_ZHANG
+   * @create 2020-12-18 11:36
+   **/
+  public class SchoolMasterApprover extends Approver {
+  
+      private String name;
+  
+      public SchoolMasterApprover(String name) {
+          this.name = name;
+      }
+  
+      @Override
+      public void processRequest(Request request) {
+          if (request.getPrice() > 10000) {
+              System.out.println("校长处理完成: " + request.getPrice());
+          } else {
+              getNextApprover().processRequest(request);
+          }
+      }
+  }
+  ```
+
+* `Request`：职业链处理事件
+
+  ```java
+  package com.self.designmode.chain;
+  
+  /**
+   * 责任链模式: 处理请求, 即需要处理的时间
+   * @author PJ_ZHANG
+   * @create 2020-12-18 11:34
+   **/
+  public class Request {
+  
+      /**
+       * 根据不同的价格, 选择不同的处理器进行处理
+       */
+      private Integer price;
+  
+      public Request(Integer price) {
+          this.price = price;
+      }
+  
+      public Integer getPrice() {
+          return price;
+      }
+  
+      public void setPrice(Integer price) {
+          this.price = price;
+      }
+  }
+  ```
+
+* `Client`：客户端
+
+  ```java
+  package com.self.designmode.chain;
+  
+  /**
+   * 职责链模式: 客户端
+   * @author PJ_ZHANG
+   * @create 2020-12-18 11:40
+   **/
+  public class Client {
+  
+      public static void main(String[] args) {
+          // 创建一个请求
+          Request request = new Request(1500000);
+          // 构建职责链
+          DepartmentApprover departmentApprover = new DepartmentApprover("主任");
+          CollegeApprover collegeApprover = new CollegeApprover("院长");
+          SchoolMasterApprover schoolMasterApprover = new SchoolMasterApprover("校长");
+          departmentApprover.setNextApprover(collegeApprover);
+          collegeApprover.setNextApprover(schoolMasterApprover);
+          // 这部分为了构成环状, 不让请求走空, 这部分可以走一个空实现
+          schoolMasterApprover.setNextApprover(departmentApprover);
+          // 处理, 从主任开始
+          departmentApprover.processRequest(request);
+      }
+  
+  }
+  ```
+
+## 25.5，职责链模式的注意事项和细节
+
+* 将请求和处理分开，实现解耦，提高系统的灵活性
+* 简化了对象，使对象不需要知道链的结构，只需要传递下一个执行者执行
+* <font color=red>在链比较长的时候，性能会受到影响，在链中节点数量过多时，应该添加限制</font>
+* <font color=red>调试困难，整个代码调用类似于过多递归，造成调试难度</font>
+* 应用场景：在多个拦截器处理一个请求的时候，如多级请求、请假加薪等审批流程。Tomcat的启动初始化完全贯彻了责任链模式。

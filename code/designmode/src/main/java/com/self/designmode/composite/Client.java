@@ -1,7 +1,7 @@
 package com.self.designmode.composite;
 
 /**
- * 客户端
+ * 组合模式:客户端
  * @author PJ_ZHANG
  * @create 2020-07-29 12:51
  **/

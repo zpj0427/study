@@ -1,7 +1,7 @@
 package com.self.designmode.visitor;
 
 /**
- * 客户端
+ * 访问者模式:客户端
  * @author PJ_ZHANG
  * @create 2020-12-10 17:29
  **/

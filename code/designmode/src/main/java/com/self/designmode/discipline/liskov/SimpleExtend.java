@@ -23,6 +23,7 @@ public class SimpleExtend {
     static class B extends A {
         // 在B中, 该方法是求两个数之差
         // B中可以理解为对A中的该方法不小心触发重写
+        @Override
         public void func_1(int num1, int num2) {
             System.out.println("result: " + (num1 - num2));
         }

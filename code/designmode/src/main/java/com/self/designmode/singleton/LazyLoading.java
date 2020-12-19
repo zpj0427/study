@@ -26,7 +26,7 @@ class SynCodeBlock {
     public static SynCodeBlock getInstance() {
         // 加载if外面, 基本同步了整个方法, 与同步方法一致
         synchronized (SynCodeBlock.class) {
-        if (null == synCodeBlock) {
+            if (null == synCodeBlock) {
             // 加在if判断里面, 与线程不安全的方式基本一致
             //synchronized (SynCodeBlock.class) {
                 synCodeBlock = new SynCodeBlock();
