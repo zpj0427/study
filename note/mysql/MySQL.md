@@ -293,7 +293,7 @@ END $
 CALL name()$
 ```
 
-* 结束标志：SQL的结束标志为 `;`，但是`BEGIN ... END` 之间是一系列SQL语句，SQL语句之间用 `;` 隔开，所以 `;` 已经被占用，此时需要定义一个结束符号，由 `DELIMITER` 进行定义，并标注在 `END` 之后，表示存储过程语句结束
+* 结束标志：SQL的结束标志为 `;`，但是`BEGIN ... END` 之间是一系列SQL语句，系列SQL语句之间用 `;` 隔开，所以 `;` 已经被占用，此时需要定义一个结束符号，由 `DELIMITER` 进行定义，并标注在 `END` 之后，表示存储过程语句结束，<font color=red>注意：定义之后，表示SQL语句的结束符为定义的语句，不是原来的 `;`，如果需要变回来，需要重定义一次</font>
 * 参数列表由三部分组成：参数模式、参数名称、参数类型。其实参数模式分为三种：`IN`，`OUT`，`INOUT`；参数名称是形参；参数类型是要求具体类型：
   * `IN`：表示该参数是入参，已经被赋值，不需要通过该参数返回值
   * `OUT`：表示该参数是出参，没有被赋值，需要在存储过程中被赋值
@@ -434,13 +434,229 @@ DROP PROCEDURE name;
 ```sql
 -- 存储过程列表
 -- 修改dbName进行查询即可
-SELECT * from mysql.proc where db = 'dbName' and `type` = 'PROCEDURE'
+SELECT * FROM MYSQL.PROC WHERE DB = '{dbName}' and TYPE = 'PROCEDURE'
 -- 指定存储过程语句
 SHOW CREATE PROCEDURE name;
 ```
 
 ## 1.4，函数
 
+### 1.4.1，基本介绍
 
+* 函数与存储过程基本相同
+  * 是一组预编译好的SQL语句的集合，可以理解成批处理语句
+  * 能够提高代码重用性
+  * 能够减少操作
+  * 能够减少编译次数并能够减少和服务器的连接次数，提高效率
+* 同时函数和存储过程也有一些区别：
+  * 存储过程可以有0个返回，也可以有多个返回，适用于数据批量插入、批量更新
+  * 函数有且仅有一个返回，适合于数据处理并返回一个数据
+
+### 1.4.2，基本语法
+
+```sql
+-- 创建语法
+CREATE FUNCTION function_name(参数列表) RETURNS 返回值类型
+BEGIN
+	函数体（一系列SQL语句）
+END
+
+-- 调用语法
+SELECT 函数名(参数列表)
+```
+
+* 参数列表：包含两部分：参数名，参数类型
+* 函数体：肯定存在 `return` 语句，如果没有会报错
+* 函数体中如果只有一句话，则 `BEGIN ... END` 语句可以省略
+* 需要使用 `DELIMITER` 语句设置结束标记
+
+### 1.4.3，函数示例
+
+#### 1.4.3.1，无参函数_返回男子表数量
+
+```sql
+-- 创建函数
+-- 无参函数，参数列表为空
+-- 定义返回类型为INT，返回数量
+CREATE FUNCTION QUERY_COUNT() RETURNS INT
+BEGIN
+	-- 需要返回数据，定义一个局部变量
+	-- 注意：此处可以定义用户变量
+	DECLARE count INT;
+	-- 查询数据并直接对局部变量赋值
+	SELECT COUNT(1) INTO count FROM BOY;
+	-- 返回该局部变量
+	-- 注意：函数一定有return语句
+	return count;
+END $
+
+-- 执行函数
+SELECT QUERY_COUNT()$
+```
+
+#### 1.4.3.2，有参函数_返回指定男子ID的名称
+
+```sql
+-- 创建函数
+-- 带参函数，存在一个入参
+-- 返回类型为VARCHAR，返回名称
+CREATE FUNCTION QUERY_BOY_NAME(id INT) RETURNS VARCHAR(32)
+BEGIN
+	-- 通过用户变量定义返回名称
+	SET @name = '';
+	-- 查询名称并直接赋值
+	SELECT NAME INTO @name FROM BOY WHERE BOY.ID = id;
+	-- 返回名称
+	return @name;
+END $
+
+-- 执行函数
+-- 1 表示入参的ID
+SELECT QUERY_BOY_NAME(1)$
+```
+
+### 1.4.4，函数删除
+
+```sql
+DROP FUNCTION function_name;
+```
+
+### 1.4.5，函数语句查看
+
+```sql
+-- 查询函数的创建语句
+SHOW CEREATE FUNCTION function_name;
+```
 
 ## 1.5，流程控制结构
+
+### 1.5.1，顺序结构
+
+1. `if` 函数
+
+   ```sql
+   -- 与Java的三元运算符基本一致
+   -- 表达式1成立，返回表达式2，不成立，返回表达式3
+   IF(表达式1, 表达式2, 表达式3)
+   ```
+
+2. `case` 结构
+
+   * 基本语法
+
+   ```sql
+   -- SELECT 中写法
+   -- 可以在任何地方使用，即 `BEGIN ... END` 内部或者外部都可以
+   -- 写法1
+   CASE 参数
+   	WHEN 数值匹配 THEN 返回值
+   	ELSE 返回值
+   END
+   -- 写法2
+   CASE
+   	WHEN 条件语句 THEN 返回值
+   	ELSE 返回值
+   END
+   
+   -- 存储过程或者函数中写法
+   -- 只能在 `BEGIN ... END` 内部使用
+   -- 存储过程或者函数中, 如果在SELECT子句中使用，可依旧使用上面的写法
+   -- 存储过程和函数中，CASE语句和作为分支语句单独执行，THEN后可跟随执行语句，跟随执行语句时，对应写法如下：
+   -- 写法1
+   CASE 参数
+   	WHEN 数值匹配 THEN 语句;
+   	ELSE 语句;
+   END CASE;
+   -- 写法2
+   CASE
+   	WHEN 条件语句 THEN 语句;
+   	ELSE 语句;
+   END CASE;
+   ```
+   * 语法示例
+    
+   ```sql
+   -- CASE语句在存储过程中的写法
+   -- 写法1
+   CREATE PROCEDURE TEST_CASE(in num INT)
+   BEGIN
+   	CASE num
+   	WHEN 0 THEN SELECT '男子' FROM BOY;
+   	WHEN 1 THEN SELECT '女子' FROM GIRL;
+   	ELSE SELECT '无';
+   	END CASE;
+   END $
+   -- 写法2
+   CREATE PROCEDURE TEST_CASE_1(in num INT)
+   BEGIN
+   	CASE
+   	WHEN num=0 THEN SELECT '男子' FROM BOY;
+   	WHEN num=1 THEN SELECT '女子' FROM GIRL;
+   	ELSE SELECT '无';
+   	END CASE;
+   END $
+   
+   -- CASE语句在函数中的写法
+   -- 写法1
+   CREATE FUNCTION TEST_CASE(num INT) RETURNS VARCHAR(20)
+   BEGIN
+   	DECLARE name VARCHAR(20);
+   	CASE num
+   	WHEN 0 THEN SELECT '男子' INTO name FROM BOY LIMIT 1;
+   	WHEN 1 THEN SELECT '女子' INTO name FROM GIRL LIMIT 1;
+   	ELSE SELECT '无' INTO name;
+   	END CASE;
+   	RETURN name;
+   END $
+   
+   -- 写法2
+   CREATE FUNCTION TEST_CASE_1(num INT) RETURNS VARCHAR(20)
+   BEGIN
+   	DECLARE name VARCHAR(20);
+   	CASE
+   	WHEN num=0 THEN SELECT '男子' INTO name FROM BOY LIMIT 1;
+   	WHEN num=1 THEN SELECT '女子' INTO name FROM GIRL LIMIT 1;
+   	ELSE SELECT '无' INTO name;
+   	END CASE;
+   	RETURN name;
+   END $
+   ```
+
+3. `if` 结构
+
+   * 基本语法
+   
+   ```sql
+-- 只能使用在 `BEGIN ... END` 语法中
+   IF 条件 THEN 语句;
+   ELSEIF 条件 THEN 语句;
+   ELSE 语句;
+   END IF;
+   ```
+   
+   * 语法示例
+   
+   ```sql
+   -- IF 结构在存储过程中使用
+   CREATE PROCEDURE TEST_IF(in num INT)
+   BEGIN 
+   	IF num = 1 THEN SELECT '男子' FROM BOY LIMIT 1;
+   	ELSEIF num = 2 THEN SELECT '女子' FROM GIRL LIMIT 1;
+   	END IF;
+   END $
+   
+   -- IF 结构在函数中的使用
+   CREATE FUNCTION TEST_IF(num INT) RETURNS VARCHAR(20)
+   BEGIN
+   	DECLARE name VARCHAR(20);
+   	IF num=0 THEN SELECT '男子' INTO name FROM BOY LIMIT 1;
+   	ELSEIF num=1 THEN SELECT '女子' INTO name FROM GIRL LIMIT 1;
+   	ELSE SELECT '无' INTO name;
+   	END IF;
+   	RETURN name;
+   END $
+   ```
+
+### 1.5.2，分支结构
+
+### 1.5.3，循环结构
