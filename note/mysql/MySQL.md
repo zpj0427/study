@@ -156,7 +156,7 @@ SELECT * FORM view_name WHERE XXX
 ### 1.2.2，系统变量
 
 * 变量由系统提供，不是用户定义的，属于服务器层面的变量
-* 系统变量查询/操作，不加限制，默认为 `SESSION` 级别
+* <font color=red>系统变量查询/操作，不加限制，默认为 `SESSION` 级别</font>
 
 #### 1.2.2.1，查看系统变量
 
@@ -530,133 +530,827 @@ SHOW CEREATE FUNCTION function_name;
 
 ## 1.5，流程控制结构
 
-### 1.5.1，顺序结构
+### 1.5.1，分支结构
 
-1. `if` 函数
+#### 1.5.1.1，`if` 函数
 
-   ```sql
-   -- 与Java的三元运算符基本一致
-   -- 表达式1成立，返回表达式2，不成立，返回表达式3
-   IF(表达式1, 表达式2, 表达式3)
-   ```
+```sql
+-- 与Java的三元运算符基本一致
+-- 表达式1成立，返回表达式2，不成立，返回表达式3
+IF(表达式1, 表达式2, 表达式3)
+```
 
-2. `case` 结构
+#### 1.5.1.2，`case` 结构
 
-   * 基本语法
+* 基本语法
 
-   ```sql
-   -- SELECT 中写法
-   -- 可以在任何地方使用，即 `BEGIN ... END` 内部或者外部都可以
-   -- 写法1
-   CASE 参数
-   	WHEN 数值匹配 THEN 返回值
-   	ELSE 返回值
-   END
-   -- 写法2
-   CASE
-   	WHEN 条件语句 THEN 返回值
-   	ELSE 返回值
-   END
-   
-   -- 存储过程或者函数中写法
-   -- 只能在 `BEGIN ... END` 内部使用
-   -- 存储过程或者函数中, 如果在SELECT子句中使用，可依旧使用上面的写法
-   -- 存储过程和函数中，CASE语句和作为分支语句单独执行，THEN后可跟随执行语句，跟随执行语句时，对应写法如下：
-   -- 写法1
-   CASE 参数
-   	WHEN 数值匹配 THEN 语句;
-   	ELSE 语句;
-   END CASE;
-   -- 写法2
-   CASE
-   	WHEN 条件语句 THEN 语句;
-   	ELSE 语句;
-   END CASE;
-   ```
-   * 语法示例
-    
-   ```sql
-   -- CASE语句在存储过程中的写法
-   -- 写法1
-   CREATE PROCEDURE TEST_CASE(in num INT)
-   BEGIN
-   	CASE num
-   	WHEN 0 THEN SELECT '男子' FROM BOY;
-   	WHEN 1 THEN SELECT '女子' FROM GIRL;
-   	ELSE SELECT '无';
-   	END CASE;
-   END $
-   -- 写法2
-   CREATE PROCEDURE TEST_CASE_1(in num INT)
-   BEGIN
-   	CASE
-   	WHEN num=0 THEN SELECT '男子' FROM BOY;
-   	WHEN num=1 THEN SELECT '女子' FROM GIRL;
-   	ELSE SELECT '无';
-   	END CASE;
-   END $
-   
-   -- CASE语句在函数中的写法
-   -- 写法1
-   CREATE FUNCTION TEST_CASE(num INT) RETURNS VARCHAR(20)
-   BEGIN
-   	DECLARE name VARCHAR(20);
-   	CASE num
-   	WHEN 0 THEN SELECT '男子' INTO name FROM BOY LIMIT 1;
-   	WHEN 1 THEN SELECT '女子' INTO name FROM GIRL LIMIT 1;
-   	ELSE SELECT '无' INTO name;
-   	END CASE;
-   	RETURN name;
-   END $
-   
-   -- 写法2
-   CREATE FUNCTION TEST_CASE_1(num INT) RETURNS VARCHAR(20)
-   BEGIN
-   	DECLARE name VARCHAR(20);
-   	CASE
-   	WHEN num=0 THEN SELECT '男子' INTO name FROM BOY LIMIT 1;
-   	WHEN num=1 THEN SELECT '女子' INTO name FROM GIRL LIMIT 1;
-   	ELSE SELECT '无' INTO name;
-   	END CASE;
-   	RETURN name;
-   END $
-   ```
+```sql
+-- SELECT 中写法
+-- 可以在任何地方使用，即 `BEGIN ... END` 内部或者外部都可以
+-- 写法1
+CASE 参数
+	WHEN 数值匹配 THEN 返回值
+	ELSE 返回值
+END
+-- 写法2
+CASE
+	WHEN 条件语句 THEN 返回值
+	ELSE 返回值
+END
 
-3. `if` 结构
+-- 存储过程或者函数中写法
+-- 只能在 `BEGIN ... END` 内部使用
+-- 存储过程或者函数中, 如果在SELECT子句中使用，可依旧使用上面的写法
+-- 存储过程和函数中，CASE语句和作为分支语句单独执行，THEN后可跟随执行语句，跟随执行语句时，对应写法如下：
+-- 写法1
+CASE 参数
+	WHEN 数值匹配 THEN 语句;
+	ELSE 语句;
+END CASE;
+-- 写法2
+CASE
+	WHEN 条件语句 THEN 语句;
+	ELSE 语句;
+END CASE;
+```
+* 语法示例
 
-   * 基本语法
-   
-   ```sql
+```sql
+-- CASE语句在存储过程中的写法
+-- 写法1
+CREATE PROCEDURE TEST_CASE(in num INT)
+BEGIN
+	CASE num
+	WHEN 0 THEN SELECT '男子' FROM BOY;
+	WHEN 1 THEN SELECT '女子' FROM GIRL;
+	ELSE SELECT '无';
+	END CASE;
+END $
+-- 写法2
+CREATE PROCEDURE TEST_CASE_1(in num INT)
+BEGIN
+	CASE
+	WHEN num=0 THEN SELECT '男子' FROM BOY;
+	WHEN num=1 THEN SELECT '女子' FROM GIRL;
+	ELSE SELECT '无';
+	END CASE;
+END $
+
+-- CASE语句在函数中的写法
+-- 写法1
+CREATE FUNCTION TEST_CASE(num INT) RETURNS VARCHAR(20)
+BEGIN
+	DECLARE name VARCHAR(20);
+	CASE num
+	WHEN 0 THEN SELECT '男子' INTO name FROM BOY LIMIT 1;
+	WHEN 1 THEN SELECT '女子' INTO name FROM GIRL LIMIT 1;
+	ELSE SELECT '无' INTO name;
+	END CASE;
+	RETURN name;
+END $
+
+-- 写法2
+CREATE FUNCTION TEST_CASE_1(num INT) RETURNS VARCHAR(20)
+BEGIN
+	DECLARE name VARCHAR(20);
+	CASE
+	WHEN num=0 THEN SELECT '男子' INTO name FROM BOY LIMIT 1;
+	WHEN num=1 THEN SELECT '女子' INTO name FROM GIRL LIMIT 1;
+	ELSE SELECT '无' INTO name;
+	END CASE;
+	RETURN name;
+END $
+```
+
+#### 1.5.2.3，`if` 结构
+
+* 基本语法
+
+```sql
 -- 只能使用在 `BEGIN ... END` 语法中
-   IF 条件 THEN 语句;
-   ELSEIF 条件 THEN 语句;
-   ELSE 语句;
-   END IF;
-   ```
-   
-   * 语法示例
-   
-   ```sql
-   -- IF 结构在存储过程中使用
-   CREATE PROCEDURE TEST_IF(in num INT)
-   BEGIN 
-   	IF num = 1 THEN SELECT '男子' FROM BOY LIMIT 1;
-   	ELSEIF num = 2 THEN SELECT '女子' FROM GIRL LIMIT 1;
-   	END IF;
-   END $
-   
-   -- IF 结构在函数中的使用
-   CREATE FUNCTION TEST_IF(num INT) RETURNS VARCHAR(20)
-   BEGIN
-   	DECLARE name VARCHAR(20);
-   	IF num=0 THEN SELECT '男子' INTO name FROM BOY LIMIT 1;
-   	ELSEIF num=1 THEN SELECT '女子' INTO name FROM GIRL LIMIT 1;
-   	ELSE SELECT '无' INTO name;
-   	END IF;
-   	RETURN name;
-   END $
-   ```
+IF 条件 THEN 语句;
+ELSEIF 条件 THEN 语句;
+ELSE 语句;
+END IF;
+```
 
-### 1.5.2，分支结构
+* 语法示例
 
-### 1.5.3，循环结构
+```sql
+-- IF 结构在存储过程中使用
+CREATE PROCEDURE TEST_IF(in num INT)
+BEGIN 
+	IF num = 1 THEN SELECT '男子' FROM BOY LIMIT 1;
+	ELSEIF num = 2 THEN SELECT '女子' FROM GIRL LIMIT 1;
+	END IF;
+END $
+
+-- IF 结构在函数中的使用
+CREATE FUNCTION TEST_IF(num INT) RETURNS VARCHAR(20)
+BEGIN
+	DECLARE name VARCHAR(20);
+	IF num=0 THEN SELECT '男子' INTO name FROM BOY LIMIT 1;
+	ELSEIF num=1 THEN SELECT '女子' INTO name FROM GIRL LIMIT 1;
+	ELSE SELECT '无' INTO name;
+	END IF;
+	RETURN name;
+END $
+```
+
+### 1.5.2，循环结构
+
+#### 1.5.2.1，基本介绍
+
+* 循环关键字：
+  * `while`：类似Java中的 `while` 循环，至少执行0次
+  * `loop`：类似Java中的 `while` 循环，但是没有循环条件控制，是一个默认的死循环，需要搭配 `leave`使用
+  * `repeat`：类似Java中的 `do ... while` 循环，至少执行1次，`repeat` 的 `until` 条件为true是退出循环
+* 循环控制语句，<font color=red>使用这两个关键字时，循环一定要加标签</font>：
+  * `iterate`：类似于Java中的 `continue`
+  * `leave`：类似于Java中的 `break`
+* <font color=red>循环结构必须依托于存储过程或者函数，应用在 `BEGIN ... END` 语句中</font>
+
+#### 1.5.2.2，`while` 循环
+
+* 基本语法
+
+  ```sql
+  -- 标签相当于Java的命名循环, 可不写
+  -- 至少循环0次
+  [标签:] WHILE 循环条件 DO
+  	循环体;
+  END WHILE [标签];
+  ```
+
+* 语法示例
+
+  ```sql
+  -- 新增数据，直接新增
+  CREATE PROCEDURE WHILE_INSERT_GIRL(IN count INT)
+  BEGIN
+  	DECLARE currCount INT DEFAULT 0;
+  	WHILE currCount < count DO
+  		INSERT INTO GIRL(NAME) VALUES(CONCAT('新增',currCount));
+  		SET currCount = currCount + 1;
+  	END WHILE;
+  END $
+  
+  -- 新增数据，入库两条后，其他扔出
+  CREATE PROCEDURE WHILE_INSERT_GIRL1(IN count INT)
+  BEGIN
+  	DECLARE currCount INT DEFAULT 0;
+  	DECLARE dataCount INT DEFAULT 0;
+  	a: WHILE currCount < count DO
+  	    IF dataCount >= 2 THEN LEAVE a;
+  		END IF;
+  		INSERT INTO GIRL(NAME) VALUES(CONCAT('新增',currCount));
+  		SET currCount = currCount + 1;
+  		SET dataCount = dataCount + 1;
+  	END WHILE a;
+  END $
+  
+  -- 新增数据，基数跳开， 只入偶数
+  CREATE PROCEDURE WHILE_INSERT_GIRL2(IN count INT)
+  BEGIN
+  	DECLARE currCount INT DEFAULT 0;
+  	a: WHILE currCount < count DO
+  	    IF currCount % 2 != 0 THEN SET currCount = currCount + 1; ITERATE a;
+  		END IF;
+  		INSERT INTO GIRL(NAME) VALUES(CONCAT('新增',currCount));
+  		SET currCount = currCount + 1;
+  	END WHILE a;
+  END $
+  
+  -- 统一执行语句
+  CALL LOOP_INSERT_GIRL(10)$
+  ```
+
+#### 1.5.2.3，`loop` 循环
+
+* 基本语法
+
+  ```sql
+  -- 该循环没有条件控制, 可能用来处理死循环
+  -- 如果需要达到一定条件退出, 需要配合Leave使用
+  [标签:] LOOP
+  	循环体;
+  END LOOP [标签];
+  ```
+
+* 语法示例
+
+  ```sql
+  -- 创建存储过程
+  CREATE PROCEDURE LOOP_INSERT_GIRL(IN count INT)
+  BEGIN
+  	DECLARE currCount INT DEFAULT 100;
+  	a: LOOP
+  		IF currCount >= count THEN LEAVE a;
+  		END IF;
+  		INSERT INTO GIRL(NAME) VALUES(CONCAT('新增',currCount));
+  		SET currCount = currCount + 1;
+  	END LOOP a;
+  END $
+  
+  -- 执行
+  CALL LOOP_INSERT_GIRL(103)$
+  ```
+
+#### 1.5.2.4，`repeat` 循环语法
+
+* 基本语法
+
+  ```sql
+  -- 类似Java中的 `do ... while` 循环
+  -- 至少循环1次
+  [标签:] REPEAT
+  	循环体;
+  UNTIL 结束循环的条件(为true是结束循环)
+  END REPEAT [标签];
+  ```
+
+* 语法示例：`repeat` 语句最少执行一次，直接用一个条件不符合的试试不满足情况
+
+  ```sql
+  -- 创建存储过程
+  CREATE PROCEDURE REPEAT_INSERT_GIRL(IN count INT)
+  BEGIN
+  	DECLARE currCount INT DEFAULT 1000;
+  	a: REPEAT
+  		INSERT INTO GIRL(NAME) VALUES(CONCAT('新增',currCount));
+  		SET currCount = currCount + 1;
+  	-- 入参为1,1 < 10为true，结束循环条件成立，直接跳出循环
+  	UNTIL count < 10
+  	END REPEAT a;
+  END $
+  
+  -- 执行
+  CALL REPEAT_INSERT_GIRL(1)$
+  ```
+
+
+
+# 2，MySQL架构介绍
+
+## 2.1，MySQL逻辑架构
+
+![2019110142053365.png](https://img.jbzj.com/file_images/article/201901/2019110142053365.png?201901014217)
+
+1. 连接层
+
+   > 最上层是一些客户端和连接服务，包含本地socket通信和大多数基于客户端/服务端工具实现的类似于tcp/ip的通信。主要完成一些类似于连接处理、授权认证及相关的安全方案。在该层上引入了线程池的概念，为通过认证安全接入的客户端提供线程，同时在该层上可以提供基于SSL的安全链接。服务器也会为安全接入的每个客户端验证它所具备的操作权限。
+
+2. 服务层
+
+   > 主要完成大多数的核心服务功能，如SQL接口；并完成缓存的查询，SQL的分析和优化及部分内置函数的执行。所有跨存储引擎的功能也在这一层实现，如过程、函数等。在该层，服务器会解析查询并创建相应的内部解析树，对其完成相应的优化。如确定查询索引，是否利用索引等，最终生成响应的执行操作。如果是SELECT语句，服务器会查询内部缓存，如果缓存空间足够大，在解读大量读操作的环境中能够很好的提升系统性能。
+
+3. 引擎层
+
+   > 存储引擎层，真正的负责了MySQL中数据的存储和提取，服务器通过API与存储引擎进行通信。不同的存储引擎具备的功能不同，这样我们可以根据自己的实际需要进行选取。
+
+4. 存储层
+
+   > 将数据存储在运行与裸设备的文件系统之上，并完成与存储引擎的交互。
+
+## 2.2，MySQL存储引擎
+
+### 2.2.1，存储引擎查询语句
+
+```sql
+-- 查看当前数据库支持度额存储引擎
+SHOW ENGINES;
+-- 查看当前数据库的默认存储引擎和使用的存储引擎
+SHOW VARIABLES LIKE '%storage_engine%';
+```
+
+### 2.2.2，`Myisam` 和 `InnoDB` 的区别
+
+|   对比项   |                         Myisam                         |                            InnoDB                            |
+| :---------------: | :---------------------------------------------: | :---------------------------------------------------: |
+| 主键和外键 |                           N                            |                              Y                               |
+|    事务    |                           N                            |                              Y                               |
+| 行锁和表锁 | 表锁，即使操作一条数据也会锁住整个表，不适合高并发操作 |       行锁，操作时只锁某一行，不影响其他行，适合高并发       |
+|    缓存    |               只缓存索引，不缓存真是数据               | 不仅缓存索引也缓存真实数据，对内存要求较高，内存大小对性能有决定性影响 |
+|   表空间   |                           小                           |                              大                              |
+|   关注点   |                          性能                          |                             事务                             |
+|  默认安装  |                           Y                            |                              Y                               |
+
+
+
+# 3，索引优化
+
+## 3.1，SQL性能下降原因
+
+* 查询语句写的差
+* 索引失效：单值索引和复合索引
+* 关联查询太多 `JOIN`（设计缺陷或者需求妥协）
+* 服务器调优及各个参数设置（缓存，线程数等）
+
+## 3.2，SQL查询执行顺序
+
+* 一条完成的SQL语句
+
+  ```sql
+  SELECT DISTINCT
+  	<select-list>
+  FROM TABLE
+  JOIN TABLE ON <join-condition>
+  WHERE <where-condition>
+  GROUP BY COLUMN
+  HAVING <having-condition>
+  ORDER BY COLUMN
+  LIMIT num
+  ```
+
+* SQL执行顺序
+
+  ```sql
+  1. FROM TABLE
+  2. ON <join-condition>
+  3. JOIN TABLE
+  4. WHERE <where-condition>
+  5. GROUP BY COLUMN
+  6. HAVING <having-condition>
+  7. SELECT
+  8. DISTINCT
+  9. ORDER BY COLUMN
+  10. LIMIT num
+  ```
+
+![减少](E:\gitrepository\study\note\image\MySQL\1608604222907.png)
+
+## 3.3，索引基础概念
+
+### 3.3.1，索引是什么
+
+* 索引（Index）是帮助MySQL高效获得数据的<font color=red>***数据结构***</font>
+* 索引是一种<font color=red>***排好序的快速查找数据结构：B+树***</font>
+* <font color=red>数据本身之外，数据库还维护着一个满足特定查找算法的数据结构，这些数据结构以某种形式指向数据，这样就可以在这些数据结构的基础上实现高级查找算法，这种数据结构就是索引，实现算法结构就是B树</font>
+* 索引本身很大，不可能全部存储在内存中，索引往往以索引文件的形式存储在磁盘上
+
+### 3.3.2，索引优劣势
+
+* 优势
+  * 提供数据检索效率，减少数据库的IO次数
+  * 通过索引对数据进行排序，减低数据排序的成本，降低CPU的消耗
+* 劣势
+  * 实际上索引也是一张表，该表保存了主键与索引字段，并指向实体表的记录，索引也是要占用空间的
+  * 索引虽然大大提高了查询速度，但同时索引也降低了操作速度。需要同步更新索引结构
+  * 索引只是提高效率的一个因素
+
+### 3.3.3，索引分类
+
+1. 单值索引：即一个索引只包含一个列，一个表可以有多个单值索引
+2. 唯一索引：索引列的值必须唯一，但是可以为空值
+3. 复合索引：即一个索引包含多个列
+
+### 3.3.4，索引语法
+
+```sql
+-- 创建
+CREATE [UNIQUE] INDEX indexName ON tableName(column1, column2);
+ALTER TABLE tableName ADD [UNIQUE] INDEX indexName ON (column1, column2);
+
+-- 删除索引
+DROP INDEX indexName ON tableName;
+
+-- 查看索引列表
+SHOW INDEX FROM tableName;
+```
+
+### 3.3.5，索引数据结构（待后续原理补充）
+
+* MySQL的索引数据结构包括：BTree索引、Hash索引、Full-Text索引、R-Tree索引
+* 其中常规索引都是通过BTree实现
+* <font color=red>原理方面后续补充</font>
+
+### 3.3.4，索引创建时机
+
+* 列索引可创建公式：DISTINCT值数量 / 数据数量 = 无限接近1 = 必要性
+
+#### 3.3.4.1，适合创建索引的场景
+
+* 主键自动建立唯一索引
+* 频繁作为查询条件的字段应该创建索引
+* 查询中与其他表建立关系的字段，外键关系建立索引
+* 单值/组合索引的选择问题，在高并发下建议创建组合索引
+* 查询中排序的字段，排序字段建所以讲大大提高排序速度
+* 查询中统计和分组的字段
+
+#### 3.3.4.2，不适合创建索引的场景
+
+* 表记录太少
+* 经常增删改的表，会一直伴随索引重拍
+* 数据重复且分部平均的表字段
+* 频繁更新的字段不适合创建索引
+
+* `where` 条件中用不到的字段不创建索引
+
+## 3.4，性能分析
+
+### 3.4.1，常见瓶颈
+
+* CPU：CPU在饱和的时候一般发生在数据装入内存或从磁盘读取数据的时候
+* IO：磁盘I/0瓶颈发生在装入数据远大于硬盘容量的时候
+* 服务器硬件性能瓶颈：top、free、iostat、vmstat等查看系统性能状态
+
+### 3.4.2，Explain
+
+* 使用 `explain` 关键字可以模拟优化器执行MySQL语句，从而知道MySQL是如何处理SQL语句的。分析查询语句或者表结构的性能瓶颈
+
+#### 3.4.2.1，Explain关键字作用
+
+* 表的读取顺序
+* 数据读取操作的操作类型
+* 哪些索引可以使用
+* 哪些索引实际被使用
+* 表之间的引用
+* 每张表有多少行被优化器处理
+
+#### 3.4.2.1，使用方式及字段解析
+
+##### 3.4.2.1.1，使用方式
+
+```sql
+-- 在查询语句前加上 EXPLAIN 关键字即可
+EXPLAIN [QUERY SQL];
+-- 具体示例
+EXPLAIN SELECT DISTINCT A. NAME FROM GIRL A LEFT JOIN BOY B ON A.ID = B.GIRL_ID WHERE A.ID = 14618;
+```
+
+##### 3.4.2.1.2，字段解析
+
+![1608622176990](E:\gitrepository\study\note\image\MySQL\1608622176990.png)
+* `id`：`SELECT` 查询的序列号，包含一组数字，表示查询中执行 `SELECT` 子句或操作表的顺序；可分为三种情况：
+  
+  * `id` 相同：执行顺序由上而下，如上面的例子
+  * `id` 不相同：如果是子查询，id的序号会递增，id值越大优先级越高，越先被执行
+  * `id` 相同不同混杂：同时存在id相同的和不同数据，先执行优先级高的，优先级相同的顺序执行
+  
+* `select_type`：查询类型，主要分为六种：
+  * `SIMPLE`：简单的 `SELECT` 查询，查询中不包含子查询或者 `UNION`
+  * `PRIMARY`：查询中若包含任何的子查询，最外层查询的查询类型
+  * `SUBQUERY`：在 `SELECT` 和 `WHERE` 列表中包含的子查询
+  * `DERIVED`：在 `FROM` 列表中包含的子查询被标记为 `DERIVED`（衍生），MySQL会递归执行这些子查询，把结果放到临时表中
+  * `UNION`：若第二个 `SELECT` 出现在 `UNION` 之后，则标记为 `UNION`；若 `UNION` 包含在 `FROM` 子句的子查询中，外层 `SELECT` 将被标记为 `DERIVED` 
+  * `UNION RESULT`：从 `UNION` 中获取结果的 `SELECT`
+  
+* `table`：显示这一行的数据是关于哪张表的
+
+* `partitions`：这群
+
+* `type`：访问类型排列，包括八种类型：
+  * `ALL`：`FULL TABLE SCAN`，全表扫描，尽量避免
+  * `index`：`FULL INDEX SCAN`，`index` 与 `ALL` 区别为 `index` 类型只遍历索引树。这通常比 `ALL` 快，因为索引文件通常比数据文件小
+  * `range`：只检索给定范围的行，使用一个索引来选择行。一般在 `where` 子句中出现 `between`、`>`、`<` 时出现
+  * `ref`：非唯一性索引扫描，返回匹配某个单独值得素有行。本质上也是一种索引访问，它返回所有匹配某个单独值得行；<font color=red>然而，它可能会找到多个符合条件的行，所以应该属于查找和扫描的混合体</font>
+  * `eq_ref`：唯一性索引扫描，对于每个索引键，表中只有一条记录与之匹配。常见于主键或者唯一索引扫描
+  * `const`：表示通过索引一次就找到，`const` 用于比较 `primary key`  或者 `unique index`；因为只匹配一行数据，所以执行速度很快。如将主键置于 `where` 列表中，`MySQL` 就能将该查询转换为一个常量
+  * `system`：表里面只有一行记录（等于系统表），是 `const` 类型的特例，平时不会出现，可以忽略不计；<font color=red>这个没有试出来</font>
+  * `NULL`：
+  * 性能排列依次是：`system > const > eq_ref > ref > range > index > ALL`
+  * 一般来讲，`type` 至少要达到 `range` 级别，最好能达到 `ref` 级别
+  
+* `possible_keys`：显示可能应用在这张表中的索引，一个或者多个。查询涉及到的字段上若存在索引，<font color=red>则该索引将被列出，但不一定被实际查询使用</font>
+
+* `key`：实际使用到的索引，如果为 `NULL`，说明没有使用到索引。查询中若使用了覆盖索引，则该索引仅出现在 `key` 列表中
+
+* `key_len`：表示索引中使用的字节数，可通过该列计算得出查询中使用的索引的长度；在不损失精度的情况下，长度越短越好。`key_len` 显示的值为索引字段的最大可能长度，<font color=red>而不是实际使用长度</font>，即 `key_len` 是根据表计算得出的，不是通过表示检索得出的；
+
+  * `key_len` 计算公式：`where` 后匹配到索引的列长度  + 可空的1 + 变长字符2
+
+  * 其中定长字符包括 `char`、`int`、`datetime`；变长字符包括 `varchar`
+
+  * int = 4 + 1（可空）
+
+  * varchar(32) = 32 * 3（UTF-8）+ 1（可空） + 2（变长字符）
+
+  * 在上面的 `BOY` 表中，对 `name = varchar(20)` 和 `girl_id(int)` 建立联合索引，并通过 `explain` 进行条件查询
+
+    ```sql
+    explain select * from boy where girl_id = 1 and name = '男1';
+    -- key_len计算
+    name(varchar(20)) = 20 * 30 + 1 + 2 = 63
+    girl_id(int) = 4 + 1 = 5
+    key_len = name + girl_id = 68
+    ```
+
+* `ref`：显示索引的哪一列被使用了，如果可能的话，是一个常数。哪些列或常量被用于查找索引列上的值；<font color=red>这个没搞懂</font>
+
+* `rows`：根据表统计信息及索引选用结果，大致估算出找到所需的记录所需要读取的行数
+
+* `Extra`：包括不适合在上述列，但十分重要的额外信息：
+
+  * `Using FileSort`：MySQL会对数据使用一个外部的索引排序，而不是按照表内的索引顺序进行读取。即MySQL无法利用索引完成的排序操作成为 ***文件排序***
+  * `Using Temporary`：使用了临时表保存中间数据，MySQL对查询结果排序时使用了临时表。常见于 `order by` 和 `group by`
+  * `Using Index`：表示相应的 `SELECT` 操作中使用了***覆盖索引***，避免访问表的数据行，效率较高
+    * 如果同时出现 `Using Where`：表示索引被用来执行索引键值得查找
+    * 如果没有出现 `Using Where`：表示索引用来读取数据而非执行查找操作
+  * `Using Where`：表名使用了 `WHERE` 过滤条件
+  * `Using Join Buffer`：使用了连接缓存
+  * `impossible where`：`where` 子句的值总是 `false`，不能用来取任何数据
+  * `select tables optimized away`：在没有 `GROUP BY` 子句的情况下，基于索引优化 `MIN/MAX` 或者对应 MyISAM 引擎优化 `count(*)` 操作，不必等到执行阶段进行计算，查询执行计划生成的阶段即完成优化
+  * `distinct`：优化 `DSITINCT` 操作，在找到第一个匹配后元素后终止找同样值得动作
+
+### 3.4.3，索引优化
+
+#### 3.4.3.1，执行过程分析
+
+* <font color=red>视频的MySQL版本是Linux 5.5，我在Windows 5.7上演示，可能是版本原因导致的，执行计划部分结构不一致</font>
+
+![1608707412595](E:\gitrepository\study\note\image\MySQL\1608707412595.png)
+
+* 在之前的执行计划字段解析中，`id` 值越大，说明执行顺序越靠前，所以具体的执行顺序按 `id` 排应该是 `4 -> 3 -> 2 -> 1 -> NULL`
+* `id = 4`：查询类型为 `UNION`，执行表为 `t2`，所以执行的是 `UNION语句`，即 `(select name, id from t2)`
+* `id = 3`：查询类型为 `DERIVED`，执行表为 `t1`，通过类型可看是虚表查询，即 `(select id, name from t1 where other_column = '')`
+* `id = 2`：查询类型是 `SUBQUERY`，执行表为 `t3`，是一个基于 `select` 子句的子查询， 即 `(select id from t3)`
+* `id = 1`：查询类型是 `PRIMARY`，执行表为 `<derived3>`，也就是 `id = 3` 时候查出来的虚表，通过 `select_type = PRIMARY` 可知，是包含 `select` 子查询的最外层查询，即 `select d1.name, (select id from t3) d2 from (select id, name from t1 where other_column = '') d1`
+* `id = null`：查询类型是 `union result`，执行表示 `<union1, 4`，是 `UNION` 结果获取部分，从 `id = 1` 和 `id = 4` 中取数据
+
+#### 3.4.3.2，索引优化简单案例
+
+##### 3.4.3.2.1，单表优化
+
+* 表创建及数据初始化_文章表
+
+  ```sql
+  -- 表创建
+  DROP TABLE IF EXISTS ARTICLE;
+  CREATE TABLE ARTICLE (
+  	ID INT PRIMARY KEY AUTO_INCREMENT,
+  	AUTHOR_ID INT NOT NULL,
+  	CATEGORY_ID INT NOT NULL,
+  	VIEWS INT NOT NULL,
+  	COMMENTS INT NOT NULL,
+  	TITLE VARCHAR(256) NOT NULL,
+  	CONTENT TEXT NOT NULL
+  )
+  -- 数据初始化
+  INSERT INTO ARTICLE(AUTHOR_ID, CATEGORY_ID, VIEWS, COMMENTS, TITLE, CONTENT) VALUES(1,1,1,1,'1','1'),(2,2,2,2,'2','2'),(1,1,3,3,'3','3');
+  ```
+
+* 查询 `CATEGORY_ID = 1` 并且 `COMMENTS > 1` 的情况下，`VIEWS` 最多的 `ARTICLE_ID`
+
+  ```sql
+  -- 查询语句
+  SELECT * FROM ARTICLE WHERE CATEGORY_ID = 1 AND COMMENTS > 1 ORDER BY VIEWS DESC LIMIT 1;
+  ```
+
+* 执行计划分析
+
+  ```sql
+  EXPLAIN SELECT * FROM ARTICLE WHERE CATEGORY_ID = 1 AND COMMENTS > 1 ORDER BY VIEWS DESC LIMIT 1;
+  ```
+
+  ![1608709877875](E:\gitrepository\study\note\image\MySQL\1608709877875.png)
+
+  * 从执行计划中可以看到两点问题：首先是 `type = ALL`  说明是全表扫描，其次是 `Extra` 中存在 `Using Filesort` 字样，说明排序没有走索引
+  * 当然，因为此时还没有给表中加索引，可以通过添加索引解决
+
+* 第一步优化_按照 `where` 字段添加索引
+
+  * 给 `where` 子句有关系的 `CATEGORY_ID`，`COMMENTS`，`VIEWS` 字段添加组合索引
+
+    ```sql
+    CREATE INDEX  ARTICLE_CCV ON ARTICLE(CATEGORY_ID, COMMENTS, VIEWS);
+    ```
+
+    ![1608710059706](E:\gitrepository\study\note\image\MySQL\1608710059706.png)
+
+  * 继续执行执行计划，可以发现 `type = range`，即从全表扫描编成了范围扫描，第一步索引生效
+
+  * 但是在 `Extra` 中，依然存在 `Using Filesort`，说明排序依旧没有生效，<font color=red>这是因为索引的匹配原则，当存在范围查找时，索引中断，索引 `VIEWS` 索引字段并没有走到</font>
+
+  * <font color=red>此时可以对组合索引字段进行调整，将影响索引执行的字段 `COMMENTS` 移除即可</font>
+
+  * <font color=red>特别注意：将一个索引拆成两个，并没有生效</font>
+
+* 第二部优化_创建指定字段索引
+
+  ```sql
+  CREATE INDEX  ARTICLE_CV ON ARTICLE(CATEGORY_ID, VIEWS);
+  ```
+
+  ![1608710519229](E:\gitrepository\study\note\image\MySQL\1608710519229.png)
+
+* 经过第二步优化后，`type = ref` 表示查询利用了索引，同时 `Extra` 中没有 `Using Filesort` 字样
+
+##### 3.4.3.2.2，两表优化
+
+* <font color=red>依旧版本不一致，以演示为例说明问题</font>
+
+* 对于一个两表非主键、非索引列关联SQL，执行计划如下，可以看到执行计划的两条都是 `type = ALL` 的全表扫描
+
+  ![1608713209852](E:\gitrepository\study\note\image\MySQL\1608713209852.png)
+
+* 首先给右表的 `card` 列建立索引，执行计划如下：可以看到 `type = ref`，使用了索引且级别为 `ref`
+
+  ![1608713404052](E:\gitrepository\study\note\image\MySQL\1608713404052.png)
+
+* 然后给左表的 `card` 列建立索引，删掉右表的索引，执行计划如下：可以看到 `type = index`，使用了索引且级别为 `index`
+
+  ![1608713710026](E:\gitrepository\study\note\image\MySQL\1608713710026.png)
+
+* <font color=red>结论：理论上来讲，`ref` 级别优于 `index` 级别，在存在 `JOIN` 连接的场景下，左连接给右表加索引，右连接给左表加索引</font>
+
+##### 3.4.3.2.3，三表优化
+
+* 依旧版本不一致，以演示为例说明问题
+
+* 对于一个三表非主键、非索引列关联SQL，执行计划如下，可以看到执行计划的两条都是 `type = ALL` 的全表扫描
+
+  ![1608715146329](E:\gitrepository\study\note\image\MySQL\1608715146329.png)
+
+* 给右表两个表全部加索引，执行计划如下：可以看到 `type = ref`，都使用了索引
+
+  ![1608715284620](E:\gitrepository\study\note\image\MySQL\1608715284620.png)
+
+* <font color=red>结论：减少 `JOIN` 语句中 `NestedLoop` 的循环总次数，永远使用小结果集驱动大结果及，即小表驱动大表；</font>
+* <font color=red>保证 `JOIN` 语句中被驱动表上 `JOIN` 条件字段已经被索引</font>
+
+#### 3.4.3.3，索引优化_索引失效
+
+* 全值匹配：尽量使用组合索引的所有字段进行条件查找。<font color=red>全值匹配我最爱</font>
+
+* 最左匹配：如果索引是组合索引，要遵守最左匹配法则。指的是从索引列的最左侧开始匹配，并且不能跳过中间列。<font color=red>带头大哥不能死，中间兄弟不能断</font>
+
+* 不在索引上做任何操作（计算、函数、（自动或者手动）类型转换），或导致索引失效而进行全表扫描：<font color=red>索引列上无计算</font>
+* 存储引擎中不能使用索引中范围条件右边的列：如果组合索引有三列，`where` 子句在匹配第二列时使用了范围语句，如 `>`、`<`、`IN` 等，则第三列会失去索引匹配。<font color=red>范围之后全失效</font>
+
+* 尽量使用覆盖索引，减少 `SELECT *`：索引列和查询列一致，会减少一次回表
+
+* MySQL在使用不等于时会无法使用索引
+
+* `IS NULL`，`IS NOT NULL` 也无法使用索引
+
+* `LIKE` 以通配符开头 `%|_xxxx`，MySQL索引会失效：<font color=red>如果 `where` 条件的字段与 `select` 查询的字段被某个覆盖索引 + 主键索引完全覆盖，此时无论通配符在什么位置，都可以匹配到索引，此处使用索引更多是从索引表中直接取数据</font>
+
+* 字符串不加单引号索引失效：底层会自动进行 `int` 类型到 `varchar` 类型的转换，引起自动类型转换；<font color = red>字符串里有引号</font>
+
+* 少用 `OR`，用来连接时索引会失效：
+
+### 3.4.4，索引优化面试题分析
+
+* 创建表并初始化数据
+
+  ```sql
+  -- 表创建
+  create table test (
+  	id int primary key auto_increment,
+  	c1 varchar(32),
+  	c2 varchar(32),
+  	c3 varchar(32),
+  	c4 varchar(32)
+  )
+  
+  -- 初始化数据
+  insert into test VALUES(null, 'c1', 'c2', 'c3', 'c4');
+  insert into test VALUES(null, 'c1', 'c2', 'c3', 'c4');
+  insert into test VALUES(null, 'c1', 'c2', 'c3', 'c4');
+  insert into test VALUES(null, 'c1', 'c2', 'c3', 'c4');
+  ```
+
+* 创建索引
+
+  ```sql
+  create index test_c1234 on test (c1, c2, c3, c4);
+  ```
+
+#### 3.4.4.1，SQL查询语句索引匹配情况分析
+
+![1608887515315](E:\gitrepository\study\note\image\MySQL\1608887515315.png)
+
+##### 3.4.4.1.1，全值顺序匹配
+
+* 可以看到使用了全索引，一个 `varchar(32)` 对应的 `key_len = 32 * 3 + 1 + 2 = 99`，匹配到索引的 `key_len = 396`，表示四个字段全部匹配到索引，即组合索引完全生效
+
+  ```sql
+  EXPLAIN SELECT * FROM TEST WHERE C1 = 'c1' AND C2 = 'c2' AND C3 = 'c3' AND C4 = 'c4';
+  ```
+
+  ![1608885465403](E:\gitrepository\study\note\image\MySQL\1608885465403.png)
+
+##### 3.4.4.1.2，全职乱序匹配
+
+* `and` 是并列关系，在执行SQL时，SQL优化器会对SQL语句进行重组，按最终执行顺序组合后提交执行，所以写的顺序对执行没影响
+
+  ```sql
+  EXPLAIN SELECT * FROM TEST WHERE C1 = 'c1' AND C2 = 'c2' AND C4 = 'c4' AND C3 = 'c3';
+  ```
+
+  ![1608885642798](E:\gitrepository\study\note\image\MySQL\1608885642798.png)
+
+##### 3.4.4.1.3，全职范围匹配
+
+* 在组合索引的 `C3` 列，也就是第三列位置断了，按照索引最左匹配原则，第四列不会走索引，索引只匹配到三个索引，`key_len = 297`；乱序结果一致，由优化器先进行优化
+
+  ```sql
+  EXPLAIN SELECT * FROM TEST WHERE C1 = 'c1' AND C2 = 'c2' AND C3 > 'c3'AND C4 = 'c4' ;
+  ```
+
+  ![1608885754073](E:\gitrepository\study\note\image\MySQL\1608885754073.png)
+
+##### 3.4.4.1.4，排序，组合索引不中断
+
+* 首先看索引长度引用 `key_len = 198`，引用了两列，也就是左侧两列；其次看 `Extra` 中的额外属性，并没有 `Using Filesort` 等字样，说明排序是走了索引；通过 `C1`，`C2` 列常量确定之后，基本 `ORDER BY` 后面的就可以理解为常量的 `C1`，常量的 `C2` 和变量的 `C3` 进行排序，是可以匹配到索引的；
+
+  ```sql
+  EXPLAIN SELECT * FROM TEST WHERE C1 = 'c1' AND C2 = 'c2' AND C4 = 'c4' ORDER BY C3;
+  ```
+
+  ![1608886023743](E:\gitrepository\study\note\image\MySQL\1608886023743.png)
+
+##### 3.4.4.1.5，排序，组合索引中断
+
+* 与上一个不同，这里最左匹配只匹配到了 `C1`，所以 `key_len = 99`；另外在排序时，因为索引中断了 `C2`，此时 `C2` 依旧是变量，无法利用索引进行排序，所以 `Extra` 中有 `Using Filesort` 字样，说明排序没有使用到索引
+
+  ```sql
+  EXPLAIN SELECT * FROM TEST WHERE C1 = 'c1' AND C4 = 'c4' ORDER BY C3;
+  ```
+
+  ![1608886098077](E:\gitrepository\study\note\image\MySQL\1608886098077.png)
+
+##### 3.4.4.1.6，排序，范围查找并排序
+
+* 范围查找后再排序，要考虑排序的字段是已经在 `where` 子句中的字段还是其他的索引字段；
+
+  * 如果是已经在 `where` 子句中索引字段，是可以匹配到索引进行排序的
+  * 如果是其他索引中的字段，此时不会匹配到索引排序
+
+  ```sql
+  EXPLAIN SELECT * FROM TEST WHERE C1 = 'c1' AND C2 > 'c2' ORDER BY C3;
+  ```
+
+  ![1608887074553](E:\gitrepository\study\note\image\MySQL\1608887074553.png)
+
+##### 3.4.4.1.7，多字段排序，顺序排序
+
+* 与索引不断的排序基本一致，使用到了常量的 `C1` 和变量的 `C2`，`C3` 进行排序，是可以匹配到索引的
+
+  ```sql
+  EXPLAIN SELECT * FROM TEST WHERE C1 = 'c1' AND C4 = 'c4' ORDER BY C2, C3;
+  ```
+
+  ![1608886386871](E:\gitrepository\study\note\image\MySQL\1608886386871.png)
+
+##### 3.4.4.1.8，多字段排序，乱序排序
+
+* 查询可以通过SQL优化器进行优化，因为 `and` 连接的是并行的，但是 `order by` 不是，`order by` 后如果随意调整顺序，是要影响输出结果的，所以乱序是不能匹配到索引的
+
+  ```sql
+  EXPLAIN SELECT * FROM TEST WHERE C1 = 'c1' AND C4 = 'c4' ORDER BY C3, C2;
+  ```
+
+  ![1608886524300](E:\gitrepository\study\note\image\MySQL\1608886524300.png)
+
+##### 3.4.4.1.9，字段常量查询并顺序排序
+
+* 在前一步的分析中，已经在单字段排序加上了基于常量的多字段的分析，对字段查询并排序，基本一致
+
+  ```sql
+  EXPLAIN SELECT * FROM TEST WHERE C1 = 'c1' AND C2 = 'c2' ORDER BY C2, C3;
+  ```
+
+  ![1608886814739](E:\gitrepository\study\note\image\MySQL\1608886814739.png)
+
+##### 3.4.4.1.10，字段常量查询并逆序排序
+
+* 与排序基本一致，逆序索引不生效
+
+  ```sql
+  EXPLAIN SELECT * FROM TEST WHERE C1 = 'c1' ORDER BY C3, C2;
+  ```
+
+  ![1608886909247](E:\gitrepository\study\note\image\MySQL\1608886909247.png)
+
+##### 3.4.4.1.11，数组分组，顺序索引
+
+* 分组与排序基本一致，顺序会匹配到索引进行分组处理
+
+  ```sql
+  EXPLAIN SELECT C2, C3 FROM TEST WHERE C1 = 'c1' GROUP BY C2, C3;
+  ```
+
+  ![1608887340647](E:\gitrepository\study\note\image\MySQL\1608887340647.png)
+
+##### 3.4.4.1.12，数组分组，乱序索引
+
+* 乱序不会匹配到索引，而且更可怕的是，排序只是出现了 `Using Filesort`，而分组出现了 `Using temporary; Using filesort`；<font color=red>`group by` 如果没有匹配到索引进行处理，会有临时表的产生</font>
+
+  ```sql
+  EXPLAIN SELECT C2, C3 FROM TEST WHERE C1 = 'c1' GROUP BY C3, C2;
+  ```
+
+  ![1608887370191](E:\gitrepository\study\note\image\MySQL\1608887370191.png)
+
+#### 3.4.4.2，索引优化的一般性建议
+
+* 对于单列索引，尽量选择针对当前查询过滤性最好的索引
+* 在选择组合索引的时候，当前查询中过滤性最好的字段在索引列顺序中，越靠前越好
+* 在选择组合索引的时候，尽量选择在当前查询的 `where` 子句中匹配字段最多的索引
+* 尽可能通过分析统计信息和调整查询的写法来达到选择合适索引的目的
+
+
+
+# 4，查询截取分析
+
