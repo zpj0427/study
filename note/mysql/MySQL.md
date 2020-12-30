@@ -817,7 +817,7 @@ END $
 ### 2.2.1，存储引擎查询语句
 
 ```sql
--- 查看当前数据库支持度额存储引擎
+-- 查看当前数据库支持的存储引擎
 SHOW ENGINES;
 -- 查看当前数据库的默认存储引擎和使用的存储引擎
 SHOW VARIABLES LIKE '%storage_engine%';
@@ -1354,3 +1354,454 @@ EXPLAIN SELECT DISTINCT A. NAME FROM GIRL A LEFT JOIN BOY B ON A.ID = B.GIRL_ID 
 
 # 4，查询截取分析
 
+## 4.1，查询优化
+
+### 4.1.1，小表驱动大表
+
+* <font color = red>小表驱动大表</font>：对于表A和表B，如果A表数据小于B表，使用A表关联B表时，`EXISTS` 比 `IN` 的性能更好
+
+  ```sql
+  SELECT * FROM A WHERE EXISTS (SELECT 1 FROM B WHERE B.ID = A.ID)
+  ```
+
+* <font color=red>大表驱动小表</font>：对于表A和表B，如果A表数据大于B表，使用A表关联B表时，`IN` 比 `EXISTS` 的性能更好
+
+  ```sql
+  SELECT * FROM A WHERE A.ID IN (SELECT ID FROM B);
+  ```
+
+### 4.1.2，`Order By` 关键字优化
+
+#### 4.1.2.1，`Index` 方式排序
+
+- `Order By` 子句，尽量使用 `Using Index` 方式排序，减少使用 `Using Filesort` 方式排序
+- MySQL支持两种方式的排序，`Filesort` 和 `Index`：`Index` 效率较高，是使用MySQL的索引完成排序；`Filesort` 效率低
+- `Order By` 满足两种情况，会使用 `Index` 排序：
+  - `Order By` 语句使用索引最左前列
+  - 使用 `where` 子句和 `Order By` 子句条件组合满足索引最左前列
+
+![1609147731900](E:\gitrepository\study\note\image\MySQL\1609147731900.png)
+
+##### 4.1.2.1.1，`Using Index` 方式示例
+
+* 创建表
+
+  ```sql
+  -- 表创建
+  CREATE TABLE `phone` (
+    `ID` int(11) NOT NULL AUTO_INCREMENT,
+    `AUTHOR_ID` int(11) NOT NULL,
+    `NUMBER` varchar(32) NOT NULL,
+    `NAME` varchar(32) NOT NULL,
+    PRIMARY KEY (`ID`),
+    KEY `phone_author` (`AUTHOR_ID`,`NUMBER`)
+  ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8
+  
+  -- 索引创建
+  create index phone_author on phone(author_id, number);
+  
+  -- 入库数据
+  insert into phone VALUES(null, 1, '1234', '1234'),(null, 2, '1234', '1234'),(null, 3, '1234', '1234'),(null, 4, '1234', '1234'),(null, 5, '1234', '1234'),(null, 6, '1234', '1234'),(null, 7, '1234', '1234'),(null, 8, '1234', '1234');
+  ```
+
+* 满足组合索引最左列的范围查找
+
+  * 此处注意一个问题：如果范围查找的结果值趋近与全表值，此处已经会使用 `Using Filesort`
+
+  ```sql
+  explain select * from phone where author_id > 7 order by author_id;
+  ```
+
+  ![1609145458231](E:\gitrepository\study\note\image\MySQL\1609145458231.png)
+
+* 满足组合索引的范围查找
+
+  ```sql
+  explain select * from phone where author_id > 7 order by author_id, number;
+  ```
+
+  ![1609145515261](E:\gitrepository\study\note\image\MySQL\1609145515261.png)
+
+* 不满足组合索引最左列范围查找
+
+  ```sql
+  explain select * from phone where author_id > 7 order by number;
+  ```
+
+  ![1609145555051](E:\gitrepository\study\note\image\MySQL\1609145555051.png)
+
+* 不满足组合索引顺序的范围查找
+
+  ```sql
+  explain select * from phone where author_id > 7 order by number, author_id;
+  ```
+
+  ![1609145583838](E:\gitrepository\study\note\image\MySQL\1609145583838.png)
+
+* 排序顺序不一致的满足索引的排序
+
+  * MySQL的排序默认走<font color=red>全顺序或者全逆序</font>，如果在组合索引中排序方式不一致，则会触发 `Using Filesort`
+
+  ```sql
+  explain select * from phone where author_id > 7 order by author_id, number desc;
+  ```
+
+  ![1609145654866](E:\gitrepository\study\note\image\MySQL\1609145654866.png)
+
+#### 4.1.2.2，`Filesort` 排序算法
+
+* 双路排序：在MySQL4.1之前使用双路排序，即先从磁盘中读取行指针和 `Order By` 列（第一路磁盘访问），在内存中进行排序后，按照排序后的行指针，重新从磁盘读取完整数据（第二路磁盘访问）；<font color=red>磁盘读数据是比较耗时的，考虑从双路排序到单路排序优化</font>
+* 单路排序：一次性从磁盘中取出需要查询和排序的所有的列，按照 `Order By` 条件在 `Buffer` 中进行排序，然后再扫描排序后的列表进行输出，避免了第二次的读取。但是在 `Buffer` 中排序，是典型的用空间换时间，需要消耗大量内存。
+* <font color=red>单路排序存在的问题：单路排序相比双路排序会消耗更多的 `sort_buffer` 空间，如果 `sort_buffer` 空间不足时，每一次从磁盘取数据最多只能取 `sort_buffer` 最大容量数据，并创建 `tmp` 文件进行合并排序。这样就可能会导致单路排序实际上可能需要更多次的IO交互，得不偿失</font>
+
+#### 4.1.2.3，优化策略
+
+* `Order By` 是只查询需要的字段
+  * 当查询的字段总和小于 `max_length_for_sort_data` 并且字段类型不是 `BLOB|TEXT` 类型时，会用改进后的算法：单路算法，否则依旧使用原始算法：双路算法
+  * 两种算法都有可能超过 `sort_buffer` 的限制，超出之后，会创建 `tmp` 临时文件进行合并排序，导致多次IO。相对而言，单路排序算法的风险更大一点，需要提高 `sort_buffer_size` 参数值得设置
+
+* 增大 `sort_buffer_size` 参数的设置，增大排序缓冲区：不管使用哪种算法，这个参数的值都必须按照实际情况设置；<font color=red>注意：该参数是针对每一个进程的，需要按照系统的实际承压能力进行调整</font>
+* 增大 `max_length_for_sort_data` 参数：提高该参数值，会增加用改进算法的概率。<font color=red>注意：该参数值应该与 `sort_buffer_size` 相匹配，如果设的过高，`sort_buffer_size` 溢出的概率就越大，造成多次IO</font>
+
+### 4.1.3，`group by` 关键字优化
+
+* `group by` 实质是先排序后进行分组，遵循索引建的最佳左前缀
+* 当无法使用索引列的时候，增大 `max_length_sort_for_data` 和 `sort_buffer_size` 参数的设置
+* `where` 高于 `having` 的执行顺序，能在 `where` 中限定的条件就不要在 `having` 中限定
+
+## 4.2，慢查询日志
+
+### 4.2.1，慢查询日志开启和基本分析
+
+* MySQL的慢查询日志是MySQL提供的一种日志记录，用来记录SQL执行时间超过阈值的语句；具体是指运行时间超过 `long_query_time = 10` 的SQL语句，会记录在慢查询日志中
+
+* 一般情况下，MySQL数据库没有开启慢查询日志，需要进行手动设置；如果不是调优需要的话，一般不开启该参数，会造成一定的性能影响；<font color=red>开启后只对当前进程生效，如果数据库重启后会失效</font>
+
+  ```sql
+  -- 查看开启状态
+  -- ON表示打开， OFF表示关闭
+  SHOW VARIABLES LIKE 'slow_query_log';
+  
+  -- 慢日志文件路径
+  SHOW VARIABLES LIKE 'slow_query_log_file';
+  ```
+
+* 如果需要永久修改该参数，需要修改 `my.ini` 配置文件，在 `mysqld` 模块添加语句
+
+  ```sql
+  slow_query_log = 1
+  slow_query_log_file = PATH
+  ```
+
+* 设置完成后，时间大于 `long_query_time = 10` 的SQL语句，会记录在慢查询日志中，日志路径参考 `slow_query_log_file`
+
+  ```sql
+  SHOW VARIABLES LIKE 'long_query_time'
+  ```
+
+* 模拟慢查询SQL语句，并且到文件夹进行分析
+
+  ```sql
+  -- 模拟慢查询日志，阈值提前从10秒修改为3秒
+  SET long_query_time = 3
+  -- 查询语句
+  select sleep(4);
+  ```
+
+  * 慢查询日志
+
+    ![1609149020535](E:\gitrepository\study\note\image\MySQL\1609149020535.png)
+
+* 查询触发了慢日志的SQL数量
+
+  ```sql
+  show global status like '%Slow_queries%'
+  ```
+
+* 配置文件配置：在 `my.ini` 的 `mysqld` 模块进行配置
+
+  ```sql
+  -- 开启慢日志
+  slow_query_log = 1
+  -- 配置慢日志路径
+  slow_query_log_file = PATH
+  -- 设置慢日志阈值
+  long_query_time = ?秒
+  log_output = FILE
+  ```
+
+### 4.2.2，慢日志分析工具：mysqldumpslow
+
+* LINUX系统下可以直接使用，Windows系统下是 `mysqldumpslow.pl` 文件，需要安装 `perl` 相关程序，没试
+
+* 相关命令
+
+  * `-s`：表示按照何种方式排序
+    * `c`：访问次数
+    * `l`：锁定时间
+    * `r`：返回记录
+    * `t`：查询时间
+    * `al`：平均锁定时间
+    * `ar`：平均返回记录数
+    * `at`：平均查询时间
+  * `-t`：返回前面多少条数据
+  * `-g`：搭配正则匹配模式，大小写不敏感
+
+* 大体使用方式
+
+  ```sql
+  -- 得到返回记录集最多的10个SQL
+  -- `-s r`：表示排序方式是按返回记录排序
+  -- `-t 10`：表示返回前面10条数据
+  -- `FILE_PAHT`：是慢日志路径
+  mysqldumpslow -s r -t 10 FILE_PATH;
+  
+  -- 返回访问次数最多的10条数据
+  mysqldumpslow -s c -t 10 FILE_PATH;
+  
+  -- 返回按照时间排序的前十条里面包含左连接的查询语句
+  mysqldumpslow -s t -t 10 -g "left join" FILE_PATH;
+  
+  -- 建议使用命令时搭配 `|` 和 `more` 使用，否则可能爆屏
+  mysqldumpslow -s r -t 10 FILE_PATH | more;
+  ```
+
+## 4.3，批量数据脚本_插入1000W条随机数据
+
+### 4.3.1，建表
+
+```sql
+-- 创建部门表
+CREATE TABLE DEPATMENT(
+	ID INT PRIMARY KEY AUTO_INCREMENT,
+	D_NUMBER INT NOT NULL,
+	D_NAME VARCHAR(256) NOT NULL
+)
+
+-- 创建员工表
+CREATE TABLE EMPLOYEE (
+	ID INT PRIMARY KEY AUTO_INCREMENT,
+	D_NUMBER INT NOT NULL,
+	E_NAME VARCHAR(256) NOT NULL
+)
+```
+
+### 4.3.2，创建自定义方法
+
+```sql
+-- 生成随机指定位数字符串
+DELIMITER $$
+CREATE FUNCTION random_str(count INT) RETURNS VARCHAR(256)
+BEGIN
+	DECLARE random_str_all VARCHAR(64) DEFAULT 'qwertyuioplkjhgfdsazxcvbnmQWERTYUIOPLKJHGFDSAZXCVBNM';
+	DECLARE return_str VARCHAR(256) DEFAULT '';
+	DECLARE curr_index INT DEFAULT '0';
+	WHILE curr_index < count DO
+		SET return_str = CONCAT(return_str,SUBSTR(random_str_all,FLOOR(1 + RAND() * 52), 1));
+		SET curr_index = curr_index + 1;
+	END WHILE;
+	return return_str;
+END $$
+DELIMITER ;
+
+-- 生成随机数字
+DELIMITER $$
+CREATE FUNCTION random_num() RETURNS INT
+BEGIN
+	DECLARE randomNum INT DEFAULT 0;
+	SET randomNum = FLOOR(100 + RAND() * 10);
+	return randomNum;
+END $$
+DELIMITER ;
+```
+
+### 4.3.3，批量插入存储过程
+
+```sql
+-- 插入员工表的存储过程
+DELIMITER $$
+CREATE PROCEDURE insert_employee(IN START INT, IN TOTAL_COUNT INT)
+BEGIN
+	DECLARE i INT DEFAULT 0;
+	REPEAT
+		SET i = i + 1;
+		INSERT INTO EMPLOYEE VALUES(START + i, random_num(), random_str(6));
+	UNTIL i = TOTAL_COUNT
+	END REPEAT;
+END $$
+DELIMITER ;
+
+-- 插入部门表的存储过程
+DELIMITER $$
+CREATE PROCEDURE insert_department(IN START INT, IN TOTAL_COUNT INT)
+BEGIN
+	DECLARE i INT DEFAULT 0;
+	REPEAT
+		SET i = i + 1;
+		INSERT INTO DEPATMENT VALUES(START + i, START + i, random_str(6));
+	UNTIL i = TOTAL_COUNT
+	END REPEAT;
+END $$
+DELIMITER ;
+```
+
+### 4.3.4，执行
+
+* 通过存储过程，插入1000万数据到员工表中，一次性插入过多可能会有影响，考虑分阶段插入，比如一次插入50万条，多插入几次
+
+  ```sql
+  -- 插入部门表，插入十条数据
+  CALL insert_department(100, 10);
+  -- 插入员工表，一次50万
+  CALL insert_employee(10000, 500000);
+  ```
+
+## 4.4，Show Profile_性能分析脚本
+
+* 是MySQL提供用来分析当前会话中语句执行的资源消耗情况，可以用于SQL调优的测量。该参数默认情况下处理管理状态，开启后可以保存最多15次的运行结果
+
+### 4.4.1，打开并查看执行记录
+
+```sql
+-- 查看属性状态
+SHOW VARIABLES LIKE 'profiling';
+-- 打开该属性
+SET profiling = 1;
+-- 如果需要持久化, 在 `my.ini` 的 [mysqld] 标签下加属性
+profiling = 1;
+-- 查看SQL执行记录
+SHOW profiles;
+```
+
+![1609216276410](E:\gitrepository\study\note\image\MySQL\1609216276410.png)
+
+### 4.4.2，诊断SQL_Profile分析
+
+```sql
+-- Query_ID 表示上一步查询的序列号, 下面截图是15的序列号
+-- CPU: 显示CPU消耗时间
+-- block io: 显示IP阻塞时间
+show profile cpu, block io for query Query_ID;
+```
+
+![1609216289509](E:\gitrepository\study\note\image\MySQL\1609216289509.png)
+
+### 4.4.3，Status 列异常情况
+
+* `Converting HEAP to MyISAM`：查询结果太大，内存不够用，动用了磁盘进行处理
+* `Creating Tmp Table`：创建临时表；拷贝数据到临时表，用完删除临时表 `removing tmp table`
+* `Copying to tmp table on disk`：把内存中临时表复制到磁盘，<font color=red>危险</font>
+* `locked`：锁表
+* <font color=red>在上面的分析中，可以看到出现了 `Creating tmp table`，有创建中间表。</font>
+
+## 4.5，全局查询日志
+
+* 开启之后，会对数据库的所有命令操作进行日志存储
+* <font color=red>永远不要在生产环境启用该功能</font>
+
+### 4.5.1，配置启用
+
+```sql
+-- windows 在 my.ini 的 [mysqld] 块里面加配置信息
+-- 开启
+general_log = 1
+-- 记录日志文件路径
+general_log_file = PATH
+-- 输入格式
+log_output = FILE
+```
+
+### 4.5.2，编码启用
+
+```sql
+-- 启用全局日志
+SET GLOBAL general_log = 1;
+-- 设置输出形式为表
+SET GLOBAL log_output = 'TABLE';
+-- 通过表形式查看日志
+SELECT * FROM mysq.general_log;
+```
+
+![1609224019004](E:\gitrepository\study\note\image\MySQL\1609224019004.png)
+
+
+
+# 5，锁
+
+## 5.1，表锁
+
+* <font color=red>表锁是MyISAM存储引擎默认的锁，MyISAM的读写锁调度是写锁优先，这也是MyISAM不适合做主表的引擎</font>
+
+### 5.1.1，表加锁及解锁
+
+```sql
+-- 加锁
+lock table TABLE_NAME [READ/WRITE], (...支持多个表操作);
+
+-- 解锁，一次性解锁全部表
+unlock tables;
+
+-- 查看加锁表
+-- In_Use为0表示未加锁，1表示被锁
+show open tables;
+```
+
+### 5.1.2，表锁_共享读锁
+
+| 操作         | 当前 Session | 其他 Session |
+| :----------- | ------------ | ------------ |
+| 加读锁表读取 | Y            | Y            |
+| 加读锁表操作 | N            | 阻塞         |
+| 未加锁表读取 | N            | Y            |
+| 未加锁表操作 | N            | Y            |
+
+### 5.1.3，表锁_独占写锁
+
+| 操作         | 当前 Session | 其他 Session |
+| :----------- | ------------ | ------------ |
+| 加写锁表读取 | Y            | 阻塞         |
+| 未加锁表读取 | N            | Y            |
+| 未加锁表操作 | N            | Y            |
+
+### 5.1.4，表锁性能分析
+
+```sql
+-- 查看表锁的两个关键状态
+show status like 'table%';
+```
+
+* `Table_locks_immediate`：产生表级锁定的次数，表示可以立即获取锁的查询次数，每立即获取一次锁值+1
+* `Table_locks_waited`：出现表级锁定争用而发生等待的次数（不能立即获取锁的次数，每出现一次+1），此值高则说明存在严重的表级锁争用情况
+
+## 5.2，事务
+
+* 偏向InnoDB存储引擎，开销大，加锁慢；会出现死锁；锁定粒度最小，发生索冲突的概率最低，并发度也最高
+* 相对于MyISAM，InnoDB<font color=red>支持事务，支持行锁</font>
+
+### 5.2.1，事务ACID属性
+
+* 原子性（Atomicity）：事务是一个原子操作单位，其对数据的修改，要么全都执行，要么全都不执行
+
+* 一致性（Consistent）：在事务开始和结束的时候，必须保持数据的一致性
+
+* 隔离性（Isolation）：数据库提供的隔离机制，保证事务在不受外部并发操作影响的独立环境执行
+
+* 持久性（Durable）：事务完成之后，对数据的修改是永久性的
+
+### 5.2.2，事务带来的问题
+
+* 更新丢失（Lost Update）：多个事务选择同一行数据进行处理，会由最后更新覆盖之前其他事务的更新
+* 脏读（Dirty Reads）：事务A读到了事务B已经修改但是尚未提交的数据
+* 幻读（Non-Repeatable Reads）：事务A读取到了事务B提交的新增数据，不符合隔离性
+* 不可重复读（Phantom Reads）：事务A读取一条数据后，再读取该数据，结果两次数据不一致，即读到了事务B提交的数据，不符合隔离性
+
+### 5.2.3，事务隔离级别
+
+| 隔离级别                                               | 读一致性                             | 脏读 | 不可重复读 | 幻读 |
+| ------------------------------------------------------ | ------------------------------------ | ---- | ---------- | ---- |
+| 未提交读（Read Uncommitted）                           | 最低级别，保证不读取物理上损坏的数据 | N    | N          | N    |
+| 已提交读（Read Committed）                             | 语句级                               | Y    | N          | N    |
+| <font color=red>可重复读（Repeatable Read）默认</font> | 事务级                               | Y    | Y          | N    |
+| 串行化（Serializable）                                 | 最高级别，事务级                     | Y    | Y          | Y    |
+
+## 5.3，行锁
