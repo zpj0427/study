@@ -1,4 +1,4 @@
-# 版本：Hadoop3.1.3
+版本：Hadoop3.1.3
 
 # 1，基础介绍
 
@@ -717,7 +717,7 @@ Hadoop104
 
 ##### 4.2.3.4.2，启动集群
 
-* <font color=red>如果集群是第一次启动：</font>需要在 `NameNode` 节点上先格式化 `NameNode`，注意：格式化 `NameNode`，会产生新的集群 id，导致 `NameNode` 和 `DataNode` 的集群 id 不一致，集群找不到已往数据。如果集群在运行过程中报错，需要重新格式化 `NameNode` 的话，一定要先停 止 `Namenode` 和 `Datanode` 进程，并且要删除所有机器的 `data` 和 `logs` 目录，然后再进行格式化。初始化成功字样如下截图
+* <font color=red>如果集群是第一次启动：</font>需要在 `NameNode` 节点上先格式化 `NameNode`，注意：格式化 `NameNode`，会产生新的集群 id，导致 `NameNode` 和 `DataNode` 的集群 id 不一致，集群找不到历史数据。如果集群在运行过程中报错，需要重新格式化 `NameNode` 的话，一定要先停 止 `Namenode` 和 `Datanode` 进程，并且要删除所有机器的 `data` 和 `logs` 目录，然后再进行格式化。初始化成功字样如下截图
 
   ```sh
   [root@Hadoop102 hadoop]# hdfs namenode -format
@@ -1677,6 +1677,31 @@ public void checkFile() throws Exception {
 }
 ```
 
+### 5.3.10，基于流的文件读写
+
+```java
+/**
+ * 以流的方式复制文件
+ */
+@Test
+public void copyFile() throws Exception {
+	Configuration configuration = new Configuration();
+	FileSystem fileSystem = FileSystem.get(new URI("hdfs://Hadoop102:8020"), configuration, "root");
+	// 以流的方式读文件
+	FSDataInputStream inputStream = fileSystem.open(new Path("/ant_1.3.4(1).zip"));
+	// 以流的方式写文件
+	FSDataOutputStream outputStream = fileSystem.create(new Path("/ant_1.3.4(2).zip"));
+	byte[] bytes = new byte[1024];
+	int len = 0;
+	for (;(len = inputStream.read(bytes)) != -1;) {
+		outputStream.write(bytes, 0, len);
+	}
+	outputStream.flush();
+	System.out.println("文件复制完成");
+	fileSystem.close();
+}
+```
+
 ## 5.4，`HDFS` 读写流程
 
 ### 5.4.1，`HDFS` 写数据流程
@@ -1741,3 +1766,275 @@ public void checkFile() throws Exception {
 
 ## 5.5，`NameNode` 和 `SecondaryNameNode`
 
+### 5.5.1，问题引入及思考
+
+> 思考：`NameNode` 的元数据存储在什么地方
+
+* 如果 `NameNode` 的元数据只存储在磁盘中，虽然数据安全性和可靠性有保证，但是需要经常进行随机访问，并相应请求到用户，效率过低；
+* 如果 `NameNode` 的元数据只存储在内存中，虽然数据处理效率较高，但是只要断电，必然存在数据丢失；
+* 在内存存储的基础上，进行数据持久化处理，<font color=red>因此产生了在磁盘中备份元数据的 `FSImage` 文件</font>，在读的时候，会提升系统的整体性能；
+* 此时又会引入新问题，当进行元数据操作时，如果同时更新 `FSImage` 文件，就会导致效率过低；如果不更新，又会造成数据不一致；
+* 因此，<font color=red>继续引入 `Edits` 文件（只进行数据追加，效率很高），</font>每当元数据存在操作时，修改内存中的元数据并添加操作状态到 `Edits` 文件中。这样，即时 `NameNode` 断电，也可以通过 `FSImage` 和 `Edits` 的合并，合成元数据
+* <font color=red>长时间添加数据到 `Edits` 文件中，必然导致文件过大，效率降低，而且一旦断电，数据恢复时间较长。因此，需要通过一定机制对 `FSImage` 和 `Edits` 文件进行合并，但是如果这个操作由 `NameNode` 来完成，又会影响 `NameNode` 效率。因此，引入一个新的节点 `SecondaryNameNode` 专门进行 `FSImage` 和 `Edits` 文件的合并。（具体合并机制下面再分析）</font>
+
+### 5.5.2，`NameNode` 和 `SecondaryNameNode` 工作机制
+
+* 黑色步骤为 `NameNode` 步骤，紫色步骤为 `SecondaryNameNode` 和 `NameNode` 交互步骤
+
+![1618989065673](E:\gitrepository\study\note\image\hadoop\1618989065673.png)
+
+#### 5.5.2.1，`NameNode` 启动阶段
+
+1. 第一次启动 `NameNode` 格式化后，创建 `FSImage` 和 `Edits` 文件。如果不是第一次启动，直接加载编辑日志和镜像文件到内存。
+2. 客户端对元数据进行增删改的请求
+3. `NameNode` 记录操作日志，更新滚动日志
+4. `NameNode` 对内存中的数据进行对应操作；<font color=red>此处一定注意是先操作日志，再修改内存；如果反过来，容易造成数据丢失</font>
+
+#### 5.5.2.2，`SecondaryNameNode` 工作机制
+
+1. `SecondaryNameNode` 询问`NameNode` 是否需要进行 `CheckPoint`，并直接带回 `NameNode` 的是否检查见过
+2. 在接收到需要时，`SecondaryNameNode` 再次访问 `NameNode` 请求执行 `CheckPoint`
+3. `NameNode` 创建新的 `Edits` 文件滚动正在写的操作日志
+4. 将之前的 `Edits` 编辑日志和 `FSImage` 镜像文件拷贝到 `SecondaryNameNode` 进行数据合并
+5. `SecondaryNameNode` 加载编辑日志和镜像文件到内存，进行合并
+6. `SecondaryNameNode` 合并数据文件完成后，生成新的文件 `FSImage.chkpoint`
+7. `SecondaryNameNode` 拷贝 `FSImage.chkpoint` 文件到 `NameNode`
+8. `NameNode` 将 `FSImage.chkpoint` 文件重新命名为 `fsimage`；<font color=red>此处注意，会有多个`fsimage` 文件，在文件名称上通过事务号进行区分，每一个 `fsimage` 文件表示该事务及之前事务的所有元数据</font>
+
+### 5.5.3，`CheckPoint` 时间设置及触发机制
+
+> `CheckPoint` 的触发机制在 `hdfs-default.xml` 文件中定义
+
+1. 通常情况下，`SecondaryNameNode` 每隔一小时执行一次 `CheckPoint`
+
+   ```xml
+   <property>
+     <name>dfs.namenode.checkpoint.period</name>
+     <value>3600s</value>
+     <description>
+       The number of seconds between two periodic checkpoints.
+       Support multiple time unit suffix(case insensitive), as described
+       in dfs.heartbeat.interval.
+     </description>
+   </property>
+   ```
+
+2. 再这一小时中，如果 `NameNode` 的 `Edits` 文件记录超过100W条，则会提前触发 `CheckPoint`
+
+   ```xml
+   <property>
+     <name>dfs.namenode.checkpoint.txns</name>
+     <value>1000000</value>
+     <description>The Secondary NameNode or CheckpointNode will create a checkpoint
+     of the namespace every 'dfs.namenode.checkpoint.txns' transactions, regardless
+     of whether 'dfs.namenode.checkpoint.period' has expired.
+     </description>
+   </property>
+   ```
+
+3. 超过100W条数据，`SecondaryNameNode` 的感知方式是在一定时间内询问一次 `NameNode`
+
+   ```xml
+   <property>
+     <name>dfs.namenode.checkpoint.check.period</name>
+     <value>60s</value>
+     <description>The SecondaryNameNode and CheckpointNode will poll the NameNode
+     every 'dfs.namenode.checkpoint.check.period' seconds to query the number
+     of uncheckpointed transactions. Support multiple time unit suffix(case insensitive),
+     as described in dfs.heartbeat.interval.
+     </description>
+   </property>
+   ```
+
+### 5.5.4，`FSImage` 和 `Edits` 文件解析
+
+> 先格式化集群并重启集群，在新的集群中进行文件查看
+>
+> 参考：[启动集群](#4.2.3.4.2，启动集群)
+
+#### 5.5.4.1，基本介绍
+
+```sh
+[root@Hadoop102 current]# pwd
+/opt/software/hadoop-3.1.3/data/dfs/name/current
+[root@Hadoop102 current]# ll
+总用量 1052
+-rw-r--r--. 1 root root     672 4月  21 15:43 edits_0000000000000000001-0000000000000000009
+-rw-r--r--. 1 root root 1048576 4月  21 15:49 edits_inprogress_0000000000000000010
+-rw-r--r--. 1 root root     388 4月  21 15:40 fsimage_0000000000000000000
+-rw-r--r--. 1 root root      62 4月  21 15:40 fsimage_0000000000000000000.md5
+-rw-r--r--. 1 root root     800 4月  21 15:43 fsimage_0000000000000000009
+-rw-r--r--. 1 root root      62 4月  21 15:43 fsimage_0000000000000000009.md5
+-rw-r--r--. 1 root root       3 4月  21 15:43 seen_txid
+-rw-r--r--. 1 root root     218 4月  21 15:40 VERSION
+```
+
+* 集群格式化完成后，在上图路径下，会生成不带 `Edits` 文件的文件列表，在集群启动成功后，`Edits` 文件生成
+
+* `FSImage` ：`HDFS` 文件系统的一个永久性检查点，其中包括 `HDFS` 文件系统的所有目录和文件 `inode` 的序列化信息；<font color=red>`FSImage` 文件会有多个，文件名称后面的数字序列表示事务号，一个 `FSImage` 文件所包含的数据，是这个事务号之前的所有数据</font>
+
+* `FSImage_XXXXX.md5`：存在对应的 `FSImage` 文件的 `MD5` 校验码
+
+* `Edits`：存放 `HDFS` 所有文件操作日志的文件，文件系统客户端所执行的所有写操作会首先存放在该文件中；<font color=red>`Edits` 文件分为两种，`edits_0000000000000000001-0000000000000000009` 表示已经经过 `CheckPoint` 的操作文件，该文件表示的操作区间是从事务1到事务9；`edits_inprogress_0000000000000000010` 是正在进行写操作还没被 `CheckPoint` 的操作文件，在下一次 `CheckPoint` 时会对该文件进行合并</font>
+
+* `VERSION`：表示集群年代
+
+* `seen_txid`：表示一个数字，即最后一个 `edits` 文件的数字
+
+  ```sh
+  [root@Hadoop102 current]# cat seen_txid 
+  10
+  [root@Hadoop102 current]# cat VERSION 
+  #Wed Apr 21 15:40:11 CST 2021
+  namespaceID=112460551
+  clusterID=CID-b80780bc-a497-41fb-a341-831e52b15640
+  cTime=1618990811261
+  storageType=NAME_NODE
+  blockpoolID=BP-1519557071-192.168.10.102-1618990811261
+  layoutVersion=-64
+  ```
+
+* 在 `hdfs` 中定义了对 `FSImage` 和 `Edits` 文件的基本访问方式，具体如下
+
+  ```sh
+  [root@Hadoop102 current]# hdfs | grep "apply"
+  oev                  apply the offline edits viewer to an edits file
+  oiv                  apply the offline fsimage viewer to an fsimage
+  oiv_legacy           apply the offline fsimage viewer to a legacy fsimage
+  [root@Hadoop102 current]# hdfs oiv -h
+  Usage: bin/hdfs oiv [OPTIONS] -i INPUTFILE -o OUTPUTFILE
+  [root@Hadoop102 current]# hdfs oev -h
+  Usage: bin/hdfs oev [OPTIONS] -i INPUT_FILE -o OUTPUT_FILE
+  ```
+
+#### 5.5.4.2，`FSImage` 文件查看
+
+1. 查看命令
+
+   ```sh
+   # -p 文件类型：表示通过什么样的文件形式查看，如XML
+   # -i INPUTFILE：指定 FSImage 文件
+   # -o OUTPUTFILE：转换后的 XML 文件的输出路径
+   hdfs oiv -p 文件类型 -i INPUTFILE -o OUTPUTFILE
+   ```
+
+2. 文件转换并输出，从下图中大体可以看到文件名称、文件目录结构等信息；<font color=red>`FSImage` 文件中会存储文件的分块信息，但并不会存储文件具体在哪个块，又 `DataNode` 上线后具体上报文件块信息</font>
+
+   ```sh
+   [root@Hadoop102 current]# hdfs oiv -p XML -i ./fsimage_0000000000000000009 -o /opt/software/fsimage1.xml
+   ```
+
+   ![1618992376838](E:\gitrepository\study\note\image\hadoop\1618992376838.png)
+
+#### 5.5.4.3，`Edits` 文件查看
+
+1. 查看命令
+
+   ```sh
+   # -p 文件类型：表示通过什么样的文件形式查看，如XML
+   # -i INPUTFILE：指定 Edits 文件
+   # -o OUTPUTFILE：转换后的 XML 文件的输出路径 
+   hdfs oev -p 文件类型 -i INPUT_FILE -o OUTPUT_FILE
+   ```
+
+2. 文件转换并输出，从截图中大致可以看出存在几个文件夹创建，但是在 `FSImage` 中并没有对这些文件夹的记录，说明该 `Edists` 文件还没有被合并
+
+   ```sh
+   [root@Hadoop102 current]# hdfs oev -p XML -i ./edits_inprogress_0000000000000000010 -o /opt/software/edits.xml
+   ```
+
+   ![1618992560011](E:\gitrepository\study\note\image\hadoop\1618992560011.png)
+
+3. 再输出一个已经被合并过的 `Edits` 文件，可以看到相关操作文件在 `FSImages` 的截图中存在
+
+   ```sh
+   [root@Hadoop102 current]# hdfs oev -p XML -i ./edits_0000000000000000001-0000000000000000009 -o /opt/software/edits.xml
+   ```
+
+   ![1618992688825](E:\gitrepository\study\note\image\hadoop\1618992688825.png)
+
+## 5.6，`DataNode` 
+
+### 5.6.1，`DataNode` 工作机制
+
+![1618999061462](E:\gitrepository\study\note\image\hadoop\1618999061462.png)
+
+* 一个数据块在 `DataNode` 上以文件形式存储在磁盘上，包括两个文件：一个文件是数据本身；一个文件是元数据包括数据块的长度、块数据的校验和、以及块数据的时间戳
+
+  ![1618999196679](E:\gitrepository\study\note\image\hadoop\1618999196679.png)
+
+1. `DataNode` 启动后先向 `NameNode` 注册，通过后，周期性（6小时）的向 `NameNode` 上报所有的块信息
+
+   * `DataNode` 向 `NameNode` 上报默认六小时
+
+     ```xml
+     <property>
+       <name>dfs.blockreport.intervalMsec</name>
+       <value>21600000</value>
+       <description>Determines block reporting interval in milliseconds.</description>
+     </property>
+     ```
+
+   * `DataNode` 扫描自身块信息，默认六小时
+
+     ```xml
+     <property>
+       <name>dfs.datanode.directoryscan.interval</name>
+       <value>21600s</value>
+       <description>Interval in seconds for Datanode to scan data directories and
+       reconcile the difference between blocks in memory and on the disk.
+       Support multiple time unit suffix(case insensitive), as described
+       in dfs.heartbeat.interval.
+       </description>
+     </property>
+     ```
+
+2. `NameNode` 和 `DataNode` 存在3s周期的心跳检测，心跳返回结果带有 `NameNode` 给该 `DataNode` 的命令如复制块数据到另一台机器，或删除某个数据块。如果超过10分钟没有收到某个 `DataNode` 的心跳，则认为该节点不可用
+3. 集群运行过程中可以安全的加入和退出一些机器
+
+### 5.6.2，`DataNode` 数据完整性校验
+
+> `DataNode` 上的数据可能存在损坏，损坏后没有发现对数据安全性是比较危险的，`DataNode` 通过对元数据进行 `crc` 计算，来确保数据安全性
+
+![1618999623987](E:\gitrepository\study\note\image\hadoop\1618999623987.png)
+
+* 当 `Client` 读取某台 `DataNode` 上的 `Block` 的数据时，会计算数据的 `CheckSum`
+* 如果 `CheckSum` 值与当初存储时不一致，则说明该文件已经损坏
+* `Client` 会读取其他 `DataNode` 上的 `Block`
+* 常见的校验算法包括 `crc(32)`，`MD5(128)`，`shal(160)`
+* `DataNode` 在文件创建后会周期性的校验 `CheckSum`
+
+### 5.6.3，掉线时限参数设置
+
+![1618999789313](E:\gitrepository\study\note\image\hadoop\1618999789313.png)
+
+* 默认配置信息
+
+  ```xml
+  <!-- 心跳检测时间 -->
+  <property>
+    <name>dfs.heartbeat.interval</name>
+    <value>3s</value>
+    <description>
+      Determines datanode heartbeat interval in seconds.
+      Can use the following suffix (case insensitive):
+      ms(millis), s(sec), m(min), h(hour), d(day)
+      to specify the time (such as 2s, 2m, 1h, etc.).
+      Or provide complete number in seconds (such as 30 for 30 seconds).
+    </description>
+  </property>
+  
+  <!-- DataNode断连超时时间设置 -->
+  <property>
+    <name>dfs.namenode.heartbeat.recheck-interval</name>
+    <value>300000</value>
+    <description>
+      This time decides the interval to check for expired datanodes.
+      With this value and dfs.heartbeat.interval, the interval of
+      deciding the datanode is stale or not is also calculated.
+      The unit of this configuration is millisecond.
+    </description>
+  </property>
+  ```
+
+  

@@ -17,8 +17,8 @@
       <file leaf-file-name="HDFSTestAPI.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/com/hadoop/hdfs/quickstart/HDFSTestAPI.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-3080">
-              <caret line="75" column="29" lean-forward="false" selection-start-line="75" selection-start-column="29" selection-end-line="75" selection-end-column="29" />
+            <state relative-caret-position="220">
+              <caret line="186" column="0" lean-forward="false" selection-start-line="186" selection-start-column="0" selection-end-line="205" selection-end-column="5" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -26,137 +26,22 @@
           </provider>
         </entry>
       </file>
+      <file leaf-file-name="FSDataInputStream.java" pinned="false" current-in-tab="false">
+        <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-common/3.1.3/hadoop-common-3.1.3-sources.jar!/org/apache/hadoop/fs/FSDataInputStream.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="297">
+              <caret line="9" column="2" lean-forward="true" selection-start-line="9" selection-start-column="2" selection-end-line="9" selection-end-column="2" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
       <file leaf-file-name="FileSystem.java" pinned="false" current-in-tab="false">
         <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-common/3.1.3/hadoop-common-3.1.3-sources.jar!/org/apache/hadoop/fs/FileSystem.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="68442">
-              <caret line="2177" column="43" lean-forward="false" selection-start-line="2177" selection-start-column="26" selection-end-line="2177" selection-end-column="43" />
-              <folding>
-                <element signature="e#0#149118#0" expanded="false" />
-                <element signature="imports" expanded="false" />
-                <element signature="e#9390#9391#0" expanded="false" />
-                <element signature="e#9445#9446#0" expanded="false" />
-                <element signature="e#9669#9670#0" expanded="false" />
-                <element signature="e#9724#9725#0" expanded="false" />
-                <element signature="e#11863#11864#0" expanded="false" />
-                <element signature="e#11905#11906#0" expanded="false" />
-                <element signature="e#13013#13014#0" expanded="false" />
-                <element signature="e#13031#13032#0" expanded="false" />
-                <element signature="e#22781#22782#0" expanded="false" />
-                <element signature="e#22802#22803#0" expanded="false" />
-                <element signature="e#24948#24949#0" expanded="false" />
-                <element signature="e#24969#24970#0" expanded="false" />
-                <element signature="e#65913#65914#0" expanded="false" />
-                <element signature="e#65942#65943#0" expanded="false" />
-                <element signature="e#67405#67406#0" expanded="false" />
-                <element signature="e#67433#67434#0" expanded="false" />
-                <element signature="e#67465#67466#0" expanded="false" />
-                <element signature="e#67491#67492#0" expanded="false" />
-                <element signature="e#67523#67524#0" expanded="false" />
-                <element signature="e#67551#67552#0" expanded="false" />
-                <element signature="e#76387#76388#0" expanded="false" />
-                <element signature="e#76426#76427#0" expanded="false" />
-                <element signature="e#77303#77304#0" expanded="false" />
-                <element signature="e#77333#77334#0" expanded="false" />
-                <element signature="e#82387#82388#0" expanded="false" />
-                <element signature="e#82408#82409#0" expanded="false" />
-                <element signature="e#91313#91314#0" expanded="false" />
-                <element signature="e#91351#91352#0" expanded="false" />
-                <element signature="e#91901#91902#0" expanded="false" />
-                <element signature="e#91941#91942#0" expanded="false" />
-                <element signature="e#96411#96412#0" expanded="false" />
-                <element signature="e#96433#96434#0" expanded="false" />
-                <element signature="e#125665#125666#0" expanded="false" />
-                <element signature="e#125752#125753#0" expanded="false" />
-                <element signature="e#125804#125805#0" expanded="false" />
-                <element signature="e#125865#125866#0" expanded="false" />
-                <element signature="e#126348#126349#0" expanded="false" />
-                <element signature="e#126427#126428#0" expanded="false" />
-                <element signature="e#129690#129691#0" expanded="false" />
-                <element signature="e#129724#129725#0" expanded="false" />
-                <element signature="e#129763#129764#0" expanded="false" />
-                <element signature="e#129800#129801#0" expanded="false" />
-                <element signature="e#129833#129834#0" expanded="false" />
-                <element signature="e#129865#129866#0" expanded="false" />
-                <element signature="e#129903#129904#0" expanded="false" />
-                <element signature="e#129940#129941#0" expanded="false" />
-                <element signature="e#129974#129975#0" expanded="false" />
-                <element signature="e#130007#130008#0" expanded="false" />
-                <element signature="e#130052#130053#0" expanded="false" />
-                <element signature="e#130095#130096#0" expanded="false" />
-                <element signature="e#130149#130150#0" expanded="false" />
-                <element signature="e#130201#130202#0" expanded="false" />
-                <element signature="e#130258#130259#0" expanded="false" />
-                <element signature="e#130313#130314#0" expanded="false" />
-                <element signature="e#130371#130372#0" expanded="false" />
-                <element signature="e#130427#130428#0" expanded="false" />
-                <element signature="e#132633#132634#0" expanded="false" />
-                <element signature="e#132673#132674#0" expanded="false" />
-                <element signature="e#132708#132709#0" expanded="false" />
-                <element signature="e#132741#132742#0" expanded="false" />
-                <element signature="e#133373#133374#0" expanded="false" />
-                <element signature="e#133402#133403#0" expanded="false" />
-                <element signature="e#135333#135334#0" expanded="false" />
-                <element signature="e#135390#135391#0" expanded="false" />
-                <element signature="e#135568#135569#0" expanded="false" />
-                <element signature="e#135628#135629#0" expanded="false" />
-                <element signature="e#135785#135786#0" expanded="false" />
-                <element signature="e#135837#135838#0" expanded="false" />
-                <element signature="e#136011#136012#0" expanded="false" />
-                <element signature="e#136068#136069#0" expanded="false" />
-                <element signature="e#136228#136229#0" expanded="false" />
-                <element signature="e#136281#136282#0" expanded="false" />
-                <element signature="e#138157#138158#0" expanded="false" />
-                <element signature="e#138206#138207#0" expanded="false" />
-                <element signature="e#138241#138242#0" expanded="false" />
-                <element signature="e#138279#138280#0" expanded="false" />
-                <element signature="e#138594#138595#0" expanded="false" />
-                <element signature="e#138649#138650#0" expanded="false" />
-                <element signature="e#138684#138685#0" expanded="false" />
-                <element signature="e#138725#138726#0" expanded="false" />
-                <element signature="e#139187#139188#0" expanded="false" />
-                <element signature="e#139223#139224#0" expanded="false" />
-                <element signature="e#139615#139616#0" expanded="false" />
-                <element signature="e#139670#139671#0" expanded="false" />
-                <element signature="e#139708#139709#0" expanded="false" />
-                <element signature="e#139749#139750#0" expanded="false" />
-                <element signature="e#140114#140115#0" expanded="false" />
-                <element signature="e#140161#140162#0" expanded="false" />
-                <element signature="e#140199#140200#0" expanded="false" />
-                <element signature="e#140236#140237#0" expanded="false" />
-                <element signature="e#141653#141654#0" expanded="false" />
-                <element signature="e#141688#141689#0" expanded="false" />
-                <element signature="e#141733#141734#0" expanded="false" />
-                <element signature="e#141765#141766#0" expanded="false" />
-                <element signature="e#142016#142017#0" expanded="false" />
-                <element signature="e#142053#142054#0" expanded="false" />
-                <element signature="e#142090#142091#0" expanded="false" />
-                <element signature="e#142135#142136#0" expanded="false" />
-                <element signature="e#143278#143279#0" expanded="false" />
-                <element signature="e#143315#143316#0" expanded="false" />
-                <element signature="e#143636#143637#0" expanded="false" />
-                <element signature="e#143663#143664#0" expanded="false" />
-                <element signature="e#143738#143739#0" expanded="false" />
-                <element signature="e#143773#143774#0" expanded="false" />
-                <element signature="e#144460#144461#0" expanded="false" />
-                <element signature="e#144518#144519#0" expanded="false" />
-                <element signature="e#145317#145318#0" expanded="false" />
-                <element signature="e#145403#145404#0" expanded="false" />
-                <element signature="e#145561#145562#0" expanded="false" />
-                <element signature="e#145611#145612#0" expanded="false" />
-                <element signature="e#146200#146201#0" expanded="false" />
-                <element signature="e#146232#146233#0" expanded="false" />
-                <element signature="e#146294#146295#0" expanded="false" />
-                <element signature="e#146326#146327#0" expanded="false" />
-                <element signature="e#146828#146829#0" expanded="false" />
-                <element signature="e#146892#146893#0" expanded="false" />
-                <element signature="e#147016#147017#0" expanded="false" />
-                <element signature="e#147065#147066#0" expanded="false" />
-                <element signature="e#147352#147353#0" expanded="false" />
-                <element signature="e#147386#147387#0" expanded="false" />
-                <element signature="e#148296#148297#0" expanded="false" />
-                <element signature="e#148321#148322#0" expanded="false" />
-              </folding>
+            <state relative-caret-position="33">
+              <caret line="123" column="8" lean-forward="true" selection-start-line="123" selection-start-column="8" selection-end-line="123" selection-end-column="8" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -242,8 +127,8 @@
     </navigator>
     <panes>
       <pane id="PackagesPane" />
-      <pane id="Scratches" />
       <pane id="Scope" />
+      <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -344,33 +229,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="JUnit.HDFSTestAPI.checkFile">
-    <configuration default="false" name="HDFSTestAPI.download" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
-      <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea">
-        <pattern>
-          <option name="PATTERN" value="com.hadoop.hdfs.quickstart.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <module name="mybigdata" />
-      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
-      <option name="ALTERNATIVE_JRE_PATH" />
-      <option name="PACKAGE_NAME" value="com.hadoop.hdfs.quickstart" />
-      <option name="MAIN_CLASS_NAME" value="com.hadoop.hdfs.quickstart.HDFSTestAPI" />
-      <option name="METHOD_NAME" value="download" />
-      <option name="TEST_OBJECT" value="method" />
-      <option name="VM_PARAMETERS" value="-ea" />
-      <option name="PARAMETERS" />
-      <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
-      <option name="ENV_VARIABLES" />
-      <option name="PASS_PARENT_ENVS" value="true" />
-      <option name="TEST_SEARCH_SCOPE">
-        <value defaultName="singleModule" />
-      </option>
-      <envs />
-      <patterns />
-      <method />
-    </configuration>
+  <component name="RunManager" selected="JUnit.HDFSTestAPI.copyFile">
     <configuration default="false" name="HDFSTestAPI.renameAndMove" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea">
         <pattern>
@@ -462,6 +321,32 @@
       <option name="PACKAGE_NAME" value="com.hadoop.hdfs.quickstart" />
       <option name="MAIN_CLASS_NAME" value="com.hadoop.hdfs.quickstart.HDFSTestAPI" />
       <option name="METHOD_NAME" value="checkFile" />
+      <option name="TEST_OBJECT" value="method" />
+      <option name="VM_PARAMETERS" value="-ea" />
+      <option name="PARAMETERS" />
+      <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
+      <option name="ENV_VARIABLES" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <option name="TEST_SEARCH_SCOPE">
+        <value defaultName="singleModule" />
+      </option>
+      <envs />
+      <patterns />
+      <method />
+    </configuration>
+    <configuration default="false" name="HDFSTestAPI.copyFile" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea">
+        <pattern>
+          <option name="PATTERN" value="com.hadoop.hdfs.quickstart.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <module name="mybigdata" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" />
+      <option name="PACKAGE_NAME" value="com.hadoop.hdfs.quickstart" />
+      <option name="MAIN_CLASS_NAME" value="com.hadoop.hdfs.quickstart.HDFSTestAPI" />
+      <option name="METHOD_NAME" value="copyFile" />
       <option name="TEST_OBJECT" value="method" />
       <option name="VM_PARAMETERS" value="-ea" />
       <option name="PARAMETERS" />
@@ -863,19 +748,19 @@
       <method />
     </configuration>
     <list size="5">
-      <item index="0" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.download" />
-      <item index="1" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.renameAndMove" />
-      <item index="2" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.delete" />
-      <item index="3" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.showDetails" />
-      <item index="4" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.checkFile" />
+      <item index="0" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.renameAndMove" />
+      <item index="1" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.delete" />
+      <item index="2" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.showDetails" />
+      <item index="3" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.checkFile" />
+      <item index="4" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.copyFile" />
     </list>
     <recent_temporary>
       <list size="5">
-        <item index="0" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.checkFile" />
-        <item index="1" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.showDetails" />
-        <item index="2" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.delete" />
-        <item index="3" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.renameAndMove" />
-        <item index="4" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.download" />
+        <item index="0" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.copyFile" />
+        <item index="1" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.checkFile" />
+        <item index="2" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.showDetails" />
+        <item index="3" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.delete" />
+        <item index="4" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.renameAndMove" />
       </list>
     </recent_temporary>
   </component>
@@ -895,15 +780,16 @@
       <workItem from="1617699834555" duration="5402000" />
       <workItem from="1617762533658" duration="3082000" />
       <workItem from="1617866948438" duration="1461000" />
+      <workItem from="1618901479739" duration="1438000" />
     </task>
     <servers />
   </component>
   <component name="TestHistory">
-    <history-entry file="HDFSTestAPI_checkFile - 2021.04.07 at 11h 09m 50s.xml">
-      <configuration name="HDFSTestAPI.checkFile" configurationId="JUnit" />
+    <history-entry file="HDFSTestAPI_copyFile - 2021.04.20 at 15h 02m 54s.xml">
+      <configuration name="HDFSTestAPI.copyFile" configurationId="JUnit" />
     </history-entry>
-    <history-entry file="HDFSTestAPI_delete - 2021.04.07 at 10h 37m 03s.xml">
-      <configuration name="HDFSTestAPI.delete" configurationId="JUnit" />
+    <history-entry file="HDFSTestAPI_copyFile - 2021.04.20 at 15h 03m 21s.xml">
+      <configuration name="HDFSTestAPI.copyFile" configurationId="JUnit" />
     </history-entry>
     <history-entry file="HDFSTestAPI_delete - 2021.04.07 at 10h 37m 36s.xml">
       <configuration name="HDFSTestAPI.delete" configurationId="JUnit" />
@@ -931,7 +817,7 @@
     </history-entry>
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="14945000" />
+    <option name="totallyTimeSpent" value="16383000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
@@ -940,18 +826,19 @@
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Nl-Palette" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.29129463" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Palette&#9;" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Image Layers" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Capture Analysis" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32995737" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.43080357" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32254463" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Properties" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Capture Tool" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.26332623" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.26599148" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -963,7 +850,6 @@
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.29129463" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.20535715" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
@@ -998,133 +884,26 @@
     <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-common/3.1.3/hadoop-common-3.1.3-sources.jar!/org/apache/hadoop/fs/FileSystem.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="71841">
-          <caret line="2177" column="43" lean-forward="true" selection-start-line="2177" selection-start-column="26" selection-end-line="2177" selection-end-column="43" />
+          <caret line="2177" column="43" lean-forward="false" selection-start-line="2177" selection-start-column="26" selection-end-line="2177" selection-end-column="43" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/com/hadoop/hdfs/quickstart/HDFSTestAPI.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
-            <element signature="e#0#149118#0" expanded="false" />
-            <element signature="imports" expanded="false" />
-            <element signature="e#9390#9391#0" expanded="false" />
-            <element signature="e#9445#9446#0" expanded="false" />
-            <element signature="e#9669#9670#0" expanded="false" />
-            <element signature="e#9724#9725#0" expanded="false" />
-            <element signature="e#11863#11864#0" expanded="false" />
-            <element signature="e#11905#11906#0" expanded="false" />
-            <element signature="e#13013#13014#0" expanded="false" />
-            <element signature="e#13031#13032#0" expanded="false" />
-            <element signature="e#22781#22782#0" expanded="false" />
-            <element signature="e#22802#22803#0" expanded="false" />
-            <element signature="e#24948#24949#0" expanded="false" />
-            <element signature="e#24969#24970#0" expanded="false" />
-            <element signature="e#65913#65914#0" expanded="false" />
-            <element signature="e#65942#65943#0" expanded="false" />
-            <element signature="e#67405#67406#0" expanded="false" />
-            <element signature="e#67433#67434#0" expanded="false" />
-            <element signature="e#67465#67466#0" expanded="false" />
-            <element signature="e#67491#67492#0" expanded="false" />
-            <element signature="e#67523#67524#0" expanded="false" />
-            <element signature="e#67551#67552#0" expanded="false" />
-            <element signature="e#76387#76388#0" expanded="false" />
-            <element signature="e#76426#76427#0" expanded="false" />
-            <element signature="e#77303#77304#0" expanded="false" />
-            <element signature="e#77333#77334#0" expanded="false" />
-            <element signature="e#82387#82388#0" expanded="false" />
-            <element signature="e#82408#82409#0" expanded="false" />
-            <element signature="e#91313#91314#0" expanded="false" />
-            <element signature="e#91351#91352#0" expanded="false" />
-            <element signature="e#91901#91902#0" expanded="false" />
-            <element signature="e#91941#91942#0" expanded="false" />
-            <element signature="e#96411#96412#0" expanded="false" />
-            <element signature="e#96433#96434#0" expanded="false" />
-            <element signature="e#125665#125666#0" expanded="false" />
-            <element signature="e#125752#125753#0" expanded="false" />
-            <element signature="e#125804#125805#0" expanded="false" />
-            <element signature="e#125865#125866#0" expanded="false" />
-            <element signature="e#126348#126349#0" expanded="false" />
-            <element signature="e#126427#126428#0" expanded="false" />
-            <element signature="e#129690#129691#0" expanded="false" />
-            <element signature="e#129724#129725#0" expanded="false" />
-            <element signature="e#129763#129764#0" expanded="false" />
-            <element signature="e#129800#129801#0" expanded="false" />
-            <element signature="e#129833#129834#0" expanded="false" />
-            <element signature="e#129865#129866#0" expanded="false" />
-            <element signature="e#129903#129904#0" expanded="false" />
-            <element signature="e#129940#129941#0" expanded="false" />
-            <element signature="e#129974#129975#0" expanded="false" />
-            <element signature="e#130007#130008#0" expanded="false" />
-            <element signature="e#130052#130053#0" expanded="false" />
-            <element signature="e#130095#130096#0" expanded="false" />
-            <element signature="e#130149#130150#0" expanded="false" />
-            <element signature="e#130201#130202#0" expanded="false" />
-            <element signature="e#130258#130259#0" expanded="false" />
-            <element signature="e#130313#130314#0" expanded="false" />
-            <element signature="e#130371#130372#0" expanded="false" />
-            <element signature="e#130427#130428#0" expanded="false" />
-            <element signature="e#132633#132634#0" expanded="false" />
-            <element signature="e#132673#132674#0" expanded="false" />
-            <element signature="e#132708#132709#0" expanded="false" />
-            <element signature="e#132741#132742#0" expanded="false" />
-            <element signature="e#133373#133374#0" expanded="false" />
-            <element signature="e#133402#133403#0" expanded="false" />
-            <element signature="e#135333#135334#0" expanded="false" />
-            <element signature="e#135390#135391#0" expanded="false" />
-            <element signature="e#135568#135569#0" expanded="false" />
-            <element signature="e#135628#135629#0" expanded="false" />
-            <element signature="e#135785#135786#0" expanded="false" />
-            <element signature="e#135837#135838#0" expanded="false" />
-            <element signature="e#136011#136012#0" expanded="false" />
-            <element signature="e#136068#136069#0" expanded="false" />
-            <element signature="e#136228#136229#0" expanded="false" />
-            <element signature="e#136281#136282#0" expanded="false" />
-            <element signature="e#138157#138158#0" expanded="false" />
-            <element signature="e#138206#138207#0" expanded="false" />
-            <element signature="e#138241#138242#0" expanded="false" />
-            <element signature="e#138279#138280#0" expanded="false" />
-            <element signature="e#138594#138595#0" expanded="false" />
-            <element signature="e#138649#138650#0" expanded="false" />
-            <element signature="e#138684#138685#0" expanded="false" />
-            <element signature="e#138725#138726#0" expanded="false" />
-            <element signature="e#139187#139188#0" expanded="false" />
-            <element signature="e#139223#139224#0" expanded="false" />
-            <element signature="e#139615#139616#0" expanded="false" />
-            <element signature="e#139670#139671#0" expanded="false" />
-            <element signature="e#139708#139709#0" expanded="false" />
-            <element signature="e#139749#139750#0" expanded="false" />
-            <element signature="e#140114#140115#0" expanded="false" />
-            <element signature="e#140161#140162#0" expanded="false" />
-            <element signature="e#140199#140200#0" expanded="false" />
-            <element signature="e#140236#140237#0" expanded="false" />
-            <element signature="e#141653#141654#0" expanded="false" />
-            <element signature="e#141688#141689#0" expanded="false" />
-            <element signature="e#141733#141734#0" expanded="false" />
-            <element signature="e#141765#141766#0" expanded="false" />
-            <element signature="e#142016#142017#0" expanded="false" />
-            <element signature="e#142053#142054#0" expanded="false" />
-            <element signature="e#142090#142091#0" expanded="false" />
-            <element signature="e#142135#142136#0" expanded="false" />
-            <element signature="e#143278#143279#0" expanded="false" />
-            <element signature="e#143315#143316#0" expanded="false" />
-            <element signature="e#143636#143637#0" expanded="false" />
-            <element signature="e#143663#143664#0" expanded="false" />
-            <element signature="e#143738#143739#0" expanded="false" />
-            <element signature="e#143773#143774#0" expanded="false" />
-            <element signature="e#144460#144461#0" expanded="false" />
-            <element signature="e#144518#144519#0" expanded="false" />
-            <element signature="e#145317#145318#0" expanded="false" />
-            <element signature="e#145403#145404#0" expanded="false" />
-            <element signature="e#145561#145562#0" expanded="false" />
-            <element signature="e#145611#145612#0" expanded="false" />
-            <element signature="e#146200#146201#0" expanded="false" />
-            <element signature="e#146232#146233#0" expanded="false" />
-            <element signature="e#146294#146295#0" expanded="false" />
-            <element signature="e#146326#146327#0" expanded="false" />
-            <element signature="e#146828#146829#0" expanded="false" />
-            <element signature="e#146892#146893#0" expanded="false" />
-            <element signature="e#147016#147017#0" expanded="false" />
-            <element signature="e#147065#147066#0" expanded="false" />
-            <element signature="e#147352#147353#0" expanded="false" />
-            <element signature="e#147386#147387#0" expanded="false" />
-            <element signature="e#148296#148297#0" expanded="false" />
-            <element signature="e#148321#148322#0" expanded="false" />
+            <element signature="imports" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-common/3.1.3/hadoop-common-3.1.3-sources.jar!/org/apache/hadoop/fs/FileSystem.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="71841">
+          <caret line="2177" column="43" lean-forward="true" selection-start-line="2177" selection-start-column="26" selection-end-line="2177" selection-end-column="43" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -1225,6 +1004,29 @@
         </state>
       </provider>
     </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-common/3.1.3/hadoop-common-3.1.3.jar!/org/apache/hadoop/fs/FileSystem.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="266">
+          <caret line="605" column="28" lean-forward="false" selection-start-line="605" selection-start-column="28" selection-end-line="605" selection-end-column="28" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-common/3.1.3/hadoop-common-3.1.3-sources.jar!/org/apache/hadoop/fs/FSDataInputStream.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="297">
+          <caret line="9" column="2" lean-forward="true" selection-start-line="9" selection-start-column="2" selection-end-line="9" selection-end-column="2" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-common/3.1.3/hadoop-common-3.1.3-sources.jar!/org/apache/hadoop/fs/FileSystem.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="33">
+          <caret line="123" column="8" lean-forward="true" selection-start-line="123" selection-start-column="8" selection-end-line="123" selection-end-column="8" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/resources/hdfs-default.xml">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="198">
@@ -1233,150 +1035,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-common/3.1.3/hadoop-common-3.1.3.jar!/org/apache/hadoop/fs/FileSystem.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="266">
-          <caret line="605" column="28" lean-forward="false" selection-start-line="605" selection-start-column="28" selection-end-line="605" selection-end-column="28" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-common/3.1.3/hadoop-common-3.1.3-sources.jar!/org/apache/hadoop/fs/FileSystem.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="68442">
-          <caret line="2177" column="43" lean-forward="false" selection-start-line="2177" selection-start-column="26" selection-end-line="2177" selection-end-column="43" />
-          <folding>
-            <element signature="e#0#149118#0" expanded="false" />
-            <element signature="imports" expanded="false" />
-            <element signature="e#9390#9391#0" expanded="false" />
-            <element signature="e#9445#9446#0" expanded="false" />
-            <element signature="e#9669#9670#0" expanded="false" />
-            <element signature="e#9724#9725#0" expanded="false" />
-            <element signature="e#11863#11864#0" expanded="false" />
-            <element signature="e#11905#11906#0" expanded="false" />
-            <element signature="e#13013#13014#0" expanded="false" />
-            <element signature="e#13031#13032#0" expanded="false" />
-            <element signature="e#22781#22782#0" expanded="false" />
-            <element signature="e#22802#22803#0" expanded="false" />
-            <element signature="e#24948#24949#0" expanded="false" />
-            <element signature="e#24969#24970#0" expanded="false" />
-            <element signature="e#65913#65914#0" expanded="false" />
-            <element signature="e#65942#65943#0" expanded="false" />
-            <element signature="e#67405#67406#0" expanded="false" />
-            <element signature="e#67433#67434#0" expanded="false" />
-            <element signature="e#67465#67466#0" expanded="false" />
-            <element signature="e#67491#67492#0" expanded="false" />
-            <element signature="e#67523#67524#0" expanded="false" />
-            <element signature="e#67551#67552#0" expanded="false" />
-            <element signature="e#76387#76388#0" expanded="false" />
-            <element signature="e#76426#76427#0" expanded="false" />
-            <element signature="e#77303#77304#0" expanded="false" />
-            <element signature="e#77333#77334#0" expanded="false" />
-            <element signature="e#82387#82388#0" expanded="false" />
-            <element signature="e#82408#82409#0" expanded="false" />
-            <element signature="e#91313#91314#0" expanded="false" />
-            <element signature="e#91351#91352#0" expanded="false" />
-            <element signature="e#91901#91902#0" expanded="false" />
-            <element signature="e#91941#91942#0" expanded="false" />
-            <element signature="e#96411#96412#0" expanded="false" />
-            <element signature="e#96433#96434#0" expanded="false" />
-            <element signature="e#125665#125666#0" expanded="false" />
-            <element signature="e#125752#125753#0" expanded="false" />
-            <element signature="e#125804#125805#0" expanded="false" />
-            <element signature="e#125865#125866#0" expanded="false" />
-            <element signature="e#126348#126349#0" expanded="false" />
-            <element signature="e#126427#126428#0" expanded="false" />
-            <element signature="e#129690#129691#0" expanded="false" />
-            <element signature="e#129724#129725#0" expanded="false" />
-            <element signature="e#129763#129764#0" expanded="false" />
-            <element signature="e#129800#129801#0" expanded="false" />
-            <element signature="e#129833#129834#0" expanded="false" />
-            <element signature="e#129865#129866#0" expanded="false" />
-            <element signature="e#129903#129904#0" expanded="false" />
-            <element signature="e#129940#129941#0" expanded="false" />
-            <element signature="e#129974#129975#0" expanded="false" />
-            <element signature="e#130007#130008#0" expanded="false" />
-            <element signature="e#130052#130053#0" expanded="false" />
-            <element signature="e#130095#130096#0" expanded="false" />
-            <element signature="e#130149#130150#0" expanded="false" />
-            <element signature="e#130201#130202#0" expanded="false" />
-            <element signature="e#130258#130259#0" expanded="false" />
-            <element signature="e#130313#130314#0" expanded="false" />
-            <element signature="e#130371#130372#0" expanded="false" />
-            <element signature="e#130427#130428#0" expanded="false" />
-            <element signature="e#132633#132634#0" expanded="false" />
-            <element signature="e#132673#132674#0" expanded="false" />
-            <element signature="e#132708#132709#0" expanded="false" />
-            <element signature="e#132741#132742#0" expanded="false" />
-            <element signature="e#133373#133374#0" expanded="false" />
-            <element signature="e#133402#133403#0" expanded="false" />
-            <element signature="e#135333#135334#0" expanded="false" />
-            <element signature="e#135390#135391#0" expanded="false" />
-            <element signature="e#135568#135569#0" expanded="false" />
-            <element signature="e#135628#135629#0" expanded="false" />
-            <element signature="e#135785#135786#0" expanded="false" />
-            <element signature="e#135837#135838#0" expanded="false" />
-            <element signature="e#136011#136012#0" expanded="false" />
-            <element signature="e#136068#136069#0" expanded="false" />
-            <element signature="e#136228#136229#0" expanded="false" />
-            <element signature="e#136281#136282#0" expanded="false" />
-            <element signature="e#138157#138158#0" expanded="false" />
-            <element signature="e#138206#138207#0" expanded="false" />
-            <element signature="e#138241#138242#0" expanded="false" />
-            <element signature="e#138279#138280#0" expanded="false" />
-            <element signature="e#138594#138595#0" expanded="false" />
-            <element signature="e#138649#138650#0" expanded="false" />
-            <element signature="e#138684#138685#0" expanded="false" />
-            <element signature="e#138725#138726#0" expanded="false" />
-            <element signature="e#139187#139188#0" expanded="false" />
-            <element signature="e#139223#139224#0" expanded="false" />
-            <element signature="e#139615#139616#0" expanded="false" />
-            <element signature="e#139670#139671#0" expanded="false" />
-            <element signature="e#139708#139709#0" expanded="false" />
-            <element signature="e#139749#139750#0" expanded="false" />
-            <element signature="e#140114#140115#0" expanded="false" />
-            <element signature="e#140161#140162#0" expanded="false" />
-            <element signature="e#140199#140200#0" expanded="false" />
-            <element signature="e#140236#140237#0" expanded="false" />
-            <element signature="e#141653#141654#0" expanded="false" />
-            <element signature="e#141688#141689#0" expanded="false" />
-            <element signature="e#141733#141734#0" expanded="false" />
-            <element signature="e#141765#141766#0" expanded="false" />
-            <element signature="e#142016#142017#0" expanded="false" />
-            <element signature="e#142053#142054#0" expanded="false" />
-            <element signature="e#142090#142091#0" expanded="false" />
-            <element signature="e#142135#142136#0" expanded="false" />
-            <element signature="e#143278#143279#0" expanded="false" />
-            <element signature="e#143315#143316#0" expanded="false" />
-            <element signature="e#143636#143637#0" expanded="false" />
-            <element signature="e#143663#143664#0" expanded="false" />
-            <element signature="e#143738#143739#0" expanded="false" />
-            <element signature="e#143773#143774#0" expanded="false" />
-            <element signature="e#144460#144461#0" expanded="false" />
-            <element signature="e#144518#144519#0" expanded="false" />
-            <element signature="e#145317#145318#0" expanded="false" />
-            <element signature="e#145403#145404#0" expanded="false" />
-            <element signature="e#145561#145562#0" expanded="false" />
-            <element signature="e#145611#145612#0" expanded="false" />
-            <element signature="e#146200#146201#0" expanded="false" />
-            <element signature="e#146232#146233#0" expanded="false" />
-            <element signature="e#146294#146295#0" expanded="false" />
-            <element signature="e#146326#146327#0" expanded="false" />
-            <element signature="e#146828#146829#0" expanded="false" />
-            <element signature="e#146892#146893#0" expanded="false" />
-            <element signature="e#147016#147017#0" expanded="false" />
-            <element signature="e#147065#147066#0" expanded="false" />
-            <element signature="e#147352#147353#0" expanded="false" />
-            <element signature="e#147386#147387#0" expanded="false" />
-            <element signature="e#148296#148297#0" expanded="false" />
-            <element signature="e#148321#148322#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/com/hadoop/hdfs/quickstart/HDFSTestAPI.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-3080">
-          <caret line="75" column="29" lean-forward="false" selection-start-line="75" selection-start-column="29" selection-end-line="75" selection-end-column="29" />
+        <state relative-caret-position="220">
+          <caret line="186" column="0" lean-forward="false" selection-start-line="186" selection-start-column="0" selection-end-line="205" selection-end-column="5" />
           <folding>
             <element signature="imports" expanded="true" />
           </folding>

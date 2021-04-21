@@ -184,4 +184,25 @@ public class HDFSTestAPI {
          }
     }
 
+    /**
+     * 以流的方式复制文件
+     */
+    @Test
+    public void copyFile() throws Exception {
+        Configuration configuration = new Configuration();
+        FileSystem fileSystem = FileSystem.get(new URI("hdfs://Hadoop102:8020"), configuration, "root");
+        // 以流的方式读文件
+        FSDataInputStream inputStream = fileSystem.open(new Path("/ant_1.3.4(1).zip"));
+        // 以流的方式写文件
+        FSDataOutputStream outputStream = fileSystem.create(new Path("/ant_1.3.4(2).zip"));
+        byte[] bytes = new byte[1024];
+        int len = 0;
+        for (;(len = inputStream.read(bytes)) != -1;) {
+            outputStream.write(bytes, 0, len);
+        }
+        outputStream.flush();
+        System.out.println("文件复制完成");
+        fileSystem.close();
+    }
+
 }
