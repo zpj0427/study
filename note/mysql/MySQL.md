@@ -23,7 +23,7 @@ QUERY SQL;
 
 #### 1.1.1.2，视图修改
 
-##### 1.1.1.2.1，Merge方式修改
+##### 1.1.1.2.1，`Merge` 方式修改
 
 ```sql
 CREATE OR REPLACE VIEW view_name
@@ -34,7 +34,7 @@ QUERY SQL；
 * 这种方式类似于Merge语句，与视图创建语句基本一致，只是增加了 `REPLACE` 部分
 * 当视图不存在时候，按指定语句创建该视图；当视图存在时，按指定语句修改该视图的执行语句
 
-##### 1.1.1.2.2，Alter方式
+##### 1.1.1.2.2，`ALTER` 方式
 
 ```sql
 ALTER VIEW view_name
@@ -127,13 +127,13 @@ SELECT * FORM view_name WHERE XXX
   * FROM 一个不能更新的视图（视图权限控制）
 
     ```sql
-    -- 从上一步中取一个不能额更新的视图，作为QUERY SQL，进行新视图创建
+    -- 从上一步中取一个不能更新的视图，作为QUERY SQL，进行新视图创建
     CREATE VIEW view_name
     AS
     SELECT * FROM exists_view_name
     ```
 
-  * WHERE 子句中的子查询应用了 FROM 字句中的表
+  * WHERE 子句中的子查询应用了 FROM 子句中的表
 
     ```sql
     CREATE VIEW view_name
