@@ -11,17 +11,25 @@ import java.io.FileOutputStream;
 public class Client {
 
     public static void main(String[] args) throws Exception {
-        ProxyFactory proxyFactory = new ProxyFactory(new TargetProxy());
+        // 先创建一个目标类对象
+        TargetProxy targetProxy = new TargetProxy();
+        // 构建自定义的代理工厂, 并且把目标对象传递到工厂中
+        ProxyFactory proxyFactory = new ProxyFactory(targetProxy);
+        // 在工厂中进行代理对象构建
         IProxy instance = (IProxy) proxyFactory.getInstance();
         instance.realMethod("JDK动态代理");
         // com.sun.proxy.$Proxy0
         System.out.println(instance.getClass().getName());
+
+
+
+
         // 打印出Proxy文件
-        byte[] bytes = ProxyGenerator.generateProxyClass("$Proxy0", TargetProxy.class.getInterfaces());
-        FileOutputStream fileOutputStream = new FileOutputStream("F:\\$Proxy0.class");
-        fileOutputStream.write(bytes);
-        fileOutputStream.flush();
-        fileOutputStream.close();
+//        byte[] bytes = ProxyGenerator.generateProxyClass("$Proxy0", TargetProxy.class.getInterfaces());
+//        FileOutputStream fileOutputStream = new FileOutputStream("F:\\$Proxy0.class");
+//        fileOutputStream.write(bytes);
+//        fileOutputStream.flush();
+//        fileOutputStream.close();
     }
 
 }

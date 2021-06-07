@@ -2038,3 +2038,782 @@ public void copyFile() throws Exception {
   ```
 
   
+
+# 6，MapReduce
+
+## 6.1，`MapReduce` 概述
+
+### 6.1.1，`MapReduce` 定义
+
+* `MapReduce` 是一个<font color=red>分布式运算程序</font>的编程框架，是用户开发“基于`Hadoop`数据分析应用”的核心框架
+* `MapReduce` 核心是将 <font color=red>用户编写的业务逻辑代码和自带默认组件</font>整合成一个完成的<font color=red>分布式运算程序</font>，并发运行在一个 `Hadoop` 集群上
+
+### 6.1.2，`MapReduce` 优缺点
+
+1. 优点
+   * **MapReduce 易于编程**：<font color=red>它简单的实现一些接口，就可以完成一个分布式程序</font>，这个分布式程序可以分布到大量廉价的 PC 机器上运行。也就是说你写一个分布式程序，跟写一个简单的串行程序是一模一样的。就是因为这个特点使得 `MapReduce` 编程变得非常流行。
+   * **良好的扩展性**：当你的计算资源不能得到满足的时候，你可以通过<font color=red>简单的增加机器</font>来扩展它的计算能力。
+   * **高容错性**：`MapReduce` 设计的初衷就是使程序能够部署在廉价的 PC 机器上，这就要求它具有很高的容错性。比如其中一台机器挂了，它可以把上面的计算任务转移到另外一个节点上运行，不至于这个任务运行失败，而且这个过程不需要人工参与，而完全是由 `Hadoop` 内部完成的。
+   * **适合 PB 级以上海量数据的离线处理**：可以实现上千台服务器集群并发工作，提供数据处理能力。
+2. 缺点
+   * **不擅长实时计算**：`MapReduce` 无法像 `MySQL` 一样，在毫秒或者秒级内返回结果。
+   * **不擅长流式计算**：<font color=red>流式计算的输入数据是动态的，而 `MapReduce` 的输入数据集是静态的，不能动态变化</font>。这是因为 `MapReduce` 自身的设计特点决定了数据源必须是静态的。
+   * **不擅长 DAG（有向无环图）计算**：`DAG` 是指多个应用程序存在依赖关系，后一个应用程序的输入为前一个的输出。在这种情况下， `MapReduce` 并不是不能做，而是使用后，<font color=red>每个 `MapReduce` 作业的输出结果都会写入到磁盘， 会造成大量的磁盘 IO，导致性能非常的低下。</font> 
+
+### 6.1.3，`MapReduce` 核心思想
+
+![1622086857246](E:\gitrepository\study\note\image\hadoop\1622086857246.png)
+
+* 分布式的运算程序需要分成至少两个步骤：`Map` 阶段和 `Reduce` 阶段
+* `Map` 阶段：`MapTask` 并发实例，完全并行运行，互不相干
+* `Reduce` 阶段：`ReduceTask` 并发实例互不相干，但是运算数据依赖于上一个 `MapTask` 阶段生成的数据
+* `MapReduce` 模型包含一个 `Map` 阶段和一个 `Reduce` 阶段，如果业务逻辑非常复杂，需要多个 `MapReduce` 程序，则将前一个 `MapReduce` 的计算结果作为后一个 `MapReduce` 的源数据，串行执行。<font color=red>`MapReduce` 可以进行这种操作，但是不擅长，`MapReduce` 数据交互是基于磁盘的，耗时较大</font>
+
+### 6.1.4，`MapReduce` 进程
+
+> 一个完整的 `MapReduce` 程序在分布式运行时有三类实例进程：
+
+* `MrAppMaster`：负责整个程序的过程调度以及状态协调
+
+* `MapTask`：负责 `Map` 阶段整个数据处理流程
+* `ReduceTask`：负责 `Reduce` 阶段整个数据处理流程
+
+## 6.2，`QuickStart` - `WordCount`
+
+### 6.2.1，官方 `WordCount` 源码
+
+* 源码路径：`/opt/software/hadoop-3.1.3/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.1.3.jar`
+
+* 通过 `jd-gui` 反编译软件编译jar包，取出 `org.apache.hadoop.examples.WordCount` 类文件：
+
+  * 从文件中可以看到，`WrodCount` 类由三个类构成：
+  *  `WordCount` 主类：用于进行全流程控制
+  * `TokenizerMapper` 类：继承自 `Mapper` 类，用于进行数据计算
+  * `IntSumReducer` 类：继承自 `Reducer` 类，用于进行数据汇总
+
+  ```java
+  package org.apache.hadoop.examples;
+  
+  import java.io.IOException;
+  import java.util.Iterator;
+  import java.util.StringTokenizer;
+  import org.apache.hadoop.conf.Configuration;
+  import org.apache.hadoop.fs.Path;
+  import org.apache.hadoop.io.IntWritable;
+  import org.apache.hadoop.io.Text;
+  import org.apache.hadoop.mapreduce.Job;
+  import org.apache.hadoop.mapreduce.Mapper;
+  import org.apache.hadoop.mapreduce.Reducer;
+  import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+  import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+  import org.apache.hadoop.util.GenericOptionsParser;
+  
+  public class WordCount {
+  
+      public static void main(String[] args) throws Exception {
+          Configuration conf = new Configuration();
+          String[] otherArgs = (new GenericOptionsParser(conf, args)).getRemainingArgs();
+          if(otherArgs.length < 2) {
+              System.err.println("Usage: wordcount <in> [<in>...] <out>");
+              System.exit(2);
+          }
+          Job job = Job.getInstance(conf, "word count");
+          job.setJarByClass(WordCount.class);
+          job.setMapperClass(WordCount.TokenizerMapper.class);
+          job.setCombinerClass(WordCount.IntSumReducer.class);
+          job.setReducerClass(WordCount.IntSumReducer.class);
+          job.setOutputKeyClass(Text.class);
+          job.setOutputValueClass(IntWritable.class);
+          for(int i = 0; i < otherArgs.length - 1; ++i) {
+              FileInputFormat.addInputPath(job, new Path(otherArgs[i]));
+          }
+          FileOutputFormat.setOutputPath(job, new Path(otherArgs[otherArgs.length - 1]));
+          System.exit(job.waitForCompletion(true)?0:1);
+      }
+  
+  	// Reducer<KEYIN, VALUEIN, KEYOUT, VALUEOUT>
+  	// Reducer<Text, IntWritable, Text, IntWritable>
+  	// 前两个泛型表示入参的 <K, V>
+  	// 后两个泛型表示出参的 <K, V>
+  	// Reduce的入参是Map的出参
+      public static class IntSumReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+          private IntWritable result = new IntWritable();
+  
+          public void reduce(Text key, Iterable<IntWritable> values, Reducer<Text, IntWritable, Text, IntWritable>.Context context) throws IOException, InterruptedException {
+              int sum = 0;
+              IntWritable val;
+              for(Iterator var5 = values.iterator(); var5.hasNext(); sum += val.get()) {
+                  val = (IntWritable)var5.next();
+              }
+              this.result.set(sum);
+              context.write(key, this.result);
+          }
+      }
+  
+  	// Mapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT>
+  	// Mapper<Object, Text, Text, IntWritable>
+  	// 前两个泛型表示入参的 <K, V>
+  	// 后两个泛型表示出参的 <K, V>
+      public static class TokenizerMapper extends Mapper<Object, Text, Text, IntWritable> {
+          private static final IntWritable one = new IntWritable(1);
+          private Text word = new Text();
+  
+          public void map(Object key, Text value, Mapper<Object, Text, Text, IntWritable>.Context context) throws IOException, InterruptedException {
+              StringTokenizer itr = new StringTokenizer(value.toString());
+              while(itr.hasMoreTokens()) {
+                  this.word.set(itr.nextToken());
+                  context.write(this.word, one);
+              }
+          }
+      }
+  }
+  ```
+
+### 6.2.2，`Hadoop` 常用数据序列化类型
+
+![1622101298174](E:\gitrepository\study\note\image\hadoop\1622101298174.png)
+
+### 6.2.3，`MapReduce` 编程规范
+
+1. `Mapper` 阶段
+   * 用户自定义的 `Mapper` 需要继承自父类 `org.apache.hadoop.mapreduce.Mapper`
+   * `Mapper` 输入的数据是 <K, V> 对的形式（K V类型可自定义）
+   * `Mapper` 中的业务逻辑写在 `map()` 中
+   * `Mapper` 输出的数据是 <K, V> 对的形式（K V类型可自定义）
+   * <font color=red>`map()` 方法（`MapTask`进程）对每一个 <K, V> 调用一次（WordCount的一个 <K, V> 表示一行数据，并对每一行每一个读到的单词记录为1）</font>
+
+2. `Reduce` 阶段
+   * 定义自定义的 `Reduce` 需要继承自父类 `org.apache.hadoop.mapreduce.Reducer`
+   * `Reduce` 的输入数据类型对应 `Mapper` 的输出数据类型，也是 <K, V>
+   * `Reduce` 的业务逻辑写在 `reduce()` 方法中
+   * <font color=red>`ReduceTask` 进程对每一组相同 K 的 <K, V> 组调用一次 `reduce()` 方法</font>
+
+3. `Driver` 方法
+   * 相当于 `Yarn` 集群的客户端，用于提交整个程序到 `Yarn` 集群，提交的是封装了 `MapRedcue` 程序相关运行参数的 `org.apache.hadoop.mapreduce.Job` 对象
+
+### 6.2.4，`WordCount` 案例实操
+
+#### 6.2.4.1，需求分析
+
+![1622109635884](E:\gitrepository\study\note\image\hadoop\1622109635884.png)
+
+1. 输入数据：如上图，输入一个文本文件，文本文件由若干个单词组成
+2. 输出数据：如上图，最终数据以文件形式输出，输出每一个单词在文件中出现的次数，并最终按字符顺序排序输出
+3. 代码编写：参考官方的 `WordCount` 案例，应该包含 `Mappeer` 类，`Reduce` 类，`Driver` 类三个类，其中：
+   * `Mapper` 类负责计算，拆分出文件中每一个单词（此处不汇总），对每一个单词进行 <K, V> 记录，K表示该单词，V表示出现了1次，因为不汇总，默认记录为1
+   * `Reduce` 类负责计算结果汇总，在 `Mapper` 中只是对每一个单词进行拆分，做了初始记录；在 `Reduce` 中按 K 进行汇总，以预订形式进行结果汇总
+   * `Driver` 类进行整体调度，包括上图的八个步骤，并最终输入数据结果到指定路径
+
+#### 6.2.4.2，代码实现
+
+1. 创建 Maven 工程
+
+2. 在 `pom.xml` 文件中引入依赖
+
+   ```xml
+   <dependencies>
+   	<dependency>
+   		<groupId>junit</groupId>
+   		<artifactId>junit</artifactId>
+   		<version>4.11</version>
+   	</dependency>
+   	<dependency>
+   		<groupId>org.apache.hadoop</groupId>
+   		<artifactId>hadoop-client</artifactId>
+   		<version>3.1.3</version>
+   	</dependency>
+   	<dependency>
+   		<groupId>org.slf4j</groupId>
+   		<artifactId>slf4j-log4j12</artifactId>
+   		<version>1.7.30</version>
+   	</dependency>
+   </dependencies>
+   ```
+
+3. 编写 `Mapper` 文件
+
+   ```java
+   package com.hadoop.mapreduce.wordcount;
+   
+   import org.apache.commons.lang3.StringUtils;
+   import org.apache.commons.lang3.Validate;
+   import org.apache.hadoop.io.IntWritable;
+   import org.apache.hadoop.io.LongWritable;
+   import org.apache.hadoop.io.Text;
+   import org.apache.hadoop.mapreduce.Mapper;
+   
+   import java.io.IOException;
+   
+   /**
+    * Mapper 计算类
+    *
+    * 泛型参数解析:
+    * KEYIN, VALUEIN, KEYOUT, VALUEOUT
+    * LongWritable, Text, Text, IntWritable
+    * * 前两个表示入参的 <K, V>类型, 后两个表示出参的<K, V> 类型
+    * * 按照需求, 以文本文档的形式输入文件进行计算, 在Mapper中最终输出解析的单词和次数(次数默认为1)
+    * * LongWritable: 入参K, 表示文本文件中该行文本的偏移索引
+    * * Text: 入参V, 以字符串的形式读取每一行数据
+    * * Text: 出参K, 计算完成后, 将单词作为K输出
+    * * IntWritable: 出参V, 在 Mapper 阶段, 不做汇总, 每一个单词都会输出, 无论重复, 默认为1
+    * 最终, Mapper 出参的<K, V>会作为Reduce入参的<K, V>继续进行汇总计算
+    *
+    * @author PJ_ZHANG
+    * @create 2021-05-27 18:08
+    **/
+   public class WordCountMapper extends Mapper<LongWritable, Text, Text, IntWritable> {
+   
+       private Text text = new Text();
+   
+       private IntWritable one = new IntWritable(1);
+   
+       /**
+        * Mapper阶段, map(..)方法调用的基本单位为行
+        * 即文本文件的每一行会调用一次map文件
+        * 该行中可能存在多个单词, 需要通过空格拆分处理(简单操作)
+        *
+        * @param key 当前行在文件中的位置偏移索引
+        * @param value 当前行的内容
+        * @param context 上下文数据
+        * @throws IOException
+        * @throws InterruptedException
+        */
+       @Override
+       protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+           if (StringUtils.isEmpty(value.toString())) {
+               return;
+           }
+           String valueStr = value.toString();
+           String[] valueArr = valueStr.split(" ");
+           for (String str : valueArr) {
+               text.set(str);
+               // 写到context中, 作为出参
+               // 因为每一个单词都会统计, 所以对于每一个单词, 都默认出现了一次
+               // 会在后续Mapper中进行汇总
+               context.write(text, one);
+           }
+       }
+   }
+   ```
+
+4. 编写 `Reduce` 文件
+
+   ```java
+   package com.hadoop.mapreduce.wordcount;
+   
+   import org.apache.hadoop.io.IntWritable;
+   import org.apache.hadoop.io.Text;
+   import org.apache.hadoop.mapreduce.Reducer;
+   
+   import java.io.IOException;
+   
+   /**
+    * Reduce汇总节点
+    * 参数解析:
+    * KEYIN,VALUEIN,KEYOUT,VALUEOUT
+    * Text, IntWritable, Text, IntWritable
+    * * 首先: Mapper的出参对应Reduce的入参, 则前两个参数确定
+    * * 按照需求分析, 最终是以<单词, 出现次数>的形式输出,
+    * * 所以输出key为Text, 输出value为IntWritable
+    *
+    * @author PJ_ZHANG
+    * @create 2021-05-27 18:18
+    **/
+   public class WordCountReduce extends Reducer<Text, IntWritable, Text, IntWritable> {
+   
+       private IntWritable intWritable = new IntWritable();
+   
+       /**
+        * Reduce调用该方法时, 是以每一组调用一次
+        * Mapper中对每一个单词进行记录, 如: Hello出现了三次, 则在Mapper会写三个<Hello, 1>
+        * 在Reduce的前面步骤处理中, 会先对重复key进行汇总, 处理为<K, List<V>>的形式
+        * 在调用一次reduce(..)方法时, 是对每一组汇总后的key的统一处理
+        *
+        * @param key Mapper输出的每一组key
+        * @param values 该key对应的数据集合
+        * @param context 上下文
+        * @throws IOException
+        * @throws InterruptedException
+        */
+       @Override
+       protected void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+           int sum = 0;
+           // 通过sum进行总数记录
+           // 对记录的数据进行叠加
+           for (IntWritable intWritable : values) {
+               sum += intWritable.get();
+           }
+           intWritable.set(sum);
+           // 最终写出单词出现的次数
+           context.write(key, intWritable);
+       }
+   }
+   ```
+
+5. 编写 `Driver` 文件
+
+   ```java
+   package com.hadoop.mapreduce.wordcount;
+   
+   import org.apache.hadoop.conf.Configuration;
+   import org.apache.hadoop.fs.Path;
+   import org.apache.hadoop.io.IntWritable;
+   import org.apache.hadoop.io.Text;
+   import org.apache.hadoop.mapreduce.Job;
+   import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+   import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+   
+   /**
+    * Driver类中进行统一调度
+    * 分8个步骤
+    * @author PJ_ZHANG
+    * @create 2021-05-27 18:24
+    **/
+   public class WordCountDriver {
+   
+       public static void main(String[] args) throws Exception {
+           // 1. 获取配置信息, 获取Job示例
+           Configuration configuration = new Configuration();
+           Job job = Job.getInstance(configuration);
+           // 2. 指定本程序jar包所在的路径
+           job.setJarByClass(WordCountDriver.class);
+           // 3. 关联Mapper/Reduce业务类
+           job.setMapperClass(WordCountMapper.class);
+           job.setReducerClass(WordCountReduce.class);
+           // 4. 指定Mapper输出数据的KV类型
+           job.setMapOutputKeyClass(Text.class);
+           job.setMapOutputValueClass(IntWritable.class);
+           // 5. 指定Reduce输出数据的KV类型
+           job.setOutputKeyClass(Text.class);
+           job.setOutputValueClass(IntWritable.class);
+           // 6. 指定Job输入原始数据的文件路径
+           // FileInputFormat.setInputPaths(job, new Path("E:\\123456.txt"));
+           FileInputFormat.setInputPaths(job, new Path(args[0]));
+           // 7. 指定Job输出结果数据的文件路径
+           // FileOutputFormat.setOutputPath(job, new Path("E:\\wcout"));
+           FileOutputFormat.setOutputPath(job, new Path(args[1]));
+           // 8. 提交执行
+           job.waitForCompletion(true);
+       }
+   
+   }
+   ```
+
+6. 输入文件
+
+   ```java
+   zhangpanjing   zhangpanjing
+   test  test
+   qwe
+   ertyuio
+   rty
+   sdrtfgyhj
+   ret ret
+   zhangpanjing
+   poiuytrew
+   ```
+
+7. 输出文件
+
+   ```java
+   	3
+   ertyuio	1
+   poiuytrew	1
+   qwe	1
+   ret	2
+   rty	1
+   sdrtfgyhj	1
+   test	2
+   zhangpanjing	3
+   ```
+
+#### 6.2.4.3，集群部署
+
+1. 修改 `pom.xml` 文件
+
+   ```xml
+   <build>
+   	<plugins>
+   		<plugin>
+   			<artifactId>maven-compiler-plugin</artifactId>
+   			<version>3.6.1</version>
+   			<configuration>
+   				<source>1.8</source>
+   				<target>1.8</target>
+   			</configuration>
+   		</plugin>
+   		<plugin>
+   			<artifactId>maven-assembly-plugin</artifactId>
+   			<configuration>
+   				<descriptorRefs>
+   					<descriptorRef>jar-with-dependencies</descriptorRef>
+   				</descriptorRefs>
+   			</configuration>
+   			<executions>
+   				<execution>
+   					<id>make-assembly</id>
+   					<phase>package</phase>
+   					<goals>
+   						<goal>single</goal>
+   					</goals>
+   				</execution>
+   			</executions>
+   		</plugin>
+   	</plugins>
+   </build>
+   ```
+
+2. 修改文件输入输出方式，改为参数形式
+
+   ```java
+   // 6. 指定Job输入原始数据的文件路径
+   // FileInputFormat.setInputPaths(job, new Path("E:\\123456.txt"));
+   FileInputFormat.setInputPaths(job, new Path(args[0]));
+   // 7. 指定Job输出结果数据的文件路径
+   // FileOutputFormat.setOutputPath(job, new Path("E:\\wcout"));
+   FileOutputFormat.setOutputPath(job, new Path(args[1]));
+   ```
+
+3. 文件打包并上传服务器
+
+   * 文件打包
+
+   ![1622112569702](E:\gitrepository\study\note\image\hadoop\1622112569702.png)
+
+   * 上传服务器
+
+     ![1622112598342](E:\gitrepository\study\note\image\hadoop\1622112598342.png)
+
+4. 集群方式运行并查看
+
+   ```shell
+   # ./mybigdata-1.0-SNAPSHOT.jar：jar包路径
+   # com.hadoop.mapreduce.wordcount.WordCountDriver：Driver类路径
+   # /123456.txt：输入文件在HDFS的路径
+   # /output：输出文件在HDFS路径，该路径必须不存在
+   [root@Hadoop102 hadoop-3.1.3]# hadoop jar ./mybigdata-1.0-SNAPSHOT.jar com.hadoop.mapreduce.wordcount.WordCountDriver /123456.txt /output
+   ```
+
+   ![1622112687922](E:\gitrepository\study\note\image\hadoop\1622112687922.png)
+
+   ![1622112709358](E:\gitrepository\study\note\image\hadoop\1622112709358.png)
+
+## 6.3，`Hadoop` 序列化
+
+### 6.3.1，序列化概述
+
+1. 什么是序列化
+   * 序列化就是把内存中的对象，转换成字节序列（或其他数据传输协议）以便于存储到磁盘（持久化）和网络传输。
+   * 反序列化就是将收到字节序列（或其他数据传输协议）或者是磁盘的持久化数据，转换成内存中的对象。
+2. 为什么要序列化
+   * 一般来说，“活的”对象只生存在内存里，关机断电就没有了。而且“活的”对象只能由本地的进程使用，不能被发送到网络上的另外一台计算机。 然而序列化可以存储“活的”对象，可以将“活的”对象发送到远程计算机。
+3. 为什么不用Java序列化
+   * Java 的序列化是一个重量级序列化框架（Serializable），一个对象被序列化后，会附带很多额外的信息（各种校验信息，Header，继承体系等），不便于在网络中高效传输。所以，Hadoop 自己开发了一套序列化机制（Writable）。
+4. `Hadoop` 序列化特点
+   * **紧凑**：高效使用存储空间。
+   * **快速**：读写数据的额外开销小。
+   * **互操作**：支持多语言的交互
+
+### 6.3.2，自定义序列化对象
+
+> `Hadoop` 内部对序列化方式进行重新定义，在 `Hadoop` 框架内部进行实例对象传递，需要实现序列化接口（`Writable`）并重写相关方法，具体可以分为以下7步：
+
+1. 相关实例类必须实现 `org.apache.hadoop.io.Writable` 接口
+
+2. 反序列化时，需要反射调用空参构造，所以实体类中必须声明空参构造方法
+
+3. 重写序列化方法
+
+   ```java
+   @Override
+   public void write(DataOutput out) throws IOException {
+   	out.writeLong(uploadBytes);
+   	out.writeLong(downloadBytes);
+   	out.writeLong(sumBytes);
+   }
+   ```
+
+4. 重写反序列化方法
+
+   ```java
+   @Override
+   public void readFields(DataInput in) throws IOException {
+   	uploadBytes = in.readLong();
+   	downloadBytes = in.readLong();
+   	sumBytes = in.readLong();
+   }
+   ```
+
+5. 注意<font color=red>序列化顺序和反序列化顺序必须完全一致</font>，不然会导致数据错乱
+
+6. 如果需要将对象写入到文件中，需要重写 `toString()` 方法
+
+7. 如果需要将自定义对象以 `Key` 的形式进行处理，因为在 `MapReduce` 的处理中默认会排序处理，所以需要额外实现 `Comparable` 接口，并重写数据比较方法：
+
+   ```java
+   @Override
+   public int compareTo(FlowBean o) {
+       // 倒序排列，从大到小
+       return this.sumFlow > o.getSumFlow() ? -1 : 1;
+   }
+   ```
+
+### 6.3.3，序列化实现手机流量统计
+
+#### 6.3.3.1，需求描述
+
+* 统计每一个手机耗费的上行流量、下行流量、总流量
+
+* 输入数据为文本文件
+
+* 输入手机格式如下：
+
+  ```java
+  ID  手机号       IP地址           域名            上行流量  下行流量  网络状态
+  1	18291166067	192.168.10.0	www.baidu.com	1123	112	200
+  ```
+
+* 输出数据格式如下
+
+  ```java
+  手机号码 上行流量 下行流量 总流量
+  13560436666 1116 954 2070
+  ```
+
+#### 6.3.3.2，需求分析
+
+![1622191349239](E:\gitrepository\study\note\image\hadoop\1622191349239.png)
+
+#### 6.3.3.3，代码实现
+
+1. `Domain` 类
+
+   ```java
+   package com.hadoop.mapreduce.serializable;
+   
+   import org.apache.hadoop.io.Writable;
+   
+   import java.io.DataInput;
+   import java.io.DataOutput;
+   import java.io.IOException;
+   
+   /**
+    * 自定义Hadoop对象, 需要满足Hadoop序列化邀请, 实现 Writable接口
+    *
+    * @author PJ_ZHANG
+    * @create 2021-05-28 14:40
+    **/
+   public class SelfDomain implements Writable {
+   
+       /**
+        * 上行流量
+        */
+       private long uploadBytes;
+   
+       /**
+        * 下行流量
+        */
+       private long downloadBytes;
+   
+       /**
+        * 汇总流量
+        */
+       private long sumBytes;
+   
+       public long getUploadBytes() {
+           return uploadBytes;
+       }
+   
+       public void setUploadBytes(long uploadBytes) {
+           this.uploadBytes = uploadBytes;
+       }
+   
+       public long getDownloadBytes() {
+           return downloadBytes;
+       }
+   
+       public void setDownloadBytes(long downloadBytes) {
+           this.downloadBytes = downloadBytes;
+       }
+   
+       public long getSumBytes() {
+           return sumBytes;
+       }
+   
+       public void setSumBytes(long sumBytes) {
+           this.sumBytes = sumBytes;
+       }
+   
+       /**
+        * 序列化顺序无所谓, 可以进行自定义
+        *
+        * @param out
+        * @throws IOException
+        */
+       @Override
+       public void write(DataOutput out) throws IOException {
+           out.writeLong(uploadBytes);
+           out.writeLong(downloadBytes);
+           out.writeLong(sumBytes);
+       }
+   
+       /**
+        * 反序列化顺序必须严格与序列化顺序一致, 不然取数据可能会有问题
+        * @param in
+        * @throws IOException
+        */
+       @Override
+       public void readFields(DataInput in) throws IOException {
+           uploadBytes = in.readLong();
+           downloadBytes = in.readLong();
+           sumBytes = in.readLong();
+       }
+   
+       @Override
+       public String toString() {
+           return uploadBytes + "\t" + downloadBytes + "\t" + sumBytes;
+       }
+   }
+   ```
+
+2. `Mapper` 类
+
+   ```java
+   package com.hadoop.mapreduce.serializable;
+   
+   import org.apache.hadoop.io.LongWritable;
+   import org.apache.hadoop.io.Text;
+   import org.apache.hadoop.mapreduce.Mapper;
+   
+   import java.io.IOException;
+   
+   /**
+    * 自定义Mapper计算
+    * LongWritable, Text: 以行的形式读取数据
+    * Text, SelfDomain: 自定义value输出数据
+    * 基本数据格式:
+    * ID	手机号	IP地址	IP域名	上行流量	下行流量	网络状态
+    * 1	18291166067	192.168.10.0	www.baidu.com	1123	112	200
+    * 需求分析:
+    * 输入: 以上文本数据, 整体为一个文本列表
+    * 输出: 每一个手机号对应的上行流量,下行流量,总流量汇总
+    * @author PJ_ZHANG
+    * @create 2021-05-28 14:44
+    **/
+   public class SelfMapper extends Mapper<LongWritable, Text, Text, SelfDomain> {
+   
+       private SelfDomain domain = new SelfDomain();
+   
+       private Text text = new Text();
+   
+       /**
+        * 以行的形式进行数据读取
+        * 1	18291166067	192.168.10.0	www.baidu.com	1123	112	200
+        * @param key 偏移量
+        * @param value 当前行数据
+        * @param context 上下文数据
+        * @throws IOException
+        * @throws InterruptedException
+        */
+       @Override
+       protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+           String str = value.toString();
+           String[] strArr = str.split("\t");
+           String phone = strArr[1];
+           long uploadBytes = Long.parseLong(strArr[4]);
+           long downloadBytes = Long.parseLong(strArr[5]);
+           long sumBytes = uploadBytes + downloadBytes;
+           domain.setUploadBytes(uploadBytes);
+           domain.setDownloadBytes(downloadBytes);
+           domain.setSumBytes(sumBytes);
+           text.set(phone);
+           context.write(text, domain);
+       }
+   }
+   ```
+
+3. `Reduce` 类
+
+   ```java
+   package com.hadoop.mapreduce.serializable;
+   
+   import org.apache.hadoop.io.Text;
+   import org.apache.hadoop.mapreduce.Reducer;
+   
+   import java.io.IOException;
+   
+   /**
+    * 最终进行数据汇总
+    * @author PJ_ZHANG
+    * @create 2021-05-28 15:37
+    **/
+   public class SelfReduce extends Reducer<Text, SelfDomain, Text, SelfDomain> {
+   
+       private SelfDomain domain = new SelfDomain();
+   
+       @Override
+       protected void reduce(Text key, Iterable<SelfDomain> values, Context context) throws IOException, InterruptedException {
+           long uploadBytes = 0L;
+           long downloadBytes = 0L;
+           long sumBytes = 0L;
+           for (SelfDomain currDomain : values) {
+               uploadBytes += currDomain.getUploadBytes();
+               downloadBytes += currDomain.getDownloadBytes();
+               sumBytes += currDomain.getSumBytes();
+           }
+           domain.setUploadBytes(uploadBytes);
+           domain.setDownloadBytes(downloadBytes);
+           domain.setSumBytes(sumBytes);
+           context.write(key, domain);
+       }
+   }
+   ```
+
+4. `Driver` 类
+
+   ```java
+   package com.hadoop.mapreduce.serializable;
+   
+   import org.apache.hadoop.conf.Configuration;
+   import org.apache.hadoop.fs.Path;
+   import org.apache.hadoop.io.Text;
+   import org.apache.hadoop.mapreduce.Job;
+   import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+   import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+   
+   /**
+    * 调度类
+    *
+    * @author PJ_ZHANG
+    * @create 2021-05-28 15:41
+    **/
+   public class SelfDriver {
+   
+       public static void main(String[] args) throws Exception {
+           // 获取配置信息, 构建Job示例
+           Configuration configuration = new Configuration();
+           Job job = Job.getInstance(configuration);
+           // 指定本程序的jar包路径
+           job.setJarByClass(SelfDriver.class);
+           // 关联 Mapper/Reduce 业务类
+           job.setMapperClass(SelfMapper.class);
+           job.setReducerClass(SelfReduce.class);
+           // 指定Mapper输出的KV类型
+           job.setMapOutputKeyClass(Text.class);
+           job.setMapOutputValueClass(SelfDomain.class);
+           // 指定Reduce输出的KV类型
+           job.setOutputKeyClass(Text.class);
+           job.setOutputValueClass(SelfDomain.class);
+           // 指定job输入路径
+           FileInputFormat.setInputPaths(job, new Path("E:\\123456.txt"));
+           // 指定job输出路径
+           FileOutputFormat.setOutputPath(job, new Path("E:\\selfout"));
+           // 工作
+           job.waitForCompletion(true);
+       }
+   
+   }
+   ```
+
+## 6.4，`MapReduce` 框架原理
+

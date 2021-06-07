@@ -11,14 +11,23 @@
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="DatabaseView">
+    <option name="SHOW_INTERMEDIATE" value="true" />
+    <option name="GROUP_SCHEMA" value="true" />
+    <option name="GROUP_CONTENTS" value="false" />
+    <option name="SORT_POSITIONED" value="false" />
+    <option name="SHOW_TABLE_DETAILS" value="true" />
+    <option name="SHOW_EMPTY_GROUPS" value="false" />
+    <option name="AUTO_SCROLL_FROM_SOURCE" value="false" />
+  </component>
   <component name="ExecutionTargetManager" SELECTED_TARGET="default_target" />
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="HDFSTestAPI.java" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/src/main/java/com/hadoop/hdfs/quickstart/HDFSTestAPI.java">
+      <file leaf-file-name="SelfDriver.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/java/com/hadoop/mapreduce/serializable/SelfDriver.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="220">
-              <caret line="186" column="0" lean-forward="false" selection-start-line="186" selection-start-column="0" selection-end-line="205" selection-end-column="5" />
+            <state relative-caret-position="498">
+              <caret line="37" column="21" lean-forward="false" selection-start-line="37" selection-start-column="21" selection-end-line="37" selection-end-column="21" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -26,22 +35,24 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="FSDataInputStream.java" pinned="false" current-in-tab="false">
-        <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-common/3.1.3/hadoop-common-3.1.3-sources.jar!/org/apache/hadoop/fs/FSDataInputStream.java">
+      <file leaf-file-name="Job.java" pinned="false" current-in-tab="true">
+        <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-mapreduce-client-core/3.1.3/hadoop-mapreduce-client-core-3.1.3-sources.jar!/org/apache/hadoop/mapreduce/Job.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="297">
-              <caret line="9" column="2" lean-forward="true" selection-start-line="9" selection-start-column="2" selection-end-line="9" selection-end-column="2" />
+            <state relative-caret-position="408">
+              <caret line="1566" column="34" lean-forward="true" selection-start-line="1566" selection-start-column="34" selection-end-line="1566" selection-end-column="34" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="FileSystem.java" pinned="false" current-in-tab="false">
-        <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-common/3.1.3/hadoop-common-3.1.3-sources.jar!/org/apache/hadoop/fs/FileSystem.java">
+      <file leaf-file-name="PrivilegedExceptionAction.java" pinned="false" current-in-tab="false">
+        <entry file="jar://E:/develop/Java/jdk1.8.0_171/src.zip!/java/security/PrivilegedExceptionAction.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="33">
-              <caret line="123" column="8" lean-forward="true" selection-start-line="123" selection-start-column="8" selection-end-line="123" selection-end-column="8" />
-              <folding />
+            <state relative-caret-position="36">
+              <caret line="44" column="17" lean-forward="false" selection-start-line="44" selection-start-column="17" selection-end-line="44" selection-end-column="17" />
+              <folding>
+                <element signature="e#0#1797#0" expanded="false" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -67,9 +78,16 @@
         <option value="$PROJECT_DIR$/src/test/java/com/study/AppTest.java" />
         <option value="$PROJECT_DIR$/src/main/java/com/hadoop/hdfs/quickstart/TestAPI.java" />
         <option value="$PROJECT_DIR$/src/main/resources/log4j.properties" />
-        <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/src/main/resources/hdfs-default.xml" />
         <option value="$PROJECT_DIR$/src/main/java/com/hadoop/hdfs/quickstart/HDFSTestAPI.java" />
+        <option value="$PROJECT_DIR$/src/main/java/com/hadoop/mapreduce/wordcount/WordCountReduce.java" />
+        <option value="$PROJECT_DIR$/src/main/java/com/hadoop/mapreduce/wordcount/WordCountDriver.java" />
+        <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/src/main/java/com/hadoop/mapreduce/wordcount/WordCountMapper.java" />
+        <option value="$PROJECT_DIR$/src/main/java/com/hadoop/mapreduce/serializable/SelfMapper.java" />
+        <option value="$PROJECT_DIR$/src/main/java/com/hadoop/mapreduce/serializable/SelfReduce.java" />
+        <option value="$PROJECT_DIR$/src/main/java/com/hadoop/mapreduce/serializable/SelfDomain.java" />
+        <option value="$PROJECT_DIR$/src/main/java/com/hadoop/mapreduce/serializable/SelfDriver.java" />
       </list>
     </option>
   </component>
@@ -87,6 +105,8 @@
     </option>
     <option name="importingSettings">
       <MavenImportingSettings>
+        <option name="downloadDocsAutomatically" value="true" />
+        <option name="downloadSourcesAutomatically" value="true" />
         <option name="importAutomatically" value="true" />
       </MavenImportingSettings>
     </option>
@@ -101,6 +121,20 @@
         <PATH_ELEMENT>
           <option name="myItemId" value="mybigdata" />
           <option name="myItemType" value="org.jetbrains.idea.maven.navigator.MavenProjectsStructure$ProjectNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="" />
+          <option name="myItemType" value="org.jetbrains.idea.maven.navigator.MavenProjectsStructure$RootNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="mybigdata" />
+          <option name="myItemType" value="org.jetbrains.idea.maven.navigator.MavenProjectsStructure$ProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="Lifecycle" />
+          <option name="myItemType" value="org.jetbrains.idea.maven.navigator.MavenProjectsStructure$LifecycleNode" />
         </PATH_ELEMENT>
       </PATH>
     </treeState>
@@ -126,9 +160,8 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="PackagesPane" />
       <pane id="Scope" />
-      <pane id="Scratches" />
+      <pane id="PackagesPane" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -172,8 +205,34 @@
               <option name="myItemId" value="main" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
+          </PATH>
+          <PATH>
             <PATH_ELEMENT>
-              <option name="myItemId" value="resources" />
+              <option name="myItemId" value="mybigdata" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="mybigdata" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="main" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="java" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="hadoop" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="mapreduce" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -199,18 +258,57 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="quickstart" />
+              <option name="myItemId" value="hadoop" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="mapreduce" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="serializable" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="mybigdata" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="mybigdata" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="main" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="java" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="hadoop" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
         </subPane>
       </pane>
+      <pane id="Scratches" />
     </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="settings.editor.selected.configurable" value="MavenSettings" />
+    <property name="settings.editor.selected.configurable" value="reference.settings.project.maven.importing" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="aspect.path.notification.shown" value="true" />
+    <property name="last_opened_file_path" value="E:/hadoop-mapreduce-examples-3.1.3.jar!/" />
+    <property name="project.structure.last.edited" value="Libraries" />
+    <property name="project.structure.proportion" value="0.15" />
+    <property name="project.structure.side.proportion" value="0.28613138" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -229,59 +327,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="JUnit.HDFSTestAPI.copyFile">
-    <configuration default="false" name="HDFSTestAPI.renameAndMove" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
-      <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea">
-        <pattern>
-          <option name="PATTERN" value="com.hadoop.hdfs.quickstart.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <module name="mybigdata" />
-      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
-      <option name="ALTERNATIVE_JRE_PATH" />
-      <option name="PACKAGE_NAME" value="com.hadoop.hdfs.quickstart" />
-      <option name="MAIN_CLASS_NAME" value="com.hadoop.hdfs.quickstart.HDFSTestAPI" />
-      <option name="METHOD_NAME" value="renameAndMove" />
-      <option name="TEST_OBJECT" value="method" />
-      <option name="VM_PARAMETERS" value="-ea" />
-      <option name="PARAMETERS" />
-      <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
-      <option name="ENV_VARIABLES" />
-      <option name="PASS_PARENT_ENVS" value="true" />
-      <option name="TEST_SEARCH_SCOPE">
-        <value defaultName="singleModule" />
-      </option>
-      <envs />
-      <patterns />
-      <method />
-    </configuration>
-    <configuration default="false" name="HDFSTestAPI.delete" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
-      <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea">
-        <pattern>
-          <option name="PATTERN" value="com.hadoop.hdfs.quickstart.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <module name="mybigdata" />
-      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
-      <option name="ALTERNATIVE_JRE_PATH" />
-      <option name="PACKAGE_NAME" value="com.hadoop.hdfs.quickstart" />
-      <option name="MAIN_CLASS_NAME" value="com.hadoop.hdfs.quickstart.HDFSTestAPI" />
-      <option name="METHOD_NAME" value="delete" />
-      <option name="TEST_OBJECT" value="method" />
-      <option name="VM_PARAMETERS" value="-ea" />
-      <option name="PARAMETERS" />
-      <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
-      <option name="ENV_VARIABLES" />
-      <option name="PASS_PARENT_ENVS" value="true" />
-      <option name="TEST_SEARCH_SCOPE">
-        <value defaultName="singleModule" />
-      </option>
-      <envs />
-      <patterns />
-      <method />
-    </configuration>
+  <component name="RunManager" selected="Application.SelfDriver">
     <configuration default="false" name="HDFSTestAPI.showDetails" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea">
         <pattern>
@@ -358,6 +404,46 @@
       </option>
       <envs />
       <patterns />
+      <method />
+    </configuration>
+    <configuration default="false" name="WordCountDriver" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea">
+        <pattern>
+          <option name="PATTERN" value="com.hadoop.mapreduce.wordcount.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="MAIN_CLASS_NAME" value="com.hadoop.mapreduce.wordcount.WordCountDriver" />
+      <option name="VM_PARAMETERS" />
+      <option name="PROGRAM_PARAMETERS" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" />
+      <option name="ENABLE_SWING_INSPECTOR" value="false" />
+      <option name="ENV_VARIABLES" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <module name="mybigdata" />
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="SelfDriver" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea">
+        <pattern>
+          <option name="PATTERN" value="com.hadoop.mapreduce.serializable.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="MAIN_CLASS_NAME" value="com.hadoop.mapreduce.serializable.SelfDriver" />
+      <option name="VM_PARAMETERS" />
+      <option name="PROGRAM_PARAMETERS" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" />
+      <option name="ENABLE_SWING_INSPECTOR" value="false" />
+      <option name="ENV_VARIABLES" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <module name="mybigdata" />
+      <envs />
       <method />
     </configuration>
     <configuration default="true" type="#org.jetbrains.idea.devkit.run.PluginConfigurationType" factoryName="Plugin">
@@ -683,6 +769,28 @@
       <envs />
       <method />
     </configuration>
+    <configuration default="true" type="MavenRunConfiguration" factoryName="Maven">
+      <MavenSettings>
+        <option name="myGeneralSettings" />
+        <option name="myRunnerSettings" />
+        <option name="myRunnerParameters">
+          <MavenRunnerParameters>
+            <option name="profiles">
+              <set />
+            </option>
+            <option name="goals">
+              <list />
+            </option>
+            <option name="profilesMap">
+              <map />
+            </option>
+            <option name="resolveToWorkspace" value="false" />
+            <option name="workingDirPath" value="" />
+          </MavenRunnerParameters>
+        </option>
+      </MavenSettings>
+      <method />
+    </configuration>
     <configuration default="true" type="Remote" factoryName="Remote">
       <option name="USE_SOCKET_TRANSPORT" value="true" />
       <option name="SERVER_MODE" value="false" />
@@ -748,19 +856,19 @@
       <method />
     </configuration>
     <list size="5">
-      <item index="0" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.renameAndMove" />
-      <item index="1" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.delete" />
-      <item index="2" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.showDetails" />
-      <item index="3" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.checkFile" />
-      <item index="4" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.copyFile" />
+      <item index="0" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.showDetails" />
+      <item index="1" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.checkFile" />
+      <item index="2" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.copyFile" />
+      <item index="3" class="java.lang.String" itemvalue="Application.WordCountDriver" />
+      <item index="4" class="java.lang.String" itemvalue="Application.SelfDriver" />
     </list>
     <recent_temporary>
       <list size="5">
-        <item index="0" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.copyFile" />
-        <item index="1" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.checkFile" />
-        <item index="2" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.showDetails" />
-        <item index="3" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.delete" />
-        <item index="4" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.renameAndMove" />
+        <item index="0" class="java.lang.String" itemvalue="Application.SelfDriver" />
+        <item index="1" class="java.lang.String" itemvalue="Application.WordCountDriver" />
+        <item index="2" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.copyFile" />
+        <item index="3" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.checkFile" />
+        <item index="4" class="java.lang.String" itemvalue="JUnit.HDFSTestAPI.showDetails" />
       </list>
     </recent_temporary>
   </component>
@@ -781,6 +889,11 @@
       <workItem from="1617762533658" duration="3082000" />
       <workItem from="1617866948438" duration="1461000" />
       <workItem from="1618901479739" duration="1438000" />
+      <workItem from="1619598038581" duration="915000" />
+      <workItem from="1622082260781" duration="83000" />
+      <workItem from="1622097743887" duration="8732000" />
+      <workItem from="1622169826806" duration="8423000" />
+      <workItem from="1622511809939" duration="4809000" />
     </task>
     <servers />
   </component>
@@ -817,7 +930,7 @@
     </history-entry>
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="16383000" />
+    <option name="totallyTimeSpent" value="39345000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
@@ -826,30 +939,30 @@
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Nl-Palette" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.29129463" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Palette&#9;" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Image Layers" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Capture Analysis" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32995737" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32254463" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.17410715" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Properties" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Capture Tool" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.26599148" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2803838" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32995737" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="UI Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Theme Preview" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3872768" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.30691963" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.29129463" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.20535715" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
@@ -862,7 +975,15 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="1" />
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/hadoop/mapreduce/serializable/SelfMapper.java</url>
+          <line>38</line>
+          <properties />
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+      </breakpoints>
+      <option name="time" value="5" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -871,13 +992,18 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-common/3.1.3/hadoop-common-3.1.3-sources.jar!/org/apache/hadoop/fs/FileSystem.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1452">
+          <caret line="123" column="8" lean-forward="true" selection-start-line="123" selection-start-column="8" selection-end-line="123" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/com/hadoop/hdfs/quickstart/HDFSTestAPI.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+          <folding />
         </state>
       </provider>
     </entry>
@@ -885,7 +1011,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="71841">
           <caret line="2177" column="43" lean-forward="false" selection-start-line="2177" selection-start-column="26" selection-end-line="2177" selection-end-column="43" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -893,9 +1018,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+          <folding />
         </state>
       </provider>
     </entry>
@@ -903,6 +1026,13 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="71841">
           <caret line="2177" column="43" lean-forward="true" selection-start-line="2177" selection-start-column="26" selection-end-line="2177" selection-end-column="43" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/com/hadoop/hdfs/quickstart/HDFSTestAPI.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding />
         </state>
       </provider>
@@ -911,19 +1041,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/com/hadoop/hdfs/quickstart/HDFSTestAPI.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+          <folding />
         </state>
       </provider>
     </entry>
@@ -939,9 +1057,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+          <folding />
         </state>
       </provider>
     </entry>
@@ -989,21 +1105,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/pom.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="171">
-          <caret line="36" column="19" lean-forward="true" selection-start-line="20" selection-start-column="4" selection-end-line="36" selection-end-column="19" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/resources/log4j.properties">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="231">
-          <caret line="7" column="25" lean-forward="true" selection-start-line="7" selection-start-column="25" selection-end-line="7" selection-end-column="25" />
-        </state>
-      </provider>
-    </entry>
     <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-common/3.1.3/hadoop-common-3.1.3.jar!/org/apache/hadoop/fs/FileSystem.class">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="266">
@@ -1014,36 +1115,662 @@
     <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-common/3.1.3/hadoop-common-3.1.3-sources.jar!/org/apache/hadoop/fs/FSDataInputStream.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="297">
-          <caret line="9" column="2" lean-forward="true" selection-start-line="9" selection-start-column="2" selection-end-line="9" selection-end-column="2" />
-          <folding />
+          <caret line="9" column="2" lean-forward="false" selection-start-line="9" selection-start-column="2" selection-end-line="9" selection-end-column="2" />
         </state>
       </provider>
     </entry>
     <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-common/3.1.3/hadoop-common-3.1.3-sources.jar!/org/apache/hadoop/fs/FileSystem.java">
       <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1452">
+          <caret line="123" column="8" lean-forward="false" selection-start-line="123" selection-start-column="8" selection-end-line="123" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-mapreduce-client-core/3.1.3/hadoop-mapreduce-client-core-3.1.3.jar!/org/apache/hadoop/mapreduce/Reducer.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="290">
+          <caret line="17" column="54" lean-forward="false" selection-start-line="17" selection-start-column="13" selection-end-line="17" selection-end-column="54" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://E:/develop/Java/jdk1.8.0_171/src.zip!/java/util/StringTokenizer.java">
+      <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="33">
-          <caret line="123" column="8" lean-forward="true" selection-start-line="123" selection-start-column="8" selection-end-line="123" selection-end-column="8" />
+          <caret line="316" column="19" lean-forward="false" selection-start-line="316" selection-start-column="19" selection-end-line="316" selection-end-column="19" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://E:/hadoop-mapreduce-examples-3.1.3.jar!/org/apache/hadoop/examples/WordCount.class" />
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-mapreduce-client-core/3.1.3/hadoop-mapreduce-client-core-3.1.3.jar!/org/apache/hadoop/mapreduce/Mapper.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="396">
+          <caret line="17" column="29" lean-forward="false" selection-start-line="17" selection-start-column="29" selection-end-line="17" selection-end-column="29" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-mapreduce-client-core/3.1.3/hadoop-mapreduce-client-core-3.1.3-sources.jar!/org/apache/hadoop/mapreduce/TaskInputOutputContext.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="191">
+          <caret line="35" column="17" lean-forward="false" selection-start-line="35" selection-start-column="17" selection-end-line="35" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-mapreduce-client-core/3.1.3/hadoop-mapreduce-client-core-3.1.3-sources.jar!/org/apache/hadoop/mapreduce/MapContext.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="408">
+          <caret line="33" column="23" lean-forward="false" selection-start-line="33" selection-start-column="23" selection-end-line="33" selection-end-column="23" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-mapreduce-client-core/3.1.3/hadoop-mapreduce-client-core-3.1.3-sources.jar!/org/apache/hadoop/mapreduce/task/TaskInputOutputContextImpl.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="507">
+          <caret line="88" column="13" lean-forward="false" selection-start-line="88" selection-start-column="13" selection-end-line="88" selection-end-column="13" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-mapreduce-client-core/3.1.3/hadoop-mapreduce-client-core-3.1.3-sources.jar!/org/apache/hadoop/mapreduce/lib/map/WrappedMapper.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="342">
+          <caret line="111" column="19" lean-forward="true" selection-start-line="111" selection-start-column="19" selection-end-line="111" selection-end-column="19" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-mapreduce-client-core/3.1.3/hadoop-mapreduce-client-core-3.1.3-sources.jar!/org/apache/hadoop/mapreduce/lib/chain/ChainMapContextImpl.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="356">
+          <caret line="109" column="15" lean-forward="false" selection-start-line="109" selection-start-column="15" selection-end-line="109" selection-end-column="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-mapreduce-client-core/3.1.3/hadoop-mapreduce-client-core-3.1.3-sources.jar!/org/apache/hadoop/mapreduce/lib/output/FilterOutputFormat.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="323">
+          <caret line="94" column="23" lean-forward="true" selection-start-line="94" selection-start-column="23" selection-end-line="94" selection-end-column="23" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-mapreduce-client-core/3.1.3/hadoop-mapreduce-client-core-3.1.3-sources.jar!/org/apache/hadoop/mapreduce/lib/output/TextOutputFormat.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="441">
+          <caret line="79" column="19" lean-forward="false" selection-start-line="79" selection-start-column="19" selection-end-line="79" selection-end-column="19" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-mapreduce-client-core/3.1.3/hadoop-mapreduce-client-core-3.1.3-sources.jar!/org/apache/hadoop/mapreduce/Mapper.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2541">
+          <caret line="100" column="52" lean-forward="false" selection-start-line="100" selection-start-column="20" selection-end-line="100" selection-end-column="52" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-mapreduce-client-core/3.1.3/hadoop-mapreduce-client-core-3.1.3-sources.jar!/org/apache/hadoop/mapreduce/Reducer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3300">
+          <caret line="123" column="50" lean-forward="false" selection-start-line="123" selection-start-column="21" selection-end-line="123" selection-end-column="50" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/mybigdata.iml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pom.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3399">
+          <caret line="103" column="26" lean-forward="false" selection-start-line="103" selection-start-column="26" selection-end-line="103" selection-end-column="26" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/resources/hdfs-default.xml">
+    <entry file="file://$PROJECT_DIR$/src/main/java/com/hadoop/mapreduce/wordcount/WordCountMapper.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="198">
-          <caret line="6" column="16" lean-forward="false" selection-start-line="6" selection-start-column="16" selection-end-line="6" selection-end-column="16" />
-          <folding />
+        <state relative-caret-position="99">
+          <caret line="3" column="40" lean-forward="false" selection-start-line="3" selection-start-column="40" selection-end-line="3" selection-end-column="40" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/com/hadoop/hdfs/quickstart/HDFSTestAPI.java">
+    <entry file="file://$PROJECT_DIR$/src/main/java/com/hadoop/mapreduce/wordcount/WordCountReduce.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="220">
-          <caret line="186" column="0" lean-forward="false" selection-start-line="186" selection-start-column="0" selection-end-line="205" selection-end-column="5" />
+        <state relative-caret-position="858">
+          <caret line="30" column="23" lean-forward="false" selection-start-line="30" selection-start-column="23" selection-end-line="30" selection-end-column="23" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/com/hadoop/mapreduce/wordcount/WordCountDriver.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="267">
+          <caret line="33" column="30" lean-forward="false" selection-start-line="33" selection-start-column="30" selection-end-line="33" selection-end-column="30" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/com/hadoop/mapreduce/serializable/SelfMapper.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="210">
+          <caret line="43" column="35" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="51" selection-end-column="0" />
           <folding>
             <element signature="imports" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/com/hadoop/mapreduce/serializable/SelfReduce.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="561">
+          <caret line="20" column="27" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="32" selection-end-column="0" />
+          <folding>
+            <element signature="imports" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/resources/hdfs-default.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="231">
+          <caret line="7" column="15" lean-forward="false" selection-start-line="7" selection-start-column="15" selection-end-line="7" selection-end-column="15" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/resources/log4j.properties">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="231">
+          <caret line="7" column="21" lean-forward="false" selection-start-line="7" selection-start-column="21" selection-end-line="7" selection-end-column="21" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/com/hadoop/hdfs/quickstart/HDFSTestAPI.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="5445">
+          <caret line="172" column="72" lean-forward="false" selection-start-line="172" selection-start-column="63" selection-end-line="172" selection-end-column="72" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://E:/develop/Java/jdk1.8.0_171/src.zip!/java/util/WeakHashMap.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="13200">
+          <caret line="446" column="13" lean-forward="false" selection-start-line="446" selection-start-column="13" selection-end-line="446" selection-end-column="13" />
+          <folding>
+            <element signature="e#0#46984#0" expanded="false" />
+            <element signature="imports" expanded="false" />
+            <element signature="e#7755#7756#0" expanded="false" />
+            <element signature="e#7810#7811#0" expanded="false" />
+            <element signature="e#9341#9342#0" expanded="false" />
+            <element signature="e#9399#9400#0" expanded="false" />
+            <element signature="e#9565#9566#0" expanded="false" />
+            <element signature="e#9632#9633#0" expanded="false" />
+            <element signature="e#10562#10563#0" expanded="false" />
+            <element signature="e#10615#10616#0" expanded="false" />
+            <element signature="e#10750#10751#0" expanded="false" />
+            <element signature="e#10803#10804#0" expanded="false" />
+            <element signature="e#10983#10984#0" expanded="false" />
+            <element signature="e#11027#11028#0" expanded="false" />
+            <element signature="e#11837#11838#0" expanded="false" />
+            <element signature="e#11874#11875#0" expanded="false" />
+            <element signature="e#13805#13806#0" expanded="false" />
+            <element signature="e#13839#13840#0" expanded="false" />
+            <element signature="e#15363#15364#0" expanded="false" />
+            <element signature="e#15407#15408#0" expanded="false" />
+            <element signature="e#25783#25784#0" expanded="false" />
+            <element signature="e#25847#25848#0" expanded="false" />
+            <element signature="e#25878#25879#0" expanded="false" />
+            <element signature="e#25914#25915#0" expanded="false" />
+            <element signature="e#26770#26771#0" expanded="false" />
+            <element signature="e#26828#26829#0" expanded="false" />
+            <element signature="e#27419#27420#0" expanded="false" />
+            <element signature="e#27479#27480#0" expanded="false" />
+            <element signature="e#29090#29091#0" expanded="false" />
+            <element signature="e#29138#29139#0" expanded="false" />
+            <element signature="e#29227#29228#0" expanded="false" />
+            <element signature="e#29278#29279#0" expanded="false" />
+            <element signature="e#29395#29396#0" expanded="false" />
+            <element signature="e#29437#29438#0" expanded="false" />
+            <element signature="e#30487#30488#0" expanded="false" />
+            <element signature="e#30535#30536#0" expanded="false" />
+            <element signature="e#30564#30565#0" expanded="false" />
+            <element signature="e#30618#30619#0" expanded="false" />
+            <element signature="e#30663#30664#0" expanded="false" />
+            <element signature="e#30708#30709#0" expanded="false" />
+            <element signature="e#30960#30961#0" expanded="false" />
+            <element signature="e#31008#31009#0" expanded="false" />
+            <element signature="e#31055#31056#0" expanded="false" />
+            <element signature="e#31137#31138#0" expanded="false" />
+            <element signature="e#32184#32185#0" expanded="false" />
+            <element signature="e#32234#32235#0" expanded="false" />
+            <element signature="e#32263#32264#0" expanded="false" />
+            <element signature="e#32317#32318#0" expanded="false" />
+            <element signature="e#32362#32363#0" expanded="false" />
+            <element signature="e#32409#32410#0" expanded="false" />
+            <element signature="e#32440#32441#0" expanded="false" />
+            <element signature="e#32488#32489#0" expanded="false" />
+            <element signature="e#32535#32536#0" expanded="false" />
+            <element signature="e#32619#32620#0" expanded="false" />
+            <element signature="e#33704#33705#0" expanded="false" />
+            <element signature="e#33754#33755#0" expanded="false" />
+            <element signature="e#34093#34094#0" expanded="false" />
+            <element signature="e#34140#34141#0" expanded="false" />
+            <element signature="e#34169#34170#0" expanded="false" />
+            <element signature="e#34223#34224#0" expanded="false" />
+            <element signature="e#34254#34255#0" expanded="false" />
+            <element signature="e#34302#34303#0" expanded="false" />
+            <element signature="e#34592#34593#0" expanded="false" />
+            <element signature="e#34643#34644#0" expanded="false" />
+            <element signature="e#34684#34685#0" expanded="false" />
+            <element signature="e#34736#34737#0" expanded="false" />
+            <element signature="e#40660#40661#0" expanded="false" />
+            <element signature="e#40711#40712#0" expanded="false" />
+            <element signature="e#43560#43561#0" expanded="false" />
+            <element signature="e#43592#43593#0" expanded="false" />
+            <element signature="e#46922#46923#0" expanded="false" />
+            <element signature="e#46973#46974#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-common/3.1.3/hadoop-common-3.1.3-sources.jar!/org/apache/hadoop/conf/Configuration.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="7161">
+          <caret line="337" column="37" lean-forward="false" selection-start-line="337" selection-start-column="37" selection-end-line="337" selection-end-column="37" />
+          <folding>
+            <element signature="n#!!doc" expanded="false" />
+            <element signature="imports" expanded="false" />
+            <element signature="e#9775#9776#0" expanded="false" />
+            <element signature="e#9824#9825#0" expanded="false" />
+            <element signature="e#10016#10017#0" expanded="false" />
+            <element signature="e#10086#10087#0" expanded="false" />
+            <element signature="e#10303#10304#0" expanded="false" />
+            <element signature="e#10328#10329#0" expanded="false" />
+            <element signature="e#10367#10368#0" expanded="false" />
+            <element signature="e#10396#10397#0" expanded="false" />
+            <element signature="e#10439#10440#0" expanded="false" />
+            <element signature="e#10474#10475#0" expanded="false" />
+            <element signature="e#10520#10521#0" expanded="false" />
+            <element signature="e#10545#10546#0" expanded="false" />
+            <element signature="e#13687#13688#0" expanded="false" />
+            <element signature="e#13736#13737#0" expanded="false" />
+            <element signature="e#14736#14737#0" expanded="false" />
+            <element signature="e#14781#14782#0" expanded="false" />
+            <element signature="e#14816#14817#0" expanded="false" />
+            <element signature="e#14849#14850#0" expanded="false" />
+            <element signature="e#15591#15592#0" expanded="false" />
+            <element signature="e#15645#15646#0" expanded="false" />
+            <element signature="e#15675#15676#0" expanded="false" />
+            <element signature="e#15699#15700#0" expanded="false" />
+            <element signature="e#15735#15736#0" expanded="false" />
+            <element signature="e#15763#15764#0" expanded="false" />
+            <element signature="e#15803#15804#0" expanded="false" />
+            <element signature="e#15837#15838#0" expanded="false" />
+            <element signature="e#18074#18075#0" expanded="false" />
+            <element signature="e#18111#18112#0" expanded="false" />
+            <element signature="e#18167#18168#0" expanded="false" />
+            <element signature="e#18211#18212#0" expanded="false" />
+            <element signature="e#23047#23048#0" expanded="false" />
+            <element signature="e#23091#23092#0" expanded="false" />
+            <element signature="e#23813#23814#0" expanded="false" />
+            <element signature="e#23871#23872#0" expanded="false" />
+            <element signature="e#31698#31699#0" expanded="false" />
+            <element signature="e#31740#31741#0" expanded="false" />
+            <element signature="e#31798#31799#0" expanded="false" />
+            <element signature="e#31838#31839#0" expanded="false" />
+            <element signature="e#32202#32203#0" expanded="false" />
+            <element signature="e#32249#32250#0" expanded="false" />
+            <element signature="e#32815#32816#0" expanded="false" />
+            <element signature="e#32861#32862#0" expanded="false" />
+            <element signature="e#32925#32926#0" expanded="false" />
+            <element signature="e#32989#32990#0" expanded="false" />
+            <element signature="e#33428#33429#0" expanded="false" />
+            <element signature="e#33475#33476#0" expanded="false" />
+            <element signature="e#34194#34195#0" expanded="false" />
+            <element signature="e#34239#34240#0" expanded="false" />
+            <element signature="e#34816#34817#0" expanded="false" />
+            <element signature="e#34867#34868#0" expanded="false" />
+            <element signature="e#41862#41863#0" expanded="false" />
+            <element signature="e#41898#41899#0" expanded="false" />
+            <element signature="e#41934#41935#0" expanded="false" />
+            <element signature="e#41974#41975#0" expanded="false" />
+            <element signature="e#43061#43062#0" expanded="false" />
+            <element signature="e#43106#43107#0" expanded="false" />
+            <element signature="e#43159#43160#0" expanded="false" />
+            <element signature="e#43199#43200#0" expanded="false" />
+            <element signature="e#47229#47230#0" expanded="false" />
+            <element signature="e#47261#47262#0" expanded="false" />
+            <element signature="e#49206#49207#0" expanded="false" />
+            <element signature="e#49245#49246#0" expanded="false" />
+            <element signature="e#52781#52782#0" expanded="false" />
+            <element signature="e#52825#52826#0" expanded="false" />
+            <element signature="e#55217#55218#0" expanded="false" />
+            <element signature="e#55258#55259#0" expanded="false" />
+            <element signature="e#56175#56176#0" expanded="false" />
+            <element signature="e#56216#56217#0" expanded="false" />
+            <element signature="e#57144#57145#0" expanded="false" />
+            <element signature="e#57186#57187#0" expanded="false" />
+            <element signature="e#58256#58257#0" expanded="false" />
+            <element signature="e#58300#58301#0" expanded="false" />
+            <element signature="e#58489#58490#0" expanded="false" />
+            <element signature="e#58540#58541#0" expanded="false" />
+            <element signature="e#58827#58828#0" expanded="false" />
+            <element signature="e#58864#58865#0" expanded="false" />
+            <element signature="e#67557#67558#0" expanded="false" />
+            <element signature="e#67605#67606#0" expanded="false" />
+            <element signature="e#72364#72365#0" expanded="false" />
+            <element signature="e#72423#72424#0" expanded="false" />
+            <element signature="e#74314#74315#0" expanded="false" />
+            <element signature="e#74369#74370#0" expanded="false" />
+            <element signature="e#75086#75087#0" expanded="false" />
+            <element signature="e#75138#75139#0" expanded="false" />
+            <element signature="e#75441#75442#0" expanded="false" />
+            <element signature="e#75500#75501#0" expanded="false" />
+            <element signature="e#79300#79301#0" expanded="false" />
+            <element signature="e#79354#79355#0" expanded="false" />
+            <element signature="e#84507#84508#0" expanded="false" />
+            <element signature="e#84560#84561#0" expanded="false" />
+            <element signature="e#95523#95524#0" expanded="false" />
+            <element signature="e#95569#95570#0" expanded="false" />
+            <element signature="e#97978#97979#0" expanded="false" />
+            <element signature="e#98012#98013#0" expanded="false" />
+            <element signature="e#126486#126487#0" expanded="false" />
+            <element signature="e#126514#126515#0" expanded="false" />
+            <element signature="e#126710#126711#0" expanded="false" />
+            <element signature="e#126750#126751#0" expanded="false" />
+            <element signature="e#127620#127621#0" expanded="false" />
+            <element signature="e#127656#127657#0" expanded="false" />
+            <element signature="e#127697#127698#0" expanded="false" />
+            <element signature="e#127728#127729#0" expanded="false" />
+            <element signature="e#131723#131724#0" expanded="false" />
+            <element signature="e#131766#131767#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/com/hadoop/mapreduce/serializable/SelfDomain.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="825">
+          <caret line="29" column="26" lean-forward="false" selection-start-line="29" selection-start-column="26" selection-end-line="29" selection-end-column="26" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-mapreduce-client-core/3.1.3/hadoop-mapreduce-client-core-3.1.3-sources.jar!/org/apache/hadoop/mapred/JobConf.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="12771">
+          <caret line="438" column="9" lean-forward="false" selection-start-line="438" selection-start-column="9" selection-end-line="438" selection-end-column="9" />
+          <folding>
+            <element signature="n#!!doc" expanded="false" />
+            <element signature="imports" expanded="false" />
+            <element signature="e#14985#14986#0" expanded="false" />
+            <element signature="e#15020#15021#0" expanded="false" />
+            <element signature="e#16105#16106#0" expanded="false" />
+            <element signature="e#16137#16138#0" expanded="false" />
+            <element signature="e#16927#16928#0" expanded="false" />
+            <element signature="e#16955#16956#0" expanded="false" />
+            <element signature="e#17025#17026#0" expanded="false" />
+            <element signature="e#17065#17066#0" expanded="false" />
+            <element signature="e#17543#17544#0" expanded="false" />
+            <element signature="e#17629#17630#0" expanded="false" />
+            <element signature="e#18924#18925#0" expanded="false" />
+            <element signature="e#18966#18967#0" expanded="false" />
+            <element signature="e#19113#19114#0" expanded="false" />
+            <element signature="e#19154#19155#0" expanded="false" />
+            <element signature="e#19475#19476#0" expanded="false" />
+            <element signature="e#19540#19541#0" expanded="false" />
+            <element signature="e#19702#19703#0" expanded="false" />
+            <element signature="e#19775#19776#0" expanded="false" />
+            <element signature="e#20127#20128#0" expanded="false" />
+            <element signature="e#20184#20185#0" expanded="false" />
+            <element signature="e#20430#20431#0" expanded="false" />
+            <element signature="e#20485#20486#0" expanded="false" />
+            <element signature="e#21535#21536#0" expanded="false" />
+            <element signature="e#21592#21593#0" expanded="false" />
+            <element signature="e#21714#21715#0" expanded="false" />
+            <element signature="e#21771#21772#0" expanded="false" />
+            <element signature="e#24682#24683#0" expanded="false" />
+            <element signature="e#24744#24745#0" expanded="false" />
+            <element signature="e#24978#24979#0" expanded="false" />
+            <element signature="e#25044#25045#0" expanded="false" />
+            <element signature="e#28588#28589#0" expanded="false" />
+            <element signature="e#28659#28660#0" expanded="false" />
+            <element signature="e#30710#30711#0" expanded="false" />
+            <element signature="e#30774#30775#0" expanded="false" />
+            <element signature="e#31735#31736#0" expanded="false" />
+            <element signature="e#31801#31802#0" expanded="false" />
+            <element signature="e#36023#36024#0" expanded="false" />
+            <element signature="e#36082#36083#0" expanded="false" />
+            <element signature="e#36329#36330#0" expanded="false" />
+            <element signature="e#36380#36381#0" expanded="false" />
+            <element signature="e#36568#36569#0" expanded="false" />
+            <element signature="e#36628#36629#0" expanded="false" />
+            <element signature="e#36878#36879#0" expanded="false" />
+            <element signature="e#36930#36931#0" expanded="false" />
+            <element signature="e#37079#37080#0" expanded="false" />
+            <element signature="e#37161#37162#0" expanded="false" />
+            <element signature="e#40239#40240#0" expanded="false" />
+            <element signature="e#40310#40311#0" expanded="false" />
+            <element signature="e#41727#41728#0" expanded="false" />
+            <element signature="e#41810#41811#0" expanded="false" />
+            <element signature="e#42570#42571#0" expanded="false" />
+            <element signature="e#42632#42633#0" expanded="false" />
+            <element signature="e#43420#43421#0" expanded="false" />
+            <element signature="e#43485#43486#0" expanded="false" />
+            <element signature="e#48555#48556#0" expanded="false" />
+            <element signature="e#48610#48611#0" expanded="false" />
+            <element signature="e#48814#48815#0" expanded="false" />
+            <element signature="e#48862#48863#0" expanded="false" />
+            <element signature="e#49215#49216#0" expanded="false" />
+            <element signature="e#49273#49274#0" expanded="false" />
+            <element signature="e#49483#49484#0" expanded="false" />
+            <element signature="e#49534#49535#0" expanded="false" />
+            <element signature="e#49728#49729#0" expanded="false" />
+            <element signature="e#49773#49774#0" expanded="false" />
+            <element signature="e#49909#49910#0" expanded="false" />
+            <element signature="e#49949#49950#0" expanded="false" />
+            <element signature="e#50697#50698#0" expanded="false" />
+            <element signature="e#50737#50738#0" expanded="false" />
+            <element signature="e#50910#50911#0" expanded="false" />
+            <element signature="e#50950#50951#0" expanded="false" />
+            <element signature="e#51699#51700#0" expanded="false" />
+            <element signature="e#51767#51768#0" expanded="false" />
+            <element signature="e#52313#52314#0" expanded="false" />
+            <element signature="e#52376#52377#0" expanded="false" />
+            <element signature="e#52811#52812#0" expanded="false" />
+            <element signature="e#52873#52874#0" expanded="false" />
+            <element signature="e#53439#53440#0" expanded="false" />
+            <element signature="e#53504#53505#0" expanded="false" />
+            <element signature="e#53949#53950#0" expanded="false" />
+            <element signature="e#54013#54014#0" expanded="false" />
+            <element signature="e#54180#54181#0" expanded="false" />
+            <element signature="e#54231#54232#0" expanded="false" />
+            <element signature="e#54397#54398#0" expanded="false" />
+            <element signature="e#54455#54456#0" expanded="false" />
+            <element signature="e#56518#56519#0" expanded="false" />
+            <element signature="e#56569#56570#0" expanded="false" />
+            <element signature="e#56975#56976#0" expanded="false" />
+            <element signature="e#57029#57030#0" expanded="false" />
+            <element signature="e#57416#57417#0" expanded="false" />
+            <element signature="e#57475#57476#0" expanded="false" />
+            <element signature="e#57758#57759#0" expanded="false" />
+            <element signature="e#57813#57814#0" expanded="false" />
+            <element signature="e#58576#58577#0" expanded="false" />
+            <element signature="e#58628#58629#0" expanded="false" />
+            <element signature="e#60294#60295#0" expanded="false" />
+            <element signature="e#60348#60349#0" expanded="false" />
+            <element signature="e#60553#60554#0" expanded="false" />
+            <element signature="e#60602#60603#0" expanded="false" />
+            <element signature="e#61522#61523#0" expanded="false" />
+            <element signature="e#61579#61580#0" expanded="false" />
+            <element signature="e#61795#61796#0" expanded="false" />
+            <element signature="e#61847#61848#0" expanded="false" />
+            <element signature="e#62169#62170#0" expanded="false" />
+            <element signature="e#62229#62230#0" expanded="false" />
+            <element signature="e#62831#62832#0" expanded="false" />
+            <element signature="e#62889#62890#0" expanded="false" />
+            <element signature="e#63487#63488#0" expanded="false" />
+            <element signature="e#63533#63534#0" expanded="false" />
+            <element signature="e#66032#66033#0" expanded="false" />
+            <element signature="e#66095#66096#0" expanded="false" />
+            <element signature="e#66273#66274#0" expanded="false" />
+            <element signature="e#66320#66321#0" expanded="false" />
+            <element signature="e#66948#66949#0" expanded="false" />
+            <element signature="e#67002#67003#0" expanded="false" />
+            <element signature="e#70095#70096#0" expanded="false" />
+            <element signature="e#70157#70158#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://E:/develop/Java/jdk1.8.0_171/src.zip!/java/util/concurrent/Semaphore.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="290">
+          <caret line="155" column="22" lean-forward="false" selection-start-line="155" selection-start-column="13" selection-end-line="155" selection-end-column="22" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://E:/develop/Java/jdk1.8.0_171/src.zip!/java/util/concurrent/locks/AbstractQueuedSynchronizer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2845">
+          <caret line="289" column="37" lean-forward="true" selection-start-line="289" selection-start-column="37" selection-end-line="289" selection-end-column="37" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://E:/develop/Java/jdk1.8.0_171/src.zip!/java/util/concurrent/locks/Lock.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="672">
+          <caret line="334" column="9" lean-forward="false" selection-start-line="334" selection-start-column="9" selection-end-line="334" selection-end-column="9" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://E:/develop/Java/jdk1.8.0_171/src.zip!/java/util/concurrent/CyclicBarrier.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2963">
+          <caret line="371" column="54" lean-forward="false" selection-start-line="371" selection-start-column="54" selection-end-line="371" selection-end-column="54" />
+          <folding>
+            <element signature="e#9581#9582#0" expanded="false" />
+            <element signature="e#9616#9617#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/com/hadoop/mapreduce/serializable/SelfDriver.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="498">
+          <caret line="37" column="21" lean-forward="false" selection-start-line="37" selection-start-column="21" selection-end-line="37" selection-end-column="21" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://E:/develop/Java/jdk1.8.0_171/src.zip!/java/security/PrivilegedExceptionAction.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="36">
+          <caret line="44" column="17" lean-forward="false" selection-start-line="44" selection-start-column="17" selection-end-line="44" selection-end-column="17" />
+          <folding>
+            <element signature="e#0#1797#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/apache/hadoop/hadoop-mapreduce-client-core/3.1.3/hadoop-mapreduce-client-core-3.1.3-sources.jar!/org/apache/hadoop/mapreduce/Job.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="408">
+          <caret line="1566" column="34" lean-forward="true" selection-start-line="1566" selection-start-column="34" selection-end-line="1566" selection-end-column="34" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+  </component>
+  <component name="masterDetails">
+    <states>
+      <state key="ArtifactsStructureConfigurable.UI">
+        <settings>
+          <artifact-editor />
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.28613138" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="FacetStructureConfigurable.UI">
+        <settings>
+          <last-edited>No facets are configured</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.2" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="GlobalLibrariesConfigurable.UI">
+        <settings>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.2" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="JdkListConfigurable.UI">
+        <settings>
+          <last-edited>1.8</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.2" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="ModuleStructureConfigurable.UI">
+        <settings>
+          <last-edited>mybigdata</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.28613138" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="ProjectJDKs.UI">
+        <settings>
+          <last-edited>1.8</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.28613138" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="ProjectLibrariesConfigurable.UI">
+        <settings>
+          <last-edited>hadoop-mapreduce-examples-3.1.3</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.28613138" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+    </states>
   </component>
 </project>
