@@ -23,6 +23,7 @@ public class HDFSTestAPI {
      */
     @Test
     public void testConfig() throws URISyntaxException, IOException, InterruptedException {
+        // 配置信息
         Configuration configuration = new Configuration();
         // configuration.set("dfs.replication", "2");
         // 参数说明:
