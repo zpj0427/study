@@ -4,6 +4,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.CombineTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
@@ -27,13 +28,14 @@ public class SelfDriver {
         // 指定Mapper输出的KV类型
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(SelfDomain.class);
+        // 设置最大处理分片大小
         // 指定Reduce输出的KV类型
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(SelfDomain.class);
         // 指定job输入路径
-        FileInputFormat.setInputPaths(job, new Path("E:\\123456.txt"));
+        FileInputFormat.setInputPaths(job, new Path("E:\\hadoop\\123456.txt"));
         // 指定job输出路径
-        FileOutputFormat.setOutputPath(job, new Path("E:\\selfout"));
+        FileOutputFormat.setOutputPath(job, new Path("E:\\hadoop\\selfout" + System.currentTimeMillis()));
         // 工作
         job.waitForCompletion(true);
     }

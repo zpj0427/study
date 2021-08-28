@@ -203,6 +203,10 @@
 
 * 创建用户名密码，完成安装
 
+  ```
+  admin  123456
+  ```
+
   ![1615875940665](E:\gitrepository\study\note\image\hadoop\1615875940665.png)
 
 * 图形化界面和命令行界面切换
@@ -710,6 +714,7 @@
 ```
 
 ```sh
+# workers内容
 Hadoop102
 Hadoop103
 Hadoop104
@@ -766,6 +771,20 @@ Hadoop104
   ![1616467395583](E:\gitrepository\study\note\image\hadoop\1616467395583.png)
 
   ![1616467408393](E:\gitrepository\study\note\image\hadoop\1616467408393.png)
+
+* 防火墙开放端口
+
+  ```sh
+  # 查看已经开放的端口
+  firewall-cmd --list-ports
+  # 开放端口
+  # 9870:HDFS页面
+  # 8088:Yarn页面
+  # 19888:历史服务器和日志聚集
+  firewall-cmd --zone=public --add-port=80/tcp --permanent
+  # 开放完成后重新加载防火墙
+  systemctl reload firewalld
+  ```
 
 * 进入 `HDFS` 系统管理界面：http://192.168.10.102:9870
 
@@ -1792,7 +1811,7 @@ public void copyFile() throws Exception {
 
 #### 5.5.2.2，`SecondaryNameNode` 工作机制
 
-1. `SecondaryNameNode` 询问`NameNode` 是否需要进行 `CheckPoint`，并直接带回 `NameNode` 的是否检查见过
+1. `SecondaryNameNode` 询问`NameNode` 是否需要进行 `CheckPoint`，并直接带回 `NameNode` 的是否检查结果
 2. 在接收到需要时，`SecondaryNameNode` 再次访问 `NameNode` 请求执行 `CheckPoint`
 3. `NameNode` 创建新的 `Edits` 文件滚动正在写的操作日志
 4. 将之前的 `Edits` 编辑日志和 `FSImage` 镜像文件拷贝到 `SecondaryNameNode` 进行数据合并
@@ -2816,4 +2835,2240 @@ public void copyFile() throws Exception {
    ```
 
 ## 6.4，`MapReduce` 框架原理
+
+### 6.4.1，`InputFormat` 数据输入
+
+#### 6.4.1.1，切片与 `MapTask` 并行度决定机制
+
+> `MapTask` 的并行度决定 `Map` 阶段的任务处理和并发度，进而影响整个 `Map` 的处理速度
+>
+> 思考：1G的数据通过8个 `MapTask` 处理会提高性能，那么1KB或者1B的数据呢
+
+* 数据块：`Block` 是 `HDFS` 物理上的数据分块概念，将数据分为一块一块进行存储；<font color=red>数据块是 `HDFS` 的基础存储单位</font>
+* 数据切片：数据切片只是在逻辑上对数据输入进行分片，并不会在磁盘上进行分片存储；<font color=red>数据切片是 `MapReduce` 程序计算输入数据的单位，一个数据分片对应一个 `MapTask`</font>
+* 默认情况下，数据切片大小等于数据块大小，即一个数据块由一个 `MapTask` 任务进行执行计算
+
+![1628069092826](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628069092826.png)
+
+#### 6.4.1.2，`Job` 提交流程源码详解
+
+![1628133495123](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628133495123.png)
+
+* `com.hadoop.mapreduce.serializable.SelfDriver`
+
+```java
+// 提交工作，并等待完成
+job.waitForCompletion(true);
+```
+
+* `org.apache.hadoop.mapreduce.Job#waitForCompletion`
+
+```java
+public boolean waitForCompletion(boolean verbose
+                                ) throws IOException, InterruptedException,
+ClassNotFoundException {
+    // 如果状态是DEFINE, 直接进行任务提交执行
+    if (state == JobState.DEFINE) {
+        submit();
+    }
+    if (verbose) {
+        // 监控任务, 清除临时文件等
+        monitorAndPrintJob();
+    } else {
+        ......
+    }
+    return isSuccessful();
+}
+```
+
+* `org.apache.hadoop.mapreduce.Job#submit`
+
+```java
+public void submit() 
+    throws IOException, InterruptedException, ClassNotFoundException {
+    // 状态确认
+    ensureState(JobState.DEFINE);
+    // 新旧API转换
+    setUseNewAPI();
+    // 客户端连接
+    // 集群模式: 连接Hadoop集群
+    // 本地模式: 取本地支持
+    connect();
+    final JobSubmitter submitter = 
+        getJobSubmitter(cluster.getFileSystem(), cluster.getClient());
+    status = ugi.doAs(new PrivilegedExceptionAction<JobStatus>() {
+        public JobStatus run() throws IOException, InterruptedException, 
+        ClassNotFoundException {
+            // 提交任务
+            return submitter.submitJobInternal(Job.this, cluster);
+        }
+    });
+    state = JobState.RUNNING;
+    LOG.info("The url to track the job: " + getTrackingURL());
+}
+```
+
+* `org.apache.hadoop.mapreduce.JobSubmitter#submitJobInternal`
+
+```java
+JobStatus submitJobInternal(Job job, Cluster cluster) 
+    throws ClassNotFoundException, InterruptedException, IOException {
+
+    // 校验输出的工作空间是否存在
+    // 根据输出设置的OutputFormatter进行确定
+    // 常见的文件存在错误在内部 org.apache.hadoop.mapreduce.lib.output.FileOutputFormat#checkOutputSpecs 方法中提示
+    checkSpecs(job);
+    ......
+	// 创建给集群提交数据的Stag路径
+    // 本地模式在本地文件系统中进行创建
+    // 本地路径创建代码: org.apache.hadoop.mapred.LocalJobRunner#getStagingAreaDir
+    // 默认位置:/tmp/hadoop/mapred/staging
+    Path jobStagingArea = JobSubmissionFiles.getStagingDir(cluster, conf);
+    ......
+    // 获取执行的JobId
+    JobID jobId = submitClient.getNewJobID();
+    ......
+    // 集群模式下拷贝jar包到集群
+    // 具体内部路劲: org.apache.hadoop.mapreduce.JobResourceUploader#uploadResourcesInternal
+    copyAndConfigureFiles(job, submitJobDir);
+    ......
+    // 切片, 并根据切片进行后续处理
+    // 切片完成后, 会在Stag路径下生成切片相关的4个文件
+	int maps = writeSplits(job, submitJobDir);
+    conf.setInt(MRJobConfig.NUM_MAPS, maps);
+    ......
+    // 向Stag写入XML配置信息
+    // 最终由 org.apache.hadoop.conf.Configuration#writeXml(java.lang.String, java.io.Writer) 写出
+    // 写完成后, 会像Stag写出job.xml文件, 作为后续执行的配置信息
+    writeConf(conf, submitJobFile);
+    ......
+    // 提交任务并返回任务状态
+    // 提交任务: 内部会启动线程进行处理
+    status = submitClient.submitJob(
+        jobId, submitJobDir.toString(), job.getCredentials());
+    ......
+}
+```
+
+* `org.apache.hadoop.mapred.LocalJobRunner#submitJob`
+
+```java
+public org.apache.hadoop.mapreduce.JobStatus submitJob(
+    org.apache.hadoop.mapreduce.JobID jobid, String jobSubmitDir,
+    Credentials credentials) throws IOException {
+    // 初始化Job, 初始化内部会执行线程的start()方法,开启线程进行后续处理
+    // 线程方法：org.apache.hadoop.mapred.LocalJobRunner.Job#run
+    Job job = new Job(JobID.downgrade(jobid), jobSubmitDir);
+    job.job.setCredentials(credentials);
+    // 初始化Job时, status状态即为Running
+    return job.status;
+}
+```
+
+#### 6.4.1.3，`FileInputFormat` 切片源码详解
+
+![1628150618441](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628150618441.png)
+
+![1628150628827](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628150628827.png)
+
+* 切片入口：`org.apache.hadoop.mapreduce.JobSubmitter#writeSplits`
+
+  ```java
+  // jobSubmitDir：Stag文件路径
+  private <T extends InputSplit>
+      int writeNewSplits(JobContext job, Path jobSubmitDir) throws IOException,
+  InterruptedException, ClassNotFoundException {
+      // 计算切片数量
+      List<InputSplit> splits = input.getSplits(job);
+      T[] array = (T[]) splits.toArray(new InputSplit[splits.size()]);
+  	// 在Stag中创建切片相关的四个文件
+      Arrays.sort(array, new SplitComparator());
+      JobSplitWriter.createSplitFiles(jobSubmitDir, conf, 
+                                      jobSubmitDir.getFileSystem(conf), array);
+      return array.length;
+  }
+  ```
+
+* 切片计算：`org.apache.hadoop.mapreduce.lib.input.FileInputFormat#getSplits`
+
+  ```java
+  public List<InputSplit> getSplits(JobContext job) throws IOException {
+      // 取切片的最大最小值，并根据最大最小值与块大小进行比较最终确认切片大小
+      StopWatch sw = new StopWatch().start();
+      long minSize = Math.max(getFormatMinSplitSize(), getMinSplitSize(job));
+      long maxSize = getMaxSplitSize(job);
+  
+      // 最终返回的切片数据
+      List<InputSplit> splits = new ArrayList<InputSplit>();
+      // 拆分输入路径，获取文件下的每一个子文件
+      List<FileStatus> files = listStatus(job);
+  	......
+      for (FileStatus file: files) {
+          if (ignoreDirs && file.isDirectory()) {
+              continue;
+          }
+          Path path = file.getPath();
+          long length = file.getLen();
+          if (length != 0) {
+              ......
+              // isSplitable：判断文件是否可以进行拆分
+              if (isSplitable(job, path)) {
+                  // 取文件的存储块大小
+                  long blockSize = file.getBlockSize();
+                  // blockSize, minSize, maxSize在三个值中经过计算取切片大小
+                  long splitSize = computeSplitSize(blockSize, minSize, maxSize);
+  				// 构建切片信息，并添加到集合
+                  long bytesRemaining = length;
+                  // SPLIT_SLOP：默认为1.1
+                  // 表示文件大小比切片大小如果大于1.1，就重新开切片处理，如果小于该值，直接在当前切片处理
+                  // eg：切片大小为32M，文件大小为33M，33/32 < 1.1，剩余的1M在当前切片处理
+                  while (((double) bytesRemaining)/splitSize > SPLIT_SLOP) {
+                      int blkIndex = getBlockIndex(blkLocations, length-bytesRemaining);
+                      splits.add(makeSplit(path, length-bytesRemaining, splitSize,
+                                           blkLocations[blkIndex].getHosts(),
+                                           blkLocations[blkIndex].getCachedHosts()));
+                      bytesRemaining -= splitSize;
+                  }
+  				......
+              }
+          }
+          ......
+      }
+      ......
+      return splits;
+  }
+  ```
+
+  ```java
+  protected long computeSplitSize(long blockSize, long minSize,
+                                  long maxSize) {
+      return Math.max(minSize, Math.min(maxSize, blockSize));
+  }
+  ```
+
+* 切片文件存储：`org.apache.hadoop.mapreduce.split.JobSplitWriter#createSplitFiles(org.apache.hadoop.fs.Path, org.apache.hadoop.conf.Configuration, org.apache.hadoop.fs.FileSystem, T[])`
+
+  ```java
+  public static <T extends InputSplit> void createSplitFiles(Path jobSubmitDir, 
+                                                             Configuration conf, FileSystem fs, T[] splits) 
+      throws IOException, InterruptedException {
+      // 创建切片相关文件
+      FSDataOutputStream out = createFile(fs, 
+                                          JobSubmissionFiles.getJobSplitFile(jobSubmitDir), conf);
+      // 将切片信息写入到文件中
+      SplitMetaInfo[] info = writeNewSplits(conf, splits, out);
+      out.close();
+      // 创建并存储切片元数据信息
+      writeJobSplitMetaInfo(fs,JobSubmissionFiles.getJobSplitMetaFile(jobSubmitDir), 
+                            new FsPermission(JobSubmissionFiles.JOB_FILE_PERMISSION), splitVersion,
+                            info);
+  }
+  ```
+
+  ```java
+  public static Path getJobSplitFile(Path jobSubmissionDir) {
+      return new Path(jobSubmissionDir, "job.split");
+  }
+  ```
+
+  ```java
+  public static Path getJobSplitMetaFile(Path jobSubmissionDir) {
+      return new Path(jobSubmissionDir, "job.splitmetainfo");
+  }
+  ```
+
+#### 6.4.1.4，`TextInputFormat`
+
+> TextInputFormat 是默认的 FileInputFormat 实现类。按行读取每条记录。
+>
+> <font color=red>Key：LongWritable类型，改行在整个文件中的起始字节偏移量</font>
+>
+> <font color=red>Value：Text类型，这行的内容，不包含任何行终止符</font>
+
+#### 6.4.1.5，`CombineTextInputFormat`
+
+> 框架默认的 `TextInputFormat` 切片机制是对任务按文件规划切片，不管文件多小，都会是一个单独的切片，都会交给一个 `MapTask`，这样如果有大量小文件，就会产生大量的 `MapTask`，处理效率极其低下。 
+>
+> <font color=red>`CombineTextInputFormat` 切片过程包括虚拟存储过程和切片过程</font>
+
+![1628156007682](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628156007682.png)
+
+* **虚拟存储过程**：将输入目录下所有文件大小，依次和设置的 `setMaxInputSplitSize` 值比较，如果不大于设置的最大值，逻辑上划分一个块。如果输入文件大于设置的最大值且大于两倍，那么以最大值切割一块；当剩余数据大小超过设置的最大值且不大于最大值 2 倍，此时将文件均分成 2 个虚拟存储块（防止出现太小切片）。例如 `setMaxInputSplitSize` 值为 4M，输入文件大小为 8.02M，则先逻辑上分成一个4M。剩余的大小为 4.02M，如果按照 4M 逻辑划分，就会出现 0.02M 的小的虚拟存储文件，所以将剩余的 4.02M 文件切分成（2.01M 和 2.01M）两个文件。
+* **切片过程**：
+  * 判断虚拟存储的文件大小是否大于 `setMaxInputSplitSize` 值，大于等于则单独形成一个切片。
+  * 如果不大于则跟下一个虚拟存储文件进行合并，共同形成一个切片。
+
+##### 6.4.2.4.1，`CombineTextInputFormat` 使用配置
+
+* 在 `Driver` 类中进行设置，设置如下
+
+  ```java
+  public class SelfDriver {
+  
+      public static void main(String[] args) throws Exception {
+          // 获取配置信息, 构建Job示例
+          Configuration configuration = new Configuration();
+          Job job = Job.getInstance(configuration);
+          // 指定本程序的jar包路径
+          job.setJarByClass(SelfDriver.class);
+          // 关联 Mapper/Reduce 业务类
+          job.setMapperClass(SelfMapper.class);
+          job.setReducerClass(SelfReduce.class);
+          // 指定Mapper输出的KV类型
+          job.setMapOutputKeyClass(Text.class);
+          job.setMapOutputValueClass(SelfDomain.class);
+          
+          // 设置未`CombineTextInputFormat`处理方式
+          job.setInputFormatClass(CombineTextInputFormat.class);
+          // 设置最大处理大小为4M
+          CombineTextInputFormat.setMaxInputSplitSize(job, 4194304);
+          
+          // 设置最大处理分片大小
+          // 指定Reduce输出的KV类型
+          job.setOutputKeyClass(Text.class);
+          job.setOutputValueClass(SelfDomain.class);
+          // 指定job输入路径
+          FileInputFormat.setInputPaths(job, new Path("E:\\123456.txt"));
+          // 指定job输出路径
+          FileOutputFormat.setOutputPath(job, new Path("E:\\selfout"));
+          // 工作
+          job.waitForCompletion(true);
+      }
+  
+  }
+  ```
+
+
+
+### 6.4.2，`MapReduce` 工作流程
+
+![1628237080804](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628237080804.png)
+
+![1628237089343](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628237089343.png)
+
+
+
+1. 准备待处理的数据文件
+2. 客户端通过配置 `Driver` 类，进行 `Job` 提交，开启一个任务处理
+3. `Job` 提交后，会对数据文件需要的分片信息、配置信息和 `jar` 包存储到本地路径（基于远程的Hadoop会存储 `Jar` 包）
+4. 根据 `Job` 阶段确定的分片信息计算出 `MapTask` 数量（默认 `Windows` 为32M，`Linux` 为128M）
+5. `MapTask` 根据当前分片的偏移量从数据文件中读取数据，默认通过 `TextInputFormat` 调用 `recorderReader` 读取，输入方式可以自定义；<font color=red>`MapTask` 间处理相互独立</font>
+6. 读取到数据后，调用自定义的 `Mapper` 实现类的 `map` 方法进行数据基础处理并写出
+7. `Mapper` 阶段读取的数据，写出时先写出到内存缓冲区中：缓冲区大小默认100M，可配置。缓冲区内部分为两部分：一部分存储索引数据，一部分存储真是数据；在写入数据时，对按照分区对数据进行区分，分区数自定义配置，默认按照 `key` 的哈希值对分区进行取余确定分区；
+8. `Mapper` 数据在缓冲区中顺序写入，在写入空间超过缓冲区空间的 `80%` 时，会按分区溢出数据到文件（分区文件重合，通过索引位置区分）如果写缓冲区速度快与写溢出文件速度，则在缓冲区满后，`Mapper` 操作会阻塞直到缓冲区空间够用；<font color=red>在写溢出文件时，会按照 `key` 对缓冲区中数据进行快速排序，排序完成后写出，排序数据移动时只移动元数据即可</font>
+9. 每一次溢出处理都会生成一个溢出文件，`Shuffle` 会通过归并排序算法对溢出文件进行合并处理，保证在后续 `Reduce` 处理时，一个 `MapTask` 中只有一个文件（分区文件重合）
+10. `MapTask` 将溢出文件按分区归并后，此时可通过 `Combiner` 对文件进行合并，以 `Key` 分组对分区文件进行初步处理，减少传递到 `Reduce` 阶段的网络数据
+11. `Redcue` 阶段理论上在 `MapTask` 任务全部执行完成后触发，并启动相应数量的 `ReduceTask`，并告知 `ReduceTask` 数据处理范围；不过如果 `MapTask` 过程，也可能在处理过程中触发 `Reduce` 对已经处理完成的 `MapTask` 数据进行合并
+12. `Reduce` 首先会对每一个分区在不同 `MapTask` 下的文件通过归并算法进行合并
+13. 对合并排序后的文件，`ReduceTask` 会从文件中取出一个个键值对 ，对同一个 `key` 的数据重新构造后，调用自定义的 `Reduce` 实现类的 `reduce(..)` 执行
+14. 数据处理完成后，通过 `OutPutFormat` 调用 `recordWrite` 写出数据，写出到 `part-r-000000` 文件中，
+
+### 6.4.3，`Shuffle` 机制详解
+
+#### 6.4.3.1，`Shuffle` 机制
+
+![1628240722053](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628240722053.png)
+
+#### 6.4.3.2，`Partition` 分区
+
+1. 问题引出：
+
+   > 要求将统计按照条件输出到不同的文件中，比如不同手机前缀的手机号分到不同的结果文件中
+
+2. 默认 `Partition` 分区
+   * `MapReduce` 的默认分区数为0
+   * 在进行分区计算时，用 `key` 的哈希值与 `int` 的最大值与计算后，对分区数取余即确定所属分区
+
+3. 自定义 `Partition` 步骤
+
+   * 自定义 `Partition` 类，继承 `org.apache.hadoop.mapreduce.Partitioner` 类，并重写抽象方法，再方法中根据规则返回不同从0开始的连续编号即所属分区编号
+
+     ```java
+     package com.hadoop.mapreduce.partition;
+     
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.Partitioner;
+     
+     /**
+      * 自定义分区, key value 为mapper阶段输出的key value类型
+      */
+     public class MyPartition extends Partitioner<Text, SelfDomain> {
+     
+         @Override
+         public int getPartition(Text text, SelfDomain selfDomain, int numPartitions) {
+             String phone = text.toString();
+             String prePhone = phone.substring(0, 3);
+             if ("136".equals(prePhone)) {
+                 return 0;
+             } else if ("137".equals(prePhone)) {
+                 return 1;
+             } else if ("138".equals(prePhone)) {
+                 return 2;
+             } else if ("139".equals(prePhone)) {
+                 return 3;
+             } else {
+                 return 4;
+             }
+         }
+     
+     }
+     ```
+
+   * 在 `Job ` 驱动中，设置自定义分区 `Partition`
+
+   * 自定义 `Partition` 后，根据自定义的 `Partition` 逻辑设置响应数量的 `ReduceTask`
+
+     ```java
+     // 分区处理, 设置分区处理类
+     job.setPartitionerClass(MyPartition.class);
+     // 设置ReduceTask个数, 与分区逻辑个数保持一致
+     job.setNumReduceTasks(5);
+     ```
+
+   * 最终输入结果
+
+     ![1628246668696](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628246668696.png)
+
+4. 分区总结
+
+   * 如果 `ReduceTask` 的数量 > `getPartition` 的结果数，则会多产生几个空的输出文件part-r-000xx
+
+   * 如果1 < `ReduceTask` 的数量 < `getPartition` 的结果数，则有一部分分区数据无处安放，会Exception；
+
+   * 如果 `ReduceTask` 的数量=1，则不管 `MapTask` 端输出多少个分区文件，最终结果都交给这一个`ReduceTask`，最终也就只会产生一个结果文件 part-r-00000；该部分在源码中有所体现
+
+     ```java
+     // org.apache.hadoop.mapred.MapTask.NewOutputCollector#NewOutputCollector
+     NewOutputCollector(org.apache.hadoop.mapreduce.JobContext jobContext,
+                        JobConf job,
+                        TaskUmbilicalProtocol umbilical,
+                        TaskReporter reporter
+                       ) throws IOException, ClassNotFoundException {
+         collector = createSortingCollector(job, reporter);
+         partitions = jobContext.getNumReduceTasks();
+         // 注意在设置分区执行类时, 如果NumReduce为1, 默认取固定的数据
+         // 如果大于1, 则根据自定义的分区类反射获取
+         if (partitions > 1) {
+             partitioner = (org.apache.hadoop.mapreduce.Partitioner<K,V>)
+                 ReflectionUtils.newInstance(jobContext.getPartitionerClass(), job);
+         } else {
+             partitioner = new org.apache.hadoop.mapreduce.Partitioner<K,V>() {
+                 @Override
+                 public int getPartition(K key, V value, int numPartitions) {
+                     return partitions - 1;
+                 }
+             };
+         }
+     }
+     ```
+
+   * 分区号必须从零开始，逐一累加
+
+#### 6.4.3.3，`WritableComparable` 排序
+
+> 排序是 `MapReduce` 框架中最重要的操作之一；
+>
+> `MapTask` 和 `ReduceTask` 均会对数据按照 `Key` 进行排序，该操作属于 `Hadoop` 的默认行为。<font color=red>任务应用程序中的数据都会被排序，而无论是否需要</font>
+>
+> 默认排序是按照<font color=red>字典顺序</font>，且实现该排序的方式是 <font color=red>快速排序</font>
+
+> 对于 `MapTask`，对将处理的结果暂时放在环形缓冲区中，<font color=red>当环形缓冲区使用率达到一定阈值后(80%)，再对缓冲区中的数据进行一次快速排序</font>，并将有序数据溢写到磁盘上（每一次溢写都会产生一个溢写文件），当数据全部处理完毕后，会对<font color=red>磁盘上的所有溢写文件进行归并排序</font>
+>
+> 对于 `ReduceTask`，它从每个 `MapTask` 上远程拷贝相应的数据文件，如果文件大于一定阈值，则溢写到磁盘，否则在内存中直接处理。如果磁盘上文件数据达到一定的阈值，则进行一次<font color=red>归并排序</font>以生成一个更大文件；如果内存中文件大小或者数据超过一定阈值，在进行一次合并后将数据溢写到磁盘上。当所有数据拷贝完成后，<font color=red>`ReduceTask` 统一对内存和磁盘上的所有数据进行一次归并排序</font>
+
+##### 6.4.3.3.1，排序分类
+
+* **部分排序**：`MapReduce` 根据输入记录的键对数据集排序，保证输出的每个文件内部有序
+* **全排序**：最终输出结果只有一个文件，且文件内部有序。实现方式是只设置一个 `ReduceTask`。但该方法在处理大型文件时效率极低，因为一台机器处理所有文件，完全丧失了 `MapReduce` 所提供的并行架构。
+* **辅助排序（GroupingComparator分组）**：在 `Reduce` 端对 `key` 进行分组。应用于：在接收的 `key` 为 `bean` 对象时，想让一个或几个字段相同（全部字段比较不相同）的 `key` 进入到同一个 `reduce` 方法时，可以采用分组排序。
+* **自定义排序**：实现 `WriteableComparable` 接口并自定义排序方式；在自定义排序过程中，如果`compareTo` 中的判断条件为两个即为二次排序。
+
+##### 6.4.3.3.2，`WritableComparable` 全排序
+
+1. 原始需求
+
+   > 对 [手机流量统计方式](#6.3.3，序列化实现手机流量统计) 进行二次开发，在原有统计结果基础上，对输出结果按总流量进行倒序排列
+
+2. 需求分析
+
+   ![1628653959591](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628653959591.png)
+
+3. 代码实现
+
+   * `SelfDomain` ：
+
+     ```java
+     // WritableComparable<T> extends Writable, Comparable<T>
+     // 能同时实现序列化和排序两个需求
+     public class SelfDomain implements WritableComparable<SelfDomain> {
+         ......
+         @Override
+         public int compareTo(SelfDomain o) {
+             // 按总流量进行倒序排列
+             return (int)(this.sumBytes - o.getSumBytes());
+         }
+     }
+     ```
+
+   * `SelfMapper`：因为要按总流量进行排序，总流量是 `SelfDomain` 中的字段，所以需要以 `SelfDomain` 为 `Key`
+
+     ```java
+     package com.hadoop.mapreduce.sort;
+     
+     import org.apache.hadoop.io.LongWritable;
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.Mapper;
+     
+     import java.io.IOException;
+     
+     /**
+      * 自定义Mapper计算
+      * 按总流量进行排序, 需要把总流浪所在的对象设置为key, 手机号为value
+      * @author PJ_ZHANG
+      * @create 2021-05-28 14:44
+      **/
+     public class SelfMapper extends Mapper<LongWritable, Text, SelfDomain, Text> {
+     
+         private SelfDomain domain = new SelfDomain();
+     
+         private Text text = new Text();
+     
+         @Override
+         protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+             String str = value.toString();
+             String[] strArr = str.split("\t");
+             String phone = strArr[0];
+             long uploadBytes = Long.parseLong(strArr[1]);
+             long downloadBytes = Long.parseLong(strArr[2]);
+             long sumBytes = Long.parseLong(strArr[3]);
+             domain.setUploadBytes(uploadBytes);
+             domain.setDownloadBytes(downloadBytes);
+             domain.setSumBytes(sumBytes);
+             text.set(phone);
+             context.write(domain, text);
+         }
+     }
+     ```
+
+   * `SelfReduce`：入参与 `Mapper` 保持一致，出参还是按照原来形式进行输出，所以出参类型不变，在出参时对 `Key` 和 `Value` 的位置进行互换
+
+     ```java
+     package com.hadoop.mapreduce.sort;
+     
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.Reducer;
+     
+     import java.io.IOException;
+     
+     /**
+      * 最终进行数据汇总
+      * @author PJ_ZHANG
+      * @create 2021-05-28 15:37
+      **/
+     public class SelfReduce extends Reducer<SelfDomain, Text, Text, SelfDomain> {
+     
+         private SelfDomain domain = new SelfDomain();
+     
+         /**
+          * reduce对应进行入参的key-value调整, 写出还是以value-key形式写出, 保证写出顺序
+          */
+         @Override
+         protected void reduce(SelfDomain key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+     
+             for (Text phone : values) {
+                context.write(phone, key);
+             }
+         }
+     
+     }
+     ```
+
+   * `SelfDriver`：修改 `Mapper` 的出入参类型即可
+
+     ```java
+     package com.hadoop.mapreduce.sort;
+     
+     import org.apache.hadoop.conf.Configuration;
+     import org.apache.hadoop.fs.Path;
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.Job;
+     import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+     import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+     
+     /**
+      * 调度类
+      *
+      * @author PJ_ZHANG
+      * @create 2021-05-28 15:41
+      **/
+     public class SelfDriver {
+     
+         public static void main(String[] args) throws Exception {
+             // 获取配置信息, 构建Job示例
+             Configuration configuration = new Configuration();
+             Job job = Job.getInstance(configuration);
+             // 指定本程序的jar包路径
+             job.setJarByClass(SelfDriver.class);
+             // 关联 Mapper/Reduce 业务类
+             job.setMapperClass(SelfMapper.class);
+             job.setReducerClass(SelfReduce.class);
+             // 指定Mapper输出的KV类型
+             job.setMapOutputKeyClass(SelfDomain.class);
+             job.setMapOutputValueClass(Text.class);
+             // 指定Reduce输出的KV类型
+             job.setOutputKeyClass(Text.class);
+             job.setOutputValueClass(SelfDomain.class);
+             // 指定job输入路径
+             FileInputFormat.setInputPaths(job, new Path("E:\\selfout1628652961768\\part-r-00000"));
+             // 指定job输出路径
+             FileOutputFormat.setOutputPath(job, new Path("E:\\selfout" + System.currentTimeMillis()));
+             // 工作
+             job.waitForCompletion(true);
+         }
+     
+     }
+     
+     ```
+
+   * 排序完成后，可能会存在总流量一致，但是上下行流量有偏差的情况，此时需要进行二次排序。
+
+     ![1628663710098](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628663710098.png)
+
+##### 6.4.3.3.3，`WritableComparable` 二次排序实现
+
+> 接上，在总流量一致时，按下行流量进行倒序；在总流量和下行流量一致时，按上行流量进行倒序；
+
+* `SelfDomain`：二次排序，只需要对排序方式进行调整即可
+
+  ```java
+  public int compareTo(SelfDomain o) {
+      long result = o.sumBytes - this.sumBytes;
+      if (0 == result) {
+          result = o.downloadBytes - this.downloadBytes;
+          if (0== result) {
+              result = o.uploadBytes - this.uploadBytes;
+          }
+      }
+      return (int) result;
+  }
+  ```
+
+  ![1628663872570](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628663872570.png)
+
+##### 6.4.3.3.4，`WritableComparable` 分区内排序
+
+> 在 [`Partition` 分区](#6.4.3.2，`Partition` 分区) 处理的基础上进行分区排序处理，按照对应的分区方式保证区内数据有序性
+
+* `SelfPartition`：增加分区处理类
+
+  ```java
+  /**
+   * 自定义分区, key value 为mapper阶段输出的key value类型
+   */
+  public class MyPartition extends Partitioner<SelfDomain, Text> {
+  
+      @Override
+      public int getPartition(SelfDomain selfDomain, Text text, int numPartitions) {
+          // 按 value 值进行分区处理
+          String phone = text.toString();
+          String prePhone = phone.substring(0, 3);
+          if ("136".equals(prePhone)) {
+              return 0;
+          } else if ("137".equals(prePhone)) {
+              return 1;
+          } else if ("138".equals(prePhone)) {
+              return 2;
+          } else if ("139".equals(prePhone)) {
+              return 3;
+          } else {
+              return 4;
+          }
+      }
+  
+  }
+  ```
+
+* `SelfDriver`：添加分区信息
+
+  ```java
+  public class SelfDriver {
+  
+      public static void main(String[] args) throws Exception {
+          // 获取配置信息, 构建Job示例
+          Configuration configuration = new Configuration();
+          Job job = Job.getInstance(configuration);
+          // 指定本程序的jar包路径
+          job.setJarByClass(SelfDriver.class);
+          // 关联 Mapper/Reduce 业务类
+          job.setMapperClass(SelfMapper.class);
+          job.setReducerClass(SelfReduce.class);
+          // 指定Mapper输出的KV类型
+          job.setMapOutputKeyClass(SelfDomain.class);
+          job.setMapOutputValueClass(Text.class);
+          // 指定Reduce输出的KV类型
+          job.setOutputKeyClass(Text.class);
+          job.setOutputValueClass(SelfDomain.class);
+          // 添加分区信息
+          job.setPartitionerClass(MyPartition.class);
+          // 设置reducetask数量, 与分区数量保持一致
+          job.setNumReduceTasks(5);
+          // 指定job输入路径
+          FileInputFormat.setInputPaths(job, new Path("E:\\selfout1628652961768\\part-r-00000"));
+          // 指定job输出路径
+          FileOutputFormat.setOutputPath(job, new Path("E:\\selfout" + System.currentTimeMillis()));
+          // 工作
+          job.waitForCompletion(true);
+      }
+  
+  }
+  ```
+
+* 结果如下：
+
+  ![1628664337771](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628664337771.png) 
+
+  ![1628664370398](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628664370398.png)
+
+#### 6.4.3.4，`Combiner` 合并
+
+> * `Combiner` 是 MR 程序中 `Mapper` 和 `Reducer` 之外的一种组件
+> * `Combiner` 组件的父类就是 `Reducer`
+> * `Combiner` 和 `Reducer` 的区别在于运行的位置
+>   * `Combiner` 是在每一个 `MapTask` 所在的节点运行
+>   * `Reducer` 是接收全局所有 `Mapper` 的输出结果
+> * `Combiner` 的意义是对每一个 `MapTask` 的输出进行局部汇总，以减少网络传输量
+> * <font color=red>`Combiner` 能够应用的前提是不能影响最终的业务逻辑</font>，而且，`Combine` 输出的KV要与 `Reduce` 输入的KV类型对应上；`Combine` 输入的KV要与 `Mapper` 输出的KV对应上
+> * 自定义 `Combiner` 步骤
+>   * 自定义 `Combiner` 类继承 `Reduce` 类，声明出入KV类型并重写 `reduce(...)` 方法
+>   * 在 `Job` 驱动类中配置 `Combiner`
+
+###### 6.4.3.4.1，`Combiner` 合并实操
+
+1. 需求
+
+   > 对 WordCount 实例进行局部汇总，以求减少网络数据传输量
+
+2. 需求分析
+
+   ![1628671935177](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628671935177.png)
+
+3. 案例实现
+
+   * 自定义 `Combiner`：
+
+     ```java
+     package com.hadoop.mapreduce.combiner;
+     
+     import org.apache.hadoop.io.IntWritable;
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.Reducer;
+     
+     import java.io.IOException;
+     
+     /**
+      * 自定义 Combiner 类
+      * 入参KV为Mapper的出参KV
+      * 出参KV为Mapper的入参KV
+      */
+     public class SelfCombiner extends Reducer<Text, IntWritable, Text, IntWritable> {
+     
+         IntWritable intWritable = new IntWritable();
+     
+         @Override
+         protected void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+             int sum = 0;
+             for (IntWritable value : values) {
+                 sum += value.get();
+             }
+             intWritable.set(sum);
+             context.write(key, intWritable);
+         }
+     
+     }
+     ```
+
+   * `Job` 配置中添加：
+
+     ```java
+     public class WordCountDriver {
+     
+         public static void main(String[] args) throws Exception {
+             // 1. 获取配置信息, 获取Job示例
+             Configuration configuration = new Configuration();
+             Job job = Job.getInstance(configuration);
+             // 2. 指定本程序jar包所在的路径
+             job.setJarByClass(WordCountDriver.class);
+             // 3. 关联Mapper/Reduce业务类
+             job.setMapperClass(WordCountMapper.class);
+             job.setReducerClass(WordCountReduce.class);
+             // 4. 指定Mapper输出数据的KV类型
+             job.setMapOutputKeyClass(Text.class);
+             job.setMapOutputValueClass(IntWritable.class);
+             // 5. 指定Reduce输出数据的KV类型
+             job.setOutputKeyClass(Text.class);
+             job.setOutputValueClass(IntWritable.class);
+     
+             // 指定合并类
+             job.setCombinerClass(SelfCombiner.class);
+     
+             // 6. 指定Job输入原始数据的文件路径
+              FileInputFormat.setInputPaths(job, new Path("E:\\123.txt"));
+             // 7. 指定Job输出结果数据的文件路径
+              FileOutputFormat.setOutputPath(job, new Path("E:\\wcout"));
+             // 8. 提交执行
+             job.waitForCompletion(true);
+         }
+     
+     }
+     ```
+
+   * 结果呈现：生效后会在日志中看到有合并信息
+
+     ![1628672893490](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628672893490.png)
+
+### 6.4.4，`OutputFormat` 数据输出
+
+> `OutputFormat` 是 `MapReduce` 输出的基类，所有实现 `MapReduce` 输出都继承了 `OutputFormat` 接口；
+>
+> * `MapReduce` 的默认输出类是 `TextOutputFormat`
+
+#### 6.4.4.1，自定义 `OutputFormat`
+
+1. 需求
+
+   > 过滤 log.txt 中的日志信息，包含 hello 的网站输出到 E:/hello.txt，其他网站输出到 E:/other.txt
+
+2. 需求分析：
+
+   ![1628679468337](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628679468337.png)
+
+3. 案例实操
+
+   * `SelfOutputFormat` 类：构建 `SelfRecordWriter` 对象
+
+     ```java
+     package com.hadoop.mapreduce.outputformat;
+     
+     import org.apache.hadoop.io.NullWritable;
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.RecordWriter;
+     import org.apache.hadoop.mapreduce.TaskAttemptContext;
+     import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+     
+     import java.io.IOException;
+     
+     public class SelfOutputFormat extends FileOutputFormat<Text, NullWritable> {
+     
+         @Override
+         public RecordWriter<Text, NullWritable> getRecordWriter(TaskAttemptContext job) throws IOException, InterruptedException {
+             return new SelfRecordWriter(job);
+         }
+     
+     }
+     ```
+
+   * `SelfRecordWriter` 类：创建输出路径并定义输出方式
+
+     ```java
+     package com.hadoop.mapreduce.outputformat;
+     
+     import org.apache.hadoop.fs.FSDataOutputStream;
+     import org.apache.hadoop.fs.FileSystem;
+     import org.apache.hadoop.fs.Path;
+     import org.apache.hadoop.io.IOUtils;
+     import org.apache.hadoop.io.NullWritable;
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.RecordWriter;
+     import org.apache.hadoop.mapreduce.TaskAttemptContext;
+     
+     import java.io.IOException;
+     import java.nio.charset.StandardCharsets;
+     
+     public class SelfRecordWriter extends RecordWriter<Text, NullWritable> {
+     
+         private FSDataOutputStream helloOutputFormat;
+     
+         private FSDataOutputStream otherOutputFormat;
+     
+         public SelfRecordWriter(TaskAttemptContext job) {
+             try {
+                 FileSystem fs = FileSystem.get(job.getConfiguration());
+                 helloOutputFormat = fs.create(new Path("E:\\hello.txt"));
+                 otherOutputFormat = fs.create(new Path("E:\\other.txt"));
+             } catch (Exception e) {
+                 e.printStackTrace();
+             }
+         }
+     
+         @Override
+         public void write(Text key, NullWritable value) throws IOException, InterruptedException {
+             String line = key.toString();
+             if (line.contains("hello")) {
+                 helloOutputFormat.write((line + "\n").getBytes(StandardCharsets.UTF_8));
+             } else {
+                 otherOutputFormat.write((line + "\n").getBytes(StandardCharsets.UTF_8));
+             }
+         }
+     
+         @Override
+         public void close(TaskAttemptContext context) throws IOException, InterruptedException {
+             IOUtils.closeStreams(helloOutputFormat, otherOutputFormat);
+         }
+     
+     }
+     ```
+
+   * `Mapper`
+
+     ```java
+     package com.hadoop.mapreduce.outputformat;
+     
+     import org.apache.hadoop.io.IntWritable;
+     import org.apache.hadoop.io.LongWritable;
+     import org.apache.hadoop.io.NullWritable;
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.Mapper;
+     
+     import java.io.IOException;
+     
+     public class WordCountMapper extends Mapper<LongWritable, Text, Text, NullWritable> {
+     
+         private Text text = new Text();
+     
+         private IntWritable one = new IntWritable(1);
+     
+         @Override
+         protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+             context.write(value, NullWritable.get());
+         }
+     }
+     ```
+
+   * `Reduce`
+
+     ```java
+     package com.hadoop.mapreduce.outputformat;
+     
+     import org.apache.hadoop.io.IntWritable;
+     import org.apache.hadoop.io.NullWritable;
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.Reducer;
+     
+     import java.io.IOException;
+     
+     public class WordCountReduce extends Reducer<Text, NullWritable, Text, NullWritable> {
+     
+         private IntWritable intWritable = new IntWritable();
+     
+         @Override
+         protected void reduce(Text key, Iterable<NullWritable> values, Context context) throws IOException, InterruptedException {
+             for (NullWritable nullWritable : values) {
+                 context.write(key, NullWritable.get());
+             }
+         }
+     }
+     ```
+
+   * `Driver`
+
+     ```java
+     package com.hadoop.mapreduce.outputformat;
+     
+     import org.apache.hadoop.conf.Configuration;
+     import org.apache.hadoop.fs.Path;
+     import org.apache.hadoop.io.IntWritable;
+     import org.apache.hadoop.io.NullWritable;
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.Job;
+     import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+     import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+     
+     /**
+      * Driver类中进行统一调度
+      * 分8个步骤
+      * @author PJ_ZHANG
+      * @create 2021-05-27 18:24
+      **/
+     public class WordCountDriver {
+     
+         public static void main(String[] args) throws Exception {
+             // 1. 获取配置信息, 获取Job示例
+             Configuration configuration = new Configuration();
+             Job job = Job.getInstance(configuration);
+             // 2. 指定本程序jar包所在的路径
+             job.setJarByClass(WordCountDriver.class);
+             // 3. 关联Mapper/Reduce业务类
+             job.setMapperClass(WordCountMapper.class);
+             job.setReducerClass(WordCountReduce.class);
+             // 4. 指定Mapper输出数据的KV类型
+             job.setMapOutputKeyClass(Text.class);
+             job.setMapOutputValueClass(NullWritable.class);
+             // 5. 指定Reduce输出数据的KV类型
+             job.setOutputKeyClass(Text.class);
+             job.setOutputValueClass(NullWritable.class);
+     
+             // *****设置自定义输出方式
+             job.setOutputFormatClass(SelfOutputFormat.class);
+     
+             // 6. 指定Job输入原始数据的文件路径
+             FileInputFormat.setInputPaths(job, new Path("E:\\log.txt"));
+             // 7. 指定Job输出结果数据的文件路径
+             // 这一步需要保留，用于输出_SUCCESS信息
+             FileOutputFormat.setOutputPath(job, new Path("E:\\wcout"));
+             // 8. 提交执行
+             job.waitForCompletion(true);
+         }
+     
+     }
+     ```
+
+### 6.4.5，`InputFormat` 自定义数据输入
+
+1. 需求
+
+   > 在自定义  `OutputFormat` 的基础上，自定义 `InputFormat`，对 `log.txt` 文件进行读取
+
+2. 需求分析
+
+   > 参考 `TextInputFormat` 实现，以 {行号 ：行数据} 输出数据（这里行号分片会有问题）
+
+3. 实现流程
+
+   * 自定义 `InputFormat` 类继承 `FileInputFormat`，参数类型需要与 `Mapper` 的入参类型保持一致
+   * `InputFormat` 中需要 `RecordReader` 子类，自定义该类并重写抽象方法
+   * 在 `RecordReader` 子类中进行文件处理，按分片进行数据读取和输出，输出输出到 `Mapper` 中
+   * 在 `Driver` 中设置自定义的 `InputFormat`
+
+4. 代码实现
+
+   * `SelfInputFormat`
+
+     ```java
+     package com.hadoop.mapreduce.inputformat;
+     
+     import org.apache.hadoop.fs.Path;
+     import org.apache.hadoop.io.LongWritable;
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.InputSplit;
+     import org.apache.hadoop.mapreduce.JobContext;
+     import org.apache.hadoop.mapreduce.RecordReader;
+     import org.apache.hadoop.mapreduce.TaskAttemptContext;
+     import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+     
+     import java.io.IOException;
+     
+     /**
+      * 模拟TextInputformat
+      */
+     public class SelfInputFormat extends FileInputFormat<LongWritable, Text> {
+     
+         @Override
+         public RecordReader<LongWritable, Text> createRecordReader(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
+             // 直接返回自定义的 selfRecordReader
+             SelfRecordReader selfRecordReader = new SelfRecordReader();
+             return selfRecordReader;
+         }
+     
+         @Override
+         protected boolean isSplitable(JobContext context, Path filename) {
+             // true: 进行分片处理,
+             // false: 不进行分片处理
+             return true;
+         }
+     }
+     ```
+
+   * `SelfRecordReader`：
+
+     ```java
+     package com.hadoop.mapreduce.inputformat;
+     
+     import org.apache.hadoop.fs.FSDataInputStream;
+     import org.apache.hadoop.fs.FileSystem;
+     import org.apache.hadoop.fs.Path;
+     import org.apache.hadoop.io.IOUtils;
+     import org.apache.hadoop.io.LongWritable;
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.InputSplit;
+     import org.apache.hadoop.mapreduce.RecordReader;
+     import org.apache.hadoop.mapreduce.TaskAttemptContext;
+     import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+     import org.apache.hadoop.util.LineReader;
+     
+     import java.io.IOException;
+     
+     public class SelfRecordReader extends RecordReader<LongWritable, Text> {
+     
+         /**
+          * 行数据读取
+          */
+         private LineReader lineReader;
+     
+         private LongWritable key = new LongWritable(-1);
+     
+         private Text value = new Text();
+     
+         private Long currPos;
+     
+         private Long start;
+     
+         private Long end;
+     
+         private Text currLine = new Text();
+     
+         @Override
+         public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
+             FileSplit fileSplit = (FileSplit) split;
+             // 取文件路径, 构造文件输入流
+             Path filePath = fileSplit.getPath();
+             FileSystem fs = filePath.getFileSystem(context.getConfiguration());
+             FSDataInputStream is = fs.open(filePath);
+             lineReader = new LineReader(is, context.getConfiguration());
+             // 获取分片文件的开始位置
+             start = fileSplit.getStart();
+             // 获取分片文件的结束位置
+             end = start + fileSplit.getLength();
+             // 读取位置定位到start的位置
+             is.seek(start);
+             if (start != 0) {
+                 // 此处大致意思是跳过一个断行, 非第一个分片可能是从行中间某一个位置开始的, 跳过改行, 改行已在上一个分片处理
+                 start += lineReader.readLine(new Text(), 0, (int) Math.min(Integer.MAX_VALUE, end - start));
+             }
+             // 定义当前偏移量到开始位置
+             currPos = start;
+         }
+     
+         @Override
+         public boolean nextKeyValue() throws IOException, InterruptedException {
+             if (currPos > end) {
+                 return false;
+             }
+             // 读取一行, 并移动偏移量
+             currPos += lineReader.readLine(currLine);
+             if (0 == currLine.getLength()) {
+                 return false;
+             }
+             // 行内容
+             value.set(currLine);
+             // 行数, 从0行开始
+             key.set(key.get() + 1);
+             return true;
+         }
+     
+         @Override
+         public LongWritable getCurrentKey() throws IOException, InterruptedException {
+             // 取当前key
+             return key;
+         }
+     
+         @Override
+         public Text getCurrentValue() throws IOException, InterruptedException {
+             // 取当前value
+             return value;
+         }
+     
+         @Override
+         public float getProgress() throws IOException, InterruptedException {
+             // 取当前进度, 已经执行的百分比
+             if (start == end) {
+                 return 0.0f;
+             } else {
+                 return Math.min(1.0f, (currPos - start) / (float) (end - start));
+             }
+         }
+     
+         @Override
+         public void close() throws IOException {
+             IOUtils.closeStreams(lineReader);
+         }
+     }
+     ```
+
+   * `Driver` 添加自定义输入类：
+
+     ```java
+     package com.hadoop.mapreduce.inputformat;
+     
+     import org.apache.hadoop.conf.Configuration;
+     import org.apache.hadoop.fs.Path;
+     import org.apache.hadoop.io.LongWritable;
+     import org.apache.hadoop.io.NullWritable;
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.Job;
+     import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+     import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+     
+     /**
+      * Driver类中进行统一调度
+      * 分8个步骤
+      * @author PJ_ZHANG
+      * @create 2021-05-27 18:24
+      **/
+     public class WordCountDriver {
+     
+         public static void main(String[] args) throws Exception {
+             // 1. 获取配置信息, 获取Job示例
+             Configuration configuration = new Configuration();
+             Job job = Job.getInstance(configuration);
+             // 2. 指定本程序jar包所在的路径
+             job.setJarByClass(WordCountDriver.class);
+             // 3. 关联Mapper/Reduce业务类
+             job.setMapperClass(WordCountMapper.class);
+             job.setReducerClass(WordCountReduce.class);
+             // 4. 指定Mapper输出数据的KV类型
+             job.setMapOutputKeyClass(LongWritable.class);
+             job.setMapOutputValueClass(Text.class);
+             // 5. 指定Reduce输出数据的KV类型
+             job.setOutputKeyClass(LongWritable.class);
+             job.setOutputValueClass(Text.class);
+     
+             // 设置自定义输入方式
+             job.setInputFormatClass(SelfInputFormat.class);
+             // 设置自定义输出方式
+             job.setOutputFormatClass(SelfOutputFormat.class);
+     
+             // 6. 指定Job输入原始数据的文件路径
+             FileInputFormat.setInputPaths(job, new Path("E:\\log.txt"));
+             // 7. 指定Job输出结果数据的文件路径
+             // 这一步需要保留，用于输出_SUCCESS信息
+             FileOutputFormat.setOutputPath(job, new Path("E:\\wcout"));
+             // 8. 提交执行
+             job.waitForCompletion(true);
+         }
+     
+     }
+     ```
+
+## 6.5，`MapReduce` 内核源码分析
+
+### 6.5.1，`MapTask` 工作机制
+
+![1628736674039](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628736674039.png)
+
+* `Read` 阶段：`MapTask` 通过 `InputFormat` 获得的 `RecordReader`，从输入 `InputSplit` 中解析出一个个 `key/value`
+* ·`Map` 阶段：该节点主要是将解析出的 `key/value` 交给用户编写 `map()` 函数处理，并产生一系列新的 `key/value`
+* `Collect` 阶段：在用户编写 `map()` 函数中，当数据处理完成后，一般会调用 `OutputCollector.collect()` 输出结果。在该函数内部，它会将生成的 `key/value` 分区（调用`Partitioner`），并写入一个环形内存缓冲区中
+* `Spill` 溢写阶段：当环形缓冲区满后，`MapReduce` 会将数据写到本地磁盘上，生成一个临时文件。需要注意的是，将数据写入本地磁盘之前，先要对数据进行一次本地排序（快速排序），并在必要时对数据进行合并、压缩等操作。
+  * 利用快速排序算法对缓存区内的数据进行排序，排序方式是，先按照分区编号 `Partition` 进行排序，然后按照 `key` 进行排序。这样，经过排序后，数据以分区为单位聚集在一起，且同一分区内所有数据按照 `key` 有序。
+  * 按照分区编号由小到大依次将每个分区中的数据写入任务工作目录下的临时文件 `output/spillN.out`（N 表示当前溢写次数）中。如果用户设置了 `Combiner`，则写入文件之前，对每个分区中的数据进行一次聚集操作
+  * 将分区数据的元信息写到内存索引数据结构 `SpillRecord` 中，其中每个分区的元信息包括在临时文件中的偏移量、压缩前数据大小和压缩后数据大小。如果当前内存索引大小超过 1MB，则将内存索引写到文件 `output/spillN.out.index` 中
+* `Merge` 阶段：当所有数据处理完成后，`MapTask` 对所有临时文件进行一次合并，以确保最终只会生成一个数据文件
+  * 当所有数据处理完后，`MapTask` 会将所有临时文件合并成一个大文件，并保存到文件 `output/file.out` 中，同时生成相应的索引文件 `output/file.out.index`
+  * 在进行文件合并过程中，`MapTask` 以分区为单位进行合并。对于某个分区，它将采用多轮递归合并的方式。每轮合并 `mapreduce.task.io.sort.factor`（默认 10）个文件，并将产生的文件重新加入待合并列表中，对文件排序后，重复以上过程，直到最终得到一个大文件
+  * 让每个 `MapTask` 最终只生成一个数据文件，可避免同时打开大量文件和同时读取大量小文件产生的随机读取带来的开销
+
+### 6.5.2，`ReduceTask` 工作机制
+
+![1628737225105](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628737225105.png)
+
+* `Copy` 阶段：`ReduceTask` 从各个 `MapTask` 上远程拷贝一片数据，并针对某一片数据，如果其大小超过一定阈值，则写到磁盘上，否则直接放到内存中
+* `Sort` 阶段：在远程拷贝数据的同时，`ReduceTask` 启动了两个后台线程对内存和磁盘上的文件进行合并，以防止内存使用过多或磁盘上文件过多。按照 `MapReduce` 语义，用户编写 `reduce()` 函数输入数据是按 key 进行聚集的一组数据。为了将 `key` 相同的数据聚在一起，`Hadoop` 采用了基于排序的策略。由于各个 `MapTask` 已经实现对自己的处理结果进行了局部排序，因此，`ReduceTask` 只需对所有数据进行一次归并排序即可
+* `Reduce` 阶段：`reduce()` 函数将计算结果写到文件系统（本地文件/远程文件服务器）中
+
+### 6.5.3，`ReduceTask` 并行机制
+
+> 回顾：`MapTask` 并行度由切片个数决定，切片个数由输入文件和切片规则决定
+>
+> 思考：`ReduceTask` 并行度由谁决定
+
+* 设置 `ReduceTask` 并行度个数：`ReduceTask` 的并行度同时影响 `Job` 的执行并发度和执行效率，`ReduceTask` 的并行数量由人为指定：
+
+  ```java
+  job.setNumReduceTasks(5);
+  ```
+
+* 测试 `ReduceTask` 的合适并发数量：通过对不同体量文件不断压测，观察执行时间而定，eg：
+
+  ![1628737609116](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628737609116.png)
+
+* 注意事项：
+
+  * `ReduceTask` 为0时，没有 `Reduce` 阶段，输出文件和 `MapTask` 个数一致
+  * `ReduceTask` 默认未1，所以输出文件为1个
+  * 如果数据分布不均匀，就有可能在 `Reduce` 阶段产生数据倾斜
+  * `ReduceTask` 并不是任意设置，还要考虑业务实现逻辑，有些情况下需要计算汇总结果，就只能有一个 `ReduceTask`
+  * 具体多少个 `ReduceTask`，还需要视集群性能而定
+
+### 6.5.4，`MapTask` 源码分析
+
+> 接 [6.4.1.2，`Job` 提交流程源码详解](#6.4.1.2，`Job` 提交流程源码详解)
+
+* 提交工作任务
+
+  ```java
+  // 1，Job 提交任务后，会在 org.apache.hadoop.mapred.LocalJobRunner.Job#Job 中开启线程
+  public Job(JobID jobid, String jobSubmitDir) throws IOException {
+      ......
+      this.start();
+  }
+  
+  // 2，start() 方法启动线程后，会调用 run() 方法，run()方法中做了三件时间
+  // * 初始化并启动 MapTask
+  // * 初始化并启动 ReduceTask
+  // * 清除临时文件
+  public void run() {
+      ......
+      // 初始化并启动 MapTask
+      List<RunnableWithThrowable> mapRunnables = getMapTaskRunnables(
+          taskSplitMetaInfos, jobId, mapOutputFiles);
+      initCounters(mapRunnables.size(), numReduceTasks);
+      ExecutorService mapService = createMapExecutor();
+      runTasks(mapRunnables, mapService, "map");
+      ......
+  	// 初始化并启动 ReduceTask
+      if (numReduceTasks > 0) {
+          List<RunnableWithThrowable> reduceRunnables = getReduceTaskRunnables(
+                  jobId, mapOutputFiles);
+          ExecutorService reduceService = createReduceExecutor();
+          runTasks(reduceRunnables, reduceService, "reduce");
+      }
+      ......
+      // 删除临时文件
+      outputCommitter.commitJob(jContext);
+      status.setCleanupProgress(1.0f);
+  	......
+  }
+  ```
+
+* 初始化并提交 `MapTask` 详解
+
+  * `org.apache.hadoop.mapred.LocalJobRunner.Job#getMapTaskRunnables`
+
+    ```java
+    // taskInfo 分片信息
+    protected List<RunnableWithThrowable> getMapTaskRunnables(
+        TaskSplitMetaInfo [] taskInfo, JobID jobId,
+        Map<TaskAttemptID, MapOutputFile> mapOutputFiles) {
+    
+        int numTasks = 0;
+        ArrayList<RunnableWithThrowable> list =
+            new ArrayList<RunnableWithThrowable
+        // 根据分片信息构造任务列表，一个分片对应一个线程
+        // 线程对象为：MapTaskRunnable
+        for (TaskSplitMetaInfo task : taskInfo) {
+            list.add(new MapTaskRunnable(task, numTasks++, jobId,
+                                         mapOutputFiles));
+        }
+        return list;
+    }
+    ```
+
+  * `org.apache.hadoop.mapred.LocalJobRunner.Job#initCounters`：初始化 `MapTask` 和 `ReduceTask` 数量
+
+  * `org.apache.hadoop.mapred.LocalJobRunner.Job#createMapExecutor`：构造 `MapTask` 线程池
+
+    ```java
+    protected synchronized ExecutorService createMapExecutor() {
+    
+        ......
+        // 线程池数量为分片数量，并左右取极值
+        maxMapThreads = Math.min(maxMapThreads, this.numMapTasks);
+        maxMapThreads = Math.max(maxMapThreads, 1); // In case of no tasks.
+    	.......
+        // 构建线程池，并自定义线程名称
+        // 线程池对象为 HadoopThreadPoolExecutor
+        ThreadFactory tf = new ThreadFactoryBuilder()
+            .setNameFormat("LocalJobRunner Map Task Executor #%d")
+            .build();
+        ExecutorService executor = HadoopExecutors.newFixedThreadPool(
+            maxMapThreads, tf);
+        return executor;
+    }
+    ```
+
+  * `org.apache.hadoop.mapred.LocalJobRunner.Job#runTasks`：通过线程池启动 `MapTask` 线程
+
+    ```java
+    private void runTasks(List<RunnableWithThrowable> runnables,
+                          ExecutorService service, String taskType) throws Exception {
+        // 启动线程池
+        for (Runnable r : runnables) {
+            service.submit(r);
+        }
+        try {
+            service.shutdown();
+            ......
+    		// 等待线程执行完成
+            service.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException ie) {}
+    	......
+    }
+    ```
+
+* `MapTask` 线程方法启动：线程类为 `MapTaskRunnable`，启动线程后会执行该类的 `run()` 方法
+
+  ```java
+  // org.apache.hadoop.mapred.LocalJobRunner.Job.MapTaskRunnable#run
+  public void run() {
+      ......
+      // 在 run() 方法中，最终调用改方法具体执行
+      // localConf 表示本地配置，默认在：\tmp\hadoop-zhangpanjing\mapred\local\localRunner\zhangpanjing\job_local1855014182_0001\job_local1855014182_0001.xml
+      map.run(localConf, Job.this);
+      ......
+  }
+  ```
+
+  ```java
+  // org.apache.hadoop.mapred.MapTask#run
+  public void run(final JobConf job, final TaskUmbilicalProtocol umbilical)
+      ......
+      // 最终执行该方法，具体进行 MapTask 处理
+      if (useNewApi) {
+          runNewMapper(job, splitMetaInfo, umbilical, reporter);
+      } else {
+          runOldMapper(job, splitMetaInfo, umbilical, reporter);
+      }
+      ......
+  }
+  ```
+
+* `MapTask` 线程方法执行：`org.apache.hadoop.mapred.MapTask#runNewMapper`
+
+  ```java
+  private <INKEY,INVALUE,OUTKEY,OUTVALUE>
+      void runNewMapper(final JobConf job,
+                        final TaskSplitIndex splitIndex,
+                        final TaskUmbilicalProtocol umbilical,
+                        TaskReporter reporter
+                       ) throws IOException, ClassNotFoundException,
+  InterruptedException {
+      // 构建一个上下文对象，持有所有任务信息和任务配置信息
+      org.apache.hadoop.mapreduce.TaskAttemptContext taskContext =
+          new org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl(job, 
+                                                                      getTaskID(),
+                                                                      reporter);
+      // 构建一个执行Mapper，就是自定义的Maper子类
+      org.apache.hadoop.mapreduce.Mapper<INKEY,INVALUE,OUTKEY,OUTVALUE> mapper =
+          (org.apache.hadoop.mapreduce.Mapper<INKEY,INVALUE,OUTKEY,OUTVALUE>)
+          ReflectionUtils.newInstance(taskContext.getMapperClass(), job);
+      // 取输入类，有自定义输入类为自定义，没有取默认 `TextInputFormat`
+      org.apache.hadoop.mapreduce.InputFormat<INKEY,INVALUE> inputFormat =
+          (org.apache.hadoop.mapreduce.InputFormat<INKEY,INVALUE>)
+          ReflectionUtils.newInstance(taskContext.getInputFormatClass(), job);
+      // 根据提交任务时写到临时文件的分片信息，进行分区构建
+      // 此时是多线程下的其中一个线程，只取对应的分片信息
+      // file:/tmp/hadoop/mapred/staging/zhangpanjing1855014182/.staging/job_local1855014182_0001/job.split
+      org.apache.hadoop.mapreduce.InputSplit split = null;
+      split = getSplitDetails(new Path(splitIndex.getSplitLocation()),
+                              splitIndex.getStartOffset());
+      LOG.info("Processing split: " + split);
+  	// 构建 RecordReader 类的包装类
+      // 内部 real 属性为真是的 RecordReader 类对象
+      // 通过 inputFormat.createRecordReader(split, taskContext) 获取
+      org.apache.hadoop.mapreduce.RecordReader<INKEY,INVALUE> input =
+          new NewTrackingRecordReader<INKEY,INVALUE>
+          (split, inputFormat, reporter, taskContext);
+      job.setBoolean(JobContext.SKIP_RECORDS, isSkipping());
+      
+      // 通过 ReduceTask 数量,构造 Output, 如果数量为0, 则不会走Reduce阶段
+      org.apache.hadoop.mapreduce.RecordWriter output = null;
+      if (job.getNumReduceTasks() == 0) {
+          output = 
+              new NewDirectOutputCollector(taskContext, job, umbilical, reporter);
+      } else {
+          // 内部根据 ReduceTask 数量设置了分片数量
+          // 如果 ReduceTask 为1,则没有分片概念
+          // 如果大于1, 则分片数量与 ReduceTask 数量相同
+          output = new NewOutputCollector(taskContext, job, umbilical, reporter);
+      }
+  
+      // 参数封装, 等待后续具体执行
+      org.apache.hadoop.mapreduce.MapContext<INKEY, INVALUE, OUTKEY, OUTVALUE> 
+          mapContext = 
+          new MapContextImpl<INKEY, INVALUE, OUTKEY, OUTVALUE>(job, getTaskID(), 
+                input, output, committer, reporter, split);
+      org.apache.hadoop.mapreduce.Mapper<INKEY,INVALUE,OUTKEY,OUTVALUE>.Context 
+          mapperContext = 
+          new WrappedMapper<INKEY, INVALUE, OUTKEY, OUTVALUE>().getMapContext(
+          mapContext);
+      try {
+          // 执行 RecordReader 的初始化方法
+          // 在自定义 InputFormat 时,会重写该方法
+          input.initialize(split, mapperContext);
+          // MapTask 核心逻辑部分
+          mapper.run(mapperContext);
+          ......
+          // MapTask 执行完毕, 数据已经全部写到缓冲区
+          // 此时写出完成, 需要溢出文件
+          output.close(mapperContext);
+          output = null;
+      } finally {
+          closeQuietly(input);
+          closeQuietly(output, mapperContext);
+      }
+  }
+  ```
+
+* `MapTask` 核心逻辑：`org.apache.hadoop.mapreduce.Mapper#run`
+
+  ```java
+  public void run(Context context) throws IOException, InterruptedException {
+      // 可进行执行前数据初始化
+      setup(context);
+      try {
+          // Mapper一次读取一组数据
+          // context 最终会调用 RecordReader.nextKeyValue() 方法
+          while (context.nextKeyValue()) {
+              // 调用自定义 Mapper.map() 方法，写出数据
+              map(context.getCurrentKey(), context.getCurrentValue(), context);
+          }
+      } finally {
+          cleanup(context);
+      }
+  }
+  ```
+
+  * `Mapper.map(..)` 方法内部的 `context.write(..)` 方法会最终调用到：`org.apache.hadoop.mapred.MapTask.NewOutputCollector#write`，该方法内部是 `Collect` 阶段的主要逻辑
+
+    ```java
+    public void write(K key, V value) throws IOException, InterruptedException {
+        // 收集收据， 即收集数据到环形缓冲区中
+        // partitioner.getPartition(key, value, partitions)：获取分区号
+        // 在自定义分区时，会重写改方法，在此处调用
+        collector.collect(key, value,
+                          partitioner.getPartition(key, value, partitions));
+    }
+    ```
+
+* `Collect` 阶段：`org.apache.hadoop.mapred.MapTask.MapOutputBuffer#collect`，写数据到环形缓冲区
+
+  ```java
+  public synchronized void collect(K key, V value, final int partition
+                                  ) throws IOException {
+      // 
+      ......
+      // 分元数据和索引数据写数据到缓冲区
+      kvmeta.put(kvindex + PARTITION, partition);
+      kvmeta.put(kvindex + KEYSTART, keystart);
+      kvmeta.put(kvindex + VALSTART, valstart);
+      kvmeta.put(kvindex + VALLEN, distanceTo(valstart, valend));
+      // advance kvindex
+      kvindex = (kvindex - NMETA + kvmeta.capacity()) % kvmeta.capacity();
+  }
+  ```
+
+* `Spill` 溢写阶段：`Mapper` 写出缓冲区完成后，对缓冲区内容溢写到文件，在溢写前需要数据进行快速排序
+
+  `org.apache.hadoop.mapred.MapTask.NewOutputCollector#close`
+
+  ```java
+  public void close(TaskAttemptContext context
+                   ) throws IOException,InterruptedException {
+      try {
+          // 刷新缓冲区
+          collector.flush();
+      } catch (ClassNotFoundException cnf) {
+          throw new IOException("can't find class ", cnf);
+      }
+      collector.close();
+  }
+  ```
+
+  ```java
+  public void flush() throws IOException, ClassNotFoundException,
+  InterruptedException {
+      ......
+      // 排序并且溢写
+      sortAndSpill();
+      ......
+      // 合并溢写文件
+      mergeParts();
+      ......
+  }
+  ```
+
+  * 排序并溢写：`org.apache.hadoop.mapred.MapTask.MapOutputBuffer#sortAndSpill`
+
+    ```java
+    private void sortAndSpill() throws IOException, ClassNotFoundException,
+    InterruptedException {
+        ......
+        // 根据分区创建一个溢写输出的临时文件
+        // /tmp/hadoop-zhangpanjing/mapred/local/localRunner/zhangpanjing/jobcache/job_local984617484_0001/attempt_local984617484_0001_m_000000_0/output/spill0.out
+        final SpillRecord spillRec = new SpillRecord(partitions);
+        final Path filename =
+            mapOutputFile.getSpillFileForWrite(numSpills, size);
+        out = rfs.create(filename);
+    	......
+        // 单文件溢出的快速排序
+        sorter.sort(MapOutputBuffer.this, mstart, mend, reporter);
+        ......
+        // 按分区追加文件到 spill0.out 中
+        for (int i = 0; i < partitions; ++i) {
+            long segmentStart = out.getPos();
+            partitionOut = CryptoUtils.wrapIfNecessary(job, out, false);
+            writer = new Writer<K, V>(job, partitionOut, keyClass, valClass, codec, spilledRecordsCounter);
+            ......
+            // `MapTask` 分区数据是共存在一个文件下的, 即 spill0.out,通过不同的区间隔离
+            // 在写数据时, 需要确定数据偏移量然后追加写入
+            if (combinerRunner == null) {
+                DataInputBuffer key = new DataInputBuffer();
+                while (spindex < mend &&
+                       kvmeta.get(offsetFor(spindex % maxRec) + PARTITION) == i) {
+                    final int kvoff = offsetFor(spindex % maxRec);
+                    int keystart = kvmeta.get(kvoff + KEYSTART);
+                    int valstart = kvmeta.get(kvoff + VALSTART);
+                    key.reset(kvbuffer, keystart, valstart - keystart);
+                    getVBytesForOffset(kvoff, value);
+                    writer.append(key, value);
+                    ++spindex;
+                }
+            }
+        }
+    }
+    ```
+
+  * 合并溢写文件：`org.apache.hadoop.mapred.MapTask.MapOutputBuffer#mergeParts`；合并溢写文件，通过归并排序对所有溢写文件进行整合，最终输出一个大文件
+
+    ```java
+    private void mergeParts() throws IOException, InterruptedException,  ClassNotFoundException {
+        ......
+        // 取切片文件路径，取所有溢出文件路径和文件大小
+        long finalOutFileSize = 0;
+        long finalIndexFileSize = 0;
+        final Path[] filename = new Path[numSpills];
+        final TaskAttemptID mapId = getTaskID();
+        for(int i = 0; i < numSpills; i++) {
+            filename[i] = mapOutputFile.getSpillFile(i);
+            finalOutFileSize += rfs.getFileStatus(filename[i]).getLen();
+        }
+        // 溢出文件已经全合并，目前文件就是最终文件
+        if (numSpills == 1) { 
+            // 修改溢出文件名
+            // /spill0.out -> file.out
+            sameVolRename(filename[0],
+                          mapOutputFile.getOutputFileForWriteInVolume(filename[0]));
+            // 写出一个索引文件
+            // /tmp/hadoop-zhangpanjing/mapred/local/localRunner/zhangpanjing/jobcache/job_local1513979178_0001/attempt_local1513979178_0001_m_000000_0/output/file.out.index
+            if (indexCacheList.size() == 0) {
+                sameVolRename(mapOutputFile.getSpillIndexFile(0),
+                              mapOutputFile.getOutputIndexFileForWriteInVolume(filename[0]));
+            } else {
+                indexCacheList.get(0).writeToFile(
+                    mapOutputFile.getOutputIndexFileForWriteInVolume(filename[0]), job);
+            }
+            sortPhase.complete();
+            return;
+        }
+        .......
+    }
+    ```
+
+* 执行完成后，`MapTask` 线程执行完成，在 `org.apache.hadoop.mapred.LocalJobRunner.Job#run` 方法中会继续往下执行，继续执行 `TaskReduce` 
+
+### 6.5.5，`ReduceTask` 源码分析
+
+* 接上一步，`MapTask` 执行完成后，继续执行 `ReduceTask` 功能，`ReduceTask` 具体线程类为 `org.apache.hadoop.mapred.LocalJobRunner.Job.ReduceTaskRunnable`
+
+*  `org.apache.hadoop.mapred.ReduceTask#run`
+
+  ```java
+  // 核心方法大概可分为三个部分
+  public void run(JobConf job, final TaskUmbilicalProtocol umbilical) throws IOException, InterruptedException, ClassNotFoundException {
+      ......
+      // 初始化
+      shuffleConsumerPlugin.init(shuffleContext);
+      // Copy & Merge & Sort 阶段
+      rIter = shuffleConsumerPlugin.run();
+      ......
+      // Reduce阶段，执行 ReducerTask 核心方法
+      runNewReducer(job, umbilical, reporter, rIter, comparator, keyClass, valueClass);
+  }
+  ```
+
+* 初始化方法：`org.apache.hadoop.mapreduce.task.reduce.Shuffle#init`
+
+  ```java
+  public void init(ShuffleConsumerPlugin.Context context) {
+      ......
+  	// 在这个构造方法中，获取到了 MapTask 数量
+      scheduler = new ShuffleSchedulerImpl<K, V>(jobConf, taskStatus, reduceId, this, copyPhase, context.getShuffledMapsCounter(), context.getReduceShuffleBytes(), context.getFailedShuffleCounter());
+      // 在这个构造方法中，对 ReduceTask 合并时基于内存和磁盘的方式进行初始化
+      merger = createMergeManager(context);
+  }
+  ```
+
+* Copy & Merge & Sort 方法：`org.apache.hadoop.mapreduce.task.reduce.Shuffle#run`
+
+  ```java
+  public RawKeyValueIterator run() throws IOException, InterruptedException 
+      ......
+      // 先开一个线程， 处理 MapTask相关事情，没懂
+      // Start the map-completion events fetcher thread
+      final EventFetcher<K,V> eventFetcher = new EventFetcher<K,V>(reduceId, umbilical, scheduler, this, maxEventsToFetch);
+      eventFetcher.start();
+      ......
+      // 本地方式，构造本地的拉取数据方式，从本地文件系统拉取 MapTask 阶段生成数据
+      // Copy阶段，从 MapTask 拷贝文件到 ReduceTask
+      if (isLocal) {
+          fetchers[0] = new LocalFetcher<K, V>(jobConf, reduceId, scheduler, merger, reporter, metrics, this, reduceTask.getShuffleSecret(), localMapFiles);
+          fetchers[0].start();
+      }
+  	......
+      // Sort阶段：对 MapTask 拷贝的文件进行合并和排序
+      // 这里面没看懂
+      kvIter = merger.close();
+  	......
+  }
+  ```
+
+  * Copy阶段：`org.apache.hadoop.mapreduce.task.reduce.LocalFetcher#run`
+
+    ```java
+    public void run() {
+        // MapTask 阶段写出的溢出文件
+        // attempt_local1865528496_0001_m_000001_0
+        Set<TaskAttemptID> maps = new HashSet<TaskAttemptID>();
+        for (TaskAttemptID map : localMapFiles.keySet()) {
+            maps.add(map);
+        }
+        ......
+    	// 数据拷贝
+        doCopy(maps);
+        // 执行完成后，数据拷贝成功，MapTask 阶段的所有数据全部读取
+        ......
+    }
+    ```
+
+    * `org.apache.hadoop.mapreduce.task.reduce.LocalFetcher#copyMapOutput`
+
+    ```java
+    private boolean copyMapOutput(TaskAttemptID mapTaskId) throws IOException {
+        // 取 MapTask 阶段的数据文件和索引文件
+        Path mapOutputFileName = localMapFiles.get(mapTaskId).getOutputFile();
+        Path indexFileName = mapOutputFileName.suffix(".index");
+        ......
+    	// 读文件数据到内存中
+        FileSystem localFs = FileSystem.getLocal(job).getRaw();
+        FSDataInputStream inStream = localFs.open(mapOutputFileName);
+        try {
+            inStream = CryptoUtils.wrapIfNecessary(job, inStream);
+            inStream.seek(ir.startOffset + CryptoUtils.cryptoPadding(job));
+            mapOutput.shuffle(LOCALHOST, inStream, compressedLength,
+                              decompressedLength, metrics, reporter);
+        } finally {
+            IOUtils.cleanupWithLogger(LOG, inStream);
+        }
+    
+        scheduler.copySucceeded(mapTaskId, LOCALHOST, compressedLength, 0, 0,
+                                mapOutput);
+        return true; // successful fetch.
+    }
+    ```
+
+  * Merge & Sort 阶段：
+
+    * `org.apache.hadoop.mapreduce.task.reduce.MergeManagerImpl#close`
+
+* 执行 ReducerTask 核心方法：`org.apache.hadoop.mapred.ReduceTask#runNewReducer`
+
+  ```java
+  private <INKEY,INVALUE,OUTKEY,OUTVALUE> void runNewReducer(JobConf job, final TaskUmbilicalProtocol umbilical, final TaskReporter reporter, RawKeyValueIterator rIter, RawComparator<INKEY> comparator, Class<INKEY> keyClass, Class<INVALUE> valueClass) throws IOException,InterruptedException, 
+  ClassNotFoundException {
+      // make a task context so we can get the classes
+      org.apache.hadoop.mapreduce.TaskAttemptContext taskContext = new org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl(job, getTaskID(), reporter);
+      // 这个是自定义的Reducer
+      org.apache.hadoop.mapreduce.Reducer<INKEY,INVALUE,OUTKEY,OUTVALUE> reducer =
+          (org.apache.hadoop.mapreduce.Reducer<INKEY,INVALUE,OUTKEY,OUTVALUE>)
+          ReflectionUtils.newInstance(taskContext.getReducerClass(), job);
+      // 构建 ReduceTask 阶段的临时输出文件夹
+      org.apache.hadoop.mapreduce.RecordWriter<OUTKEY,OUTVALUE> trackedRW = 
+          new NewTrackingRecordWriter<OUTKEY, OUTVALUE>(this, taskContext);
+      job.setBoolean("mapred.skip.on", isSkipping());
+      job.setBoolean(JobContext.SKIP_RECORDS, isSkipping());
+      org.apache.hadoop.mapreduce.Reducer.Context 
+          reducerContext = createReduceContext(reducer, job, getTaskID(), rIter, reduceInputKeyCounter, reduceInputValueCounter, trackedRW, committer, reporter, comparator, keyClass, valueClass);
+      try {
+          // 具体方法
+          reducer.run(reducerContext);
+      } finally {
+          trackedRW.close(reducerContext);
+      }
+  }
+  ```
+
+  * `org.apache.hadoop.mapreduce.Reducer#run`
+
+    ```java
+    public void run(Context context) throws IOException, InterruptedException {
+        setup(context);
+        try {
+            // 按 Key 分组取数据
+            while (context.nextKey()) {
+                // 传递到自定义 Reduce 中执行
+                reduce(context.getCurrentKey(), context.getValues(), context);
+                // If a back up store is used, reset it
+                Iterator<VALUEIN> iter = context.getValues().iterator();
+                if(iter instanceof ReduceContext.ValueIterator) {
+                    ((ReduceContext.ValueIterator<VALUEIN>)iter).resetBackupStore();        
+                }
+            }
+        } finally {
+            cleanup(context);
+        }
+    }
+    ```
+
+* `OutputFormat`：写出阶段
+
+  * `org.apache.hadoop.mapreduce.lib.reduce.WrappedReducer.Context#write`
+
+  * `org.apache.hadoop.mapreduce.task.TaskInputOutputContextImpl#write`
+
+  * `org.apache.hadoop.mapred.ReduceTask.NewTrackingRecordWriter#write`
+
+    ```java
+    public void write(K key, V value) throws IOException, InterruptedException {
+        long bytesOutPrev = getOutputBytes(fsStats);
+        // real 表示实际执行的 OutputFormat 子类，
+        // 如果自定义输出类，则此处为自定义类
+        real.write(key,value);
+        long bytesOutCurr = getOutputBytes(fsStats);
+        fileOutputByteCounter.increment(bytesOutCurr - bytesOutPrev);
+        outputRecordCounter.increment(1);
+    }
+    ```
+
+  * `org.apache.hadoop.mapreduce.lib.output.TextOutputFormat.LineRecordWriter#write`
+
+    ```java
+    public synchronized void write(K key, V value)
+        throws IOException {
+    
+        boolean nullKey = key == null || key instanceof NullWritable;
+        boolean nullValue = value == null || value instanceof NullWritable;
+        if (nullKey && nullValue) {
+            return;
+        }
+        if (!nullKey) {
+            // 写出Key
+            writeObject(key);
+        }
+        if (!(nullKey || nullValue)) {
+            out.write(keyValueSeparator);
+        }
+        if (!nullValue) {
+            // 写出Value
+            writeObject(value);
+        }
+        out.write(NEWLINE);
+    }
+    ```
+
+* 清除临时数据，提交JOB：`org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter#commitJob`
+
+## 6.6，`Join` 合并
+
+### 6.6.1，`Reduce Join`
+
+> 类似于多表关联，在多组数据处理时，以一个统一的字段做为 `Key` 对数据行简历映射，并通过 `Mapper` 写出，在 `Reduce` 阶段，按 `Key` 进行分数进行统一处理，在这组数据出，可进行最终的目标数据识别
+
+1. 需求
+
+   ![1628845659001](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628845659001.png)
+
+   * 订单表：订单商品和商品数量
+   * 商品表：商品名称
+   * 订单表和商品表通过商品ID进行关联，最终输出订单号，商品名称，商品数量
+
+2. 需求分析
+
+   ![1628845733988](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628845733988.png)
+
+3. 代码实现
+
+   * `MyBean`：定义实体类，包括订单ID，商品数量，商品名称，即区分表的字段 `tableName`，因为需要作为 `Value` 输出，实现 `Writeable` 接口：
+
+     ```java
+     package com.hadoop.mapreduce.reducejoin;
+     
+     import org.apache.hadoop.io.Writable;
+     
+     import java.io.DataInput;
+     import java.io.DataOutput;
+     import java.io.IOException;
+     
+     /**
+      * 自定义输出类
+      */
+     public class MyBean implements Writable {
+     
+         private String orderId;
+     
+         private Integer productCount;
+     
+         private String productName;
+     
+         private String tableName;
+     
+         public String getOrderId() {
+             return orderId;
+         }
+     
+         public void setOrderId(String orderId) {
+             this.orderId = orderId;
+         }
+     
+         public Integer getProductCount() {
+             return productCount;
+         }
+     
+         public void setProductCount(Integer productCount) {
+             this.productCount = productCount;
+         }
+     
+         public String getProductName() {
+             return productName;
+         }
+     
+         public void setProductName(String productName) {
+             this.productName = productName;
+         }
+     
+         public String getTableName() {
+             return tableName;
+         }
+     
+         public void setTableName(String tableName) {
+             this.tableName = tableName;
+         }
+     
+         @Override
+         public void write(DataOutput out) throws IOException {
+             out.writeUTF(orderId);
+             out.writeInt(productCount);
+             out.writeUTF(productName);
+             out.writeUTF(tableName);
+         }
+     
+         @Override
+         public void readFields(DataInput in) throws IOException {
+             orderId = in.readUTF();
+             productCount = in.readInt();
+             productName = in.readUTF();
+             tableName = in.readUTF();
+         }
+     
+         /**
+          * 重写 toString() 方法, 只输出重点字段
+          * @return
+          */
+         @Override
+         public String toString() {
+             return "orderId=" + orderId + ",\t productCount=" + productCount + ",\t productName=" + productName;
+         }
+     
+     }
+     ```
+
+   * `JoinMapper`：以 `productId` 作为统一的 `Key`，对数据进行数据，并通过表名称进行数据标记
+
+     ```java
+     package com.hadoop.mapreduce.reducejoin;
+     
+     import org.apache.hadoop.io.LongWritable;
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.Mapper;
+     import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+     
+     import java.io.IOException;
+     
+     /**
+      * 自定义Mapper
+      * 入参: 行号, 行数据
+      * 出参: 商品ID, 自定义列表
+      */
+     public class JoinMapper extends Mapper<LongWritable, Text, Text, MyBean> {
+     
+         private String tableName = null;
+     
+         private Text outKey = new Text();
+     
+         /**
+          * 数据初始化, 取表名称, 对应的表关键字
+          * @param context
+          * @throws IOException
+          * @throws InterruptedException
+          */
+         @Override
+         protected void setup(Context context) throws IOException, InterruptedException {
+             super.setup(context);
+             FileSplit fileSplit = (FileSplit) context.getInputSplit();
+             tableName = fileSplit.getPath().getName();
+         }
+     
+         @Override
+         protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+             // 解析数据
+             String productId = null;
+             String orderId = null;
+             String productName = null;
+             Integer productCount = null;
+             String[] strArr = value.toString().split("\t");
+             if (tableName.contains("order")) {
+                 // 订单表
+                 orderId = strArr[0];
+                 productId = strArr[1];
+                 productCount = Integer.valueOf(strArr[2]);
+             } else {
+                 // 商品表
+                 productId = strArr[0];
+                 productName = strArr[1];
+             }
+             // 组合并写出数据
+             MyBean myBean = new MyBean();
+             myBean.setOrderId(null == orderId ? "" : orderId);
+             myBean.setProductName(null == productName ? "" : productName);
+             myBean.setProductCount(null == productCount ? 0 : productCount);
+             myBean.setTableName(tableName);
+             outKey.set(productId);
+             context.write(outKey, myBean);
+         }
+     
+     }
+     ```
+
+   * `JoinReduce`：以 `Key` 对数据进行组合，`Value` 为 `Key` 对应的一组数据，对该数据数据按照标识进行拆分，对拆分后的数据进行字段填充
+
+     ```java
+     package com.hadoop.mapreduce.reducejoin;
+     
+     import org.apache.commons.beanutils.BeanUtils;
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.Reducer;
+     
+     import java.io.IOException;
+     import java.util.ArrayList;
+     import java.util.HashMap;
+     import java.util.List;
+     import java.util.Map;
+     
+     /**
+      * 自定义Reduce类
+      * 入参: 与Mapper出参对应, 商品ID, 自定义Bean
+      * 出参: 与上面一致
+      */
+     public class JoinReduce extends Reducer<Text, MyBean, Text, MyBean> {
+     
+         /**
+          * 注意, 在Mapper中对两张表的数据, 以同一个key输出,
+          * 所以, 在reduce中, value是两张表的数据在一起, 以tableName字段识别, 先需要对数据进行分离
+          * @param key
+          * @param values
+          * @param context
+          * @throws IOException
+          * @throws InterruptedException
+          */
+         @Override
+         protected void reduce(Text key, Iterable<MyBean> values, Context context) throws IOException, InterruptedException {
+             // 数据分离
+             List<MyBean> lstOrderData = new ArrayList<>();
+             Map<String, String> productId2Name = new HashMap<>();
+             for (MyBean value : values) {
+                 // 因为 value 在进行数据填充时, 是值传递
+                 // 如果不对数据进行拷贝, 会造成数据覆盖问题
+                 MyBean copyBean = new MyBean();
+                 try {
+                     BeanUtils.copyProperties(copyBean, value);
+                 } catch (Exception e) {
+                     e.printStackTrace();
+                 }
+                 if (copyBean.getTableName().contains("order")) {
+                     lstOrderData.add(copyBean);
+                 } else {
+                     productId2Name.put(key.toString(), copyBean.getProductName());
+                 }
+             }
+             // 分离完毕, 进行数据处理
+             for (MyBean currData : lstOrderData) {
+                 currData.setProductName(productId2Name.get(key.toString()));
+                 // 写数据
+                 context.write(key, currData);
+             }
+         }
+     
+     }
+     ```
+
+   * `JoinDriver`：调度类
+
+     ```java
+     package com.hadoop.mapreduce.reducejoin;
+     
+     import org.apache.hadoop.conf.Configuration;
+     import org.apache.hadoop.fs.Path;
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.Job;
+     import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+     import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+     
+     public class JoinDriver {
+     
+         public static void main(String[] args) throws Exception {
+             // 获取配置信息, 构建Job示例
+             Configuration configuration = new Configuration();
+             Job job = Job.getInstance(configuration);
+             // 指定本程序的jar包路径
+             job.setJarByClass(JoinDriver.class);
+             // 关联 Mapper/Reduce 业务类
+             job.setMapperClass(JoinMapper.class);
+             job.setReducerClass(JoinReduce.class);
+             // 指定Mapper输出的KV类型
+             job.setMapOutputKeyClass(Text.class);
+             job.setMapOutputValueClass(MyBean.class);
+             // 指定Reduce输出的KV类型
+             job.setOutputKeyClass(Text.class);
+             job.setOutputValueClass(MyBean.class);
+             // 指定job输入路径
+             FileInputFormat.setInputPaths(job, new Path("E:\\hadoop\\join"));
+             // 指定job输出路径
+             FileOutputFormat.setOutputPath(job, new Path("E:\\hadoop\\selfout" + System.currentTimeMillis()));
+             // 工作
+             job.waitForCompletion(true);
+         }
+     
+     }
+     ```
+
+   * 结果：
+
+     ![1628847773150](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1628847773150.png)
+
+### 6.6.2，`Map Join`
+
+1. 使用场景:
+
+   > 适用于一张表很大，而另外一张表很小的情况；
+   >
+   > 以小表作为缓冲数据直接加载，通过 `MapTask` 读取大表数据进行合并
+
+2. 优点：
+
+   > <font color=red>在 `Reduce` 端处理过多的表，容易产生数据倾斜</font>
+   >
+   > 针对上面的问题，可以在 `Mapper` 端缓存多张表，提前处理相关业务逻辑，增加 `Mapper` 端业务，减少 `Reduce` 端数据压力，减少数据倾斜
+
+3. 具体办法：采用 `DistributedCache`
+
+   > * 在 `Driver` 类中添加缓存驱动，<font color=red>此处注意路径！！！</font>
+   >
+   >   ```java
+   >   job.addCacheFile(new URI("file:///E:/hadoop/tmp.txt"));
+   >   ```
+   >
+   > * 在 `Mapper` 的 `setUp(...)` 方法中读取缓存，进行缓存数据加载
+
+#### 6.6.2.1，`MapJoin` 案例实操
+
+* `Mapper` 类：
+
+  ```java
+  package com.hadoop.mapreduce.mapjoin;
+  
+  import com.hadoop.mapreduce.reducejoin.MyBean;
+  import org.apache.hadoop.fs.FSDataInputStream;
+  import org.apache.hadoop.fs.FileSystem;
+  import org.apache.hadoop.fs.Path;
+  import org.apache.hadoop.io.LongWritable;
+  import org.apache.hadoop.io.NullWritable;
+  import org.apache.hadoop.io.Text;
+  import org.apache.hadoop.mapreduce.Mapper;
+  import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+  
+  import java.io.BufferedReader;
+  import java.io.IOException;
+  import java.io.InputStreamReader;
+  import java.net.URI;
+  import java.util.HashMap;
+  import java.util.Map;
+  
+  /**
+   * 自定义Mapper
+   * 入参: 行号, 行数据
+   * 出参: 商品ID, 自定义列表
+   */
+  public class JoinMapper extends Mapper<LongWritable, Text, Text, NullWritable> {
+  
+      private Text outKey = new Text();
+  
+      private Map<String, String> key2Name = new HashMap<>();
+  
+      /**
+       * 数据初始化, 取表名称, 对应的表关键字
+       * @param context
+       * @throws IOException
+       * @throws InterruptedException
+       */
+      @Override
+      protected void setup(Context context) throws IOException, InterruptedException {
+          super.setup(context);
+          // 取预加载文件
+          URI[] cacheFiles = context.getCacheFiles();
+          Path path = new Path(cacheFiles[0]);
+          FileSystem fileSystem = FileSystem.get(context.getConfiguration());
+          FSDataInputStream inputStream = fileSystem.open(path);
+          BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+          String line = null;
+          // 解析数据, 并对数据进行缓存
+          while (null != (line = bufferedReader.readLine())) {
+              String[] arr = line.split(" ", -1);
+              key2Name.put(arr[0], arr[1]);
+          }
+      }
+  
+      @Override
+      protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+          String line = value.toString();
+          String[] arr = line.split(" ", -1);
+          outKey.set(key2Name.get(arr[0]) + " " + arr[1]);
+          context.write(outKey, NullWritable.get());
+      }
+  
+  }
+  ```
+
+* `Driver` 类：
+
+  ```java
+  package com.hadoop.mapreduce.mapjoin;
+  
+  import org.apache.hadoop.conf.Configuration;
+  import org.apache.hadoop.fs.Path;
+  import org.apache.hadoop.io.NullWritable;
+  import org.apache.hadoop.io.Text;
+  import org.apache.hadoop.mapreduce.Job;
+  import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+  import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+  
+  import java.net.URI;
+  
+  public class JoinDriver {
+  
+      public static void main(String[] args) throws Exception {
+          // 获取配置信息, 构建Job示例
+          Configuration configuration = new Configuration();
+          Job job = Job.getInstance(configuration);
+          // 指定本程序的jar包路径
+          job.setJarByClass(JoinDriver.class);
+          // 关联 Mapper/Reduce 业务类
+          job.setMapperClass(JoinMapper.class);
+          // 指定Mapper输出的KV类型
+          job.setMapOutputKeyClass(Text.class);
+          job.setMapOutputValueClass(NullWritable.class);
+          //设置map缓存路径
+          job.addCacheFile(new URI("file:///E:/hadoop/tmp.txt"));
+          // 只走map阶段, 不走reduce阶段
+          job.setNumReduceTasks(0);
+          // 指定job输入路径
+          FileInputFormat.setInputPaths(job, new Path("E:\\hadoop\\mapjoin.txt"));
+          // 指定job输出路径
+          FileOutputFormat.setOutputPath(job, new Path("E:\\hadoop\\selfout" + System.currentTimeMillis()));
+          // 工作
+          job.waitForCompletion(true);
+      }
+  
+  }
+  ```
+
+  
 
