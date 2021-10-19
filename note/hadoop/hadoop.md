@@ -981,7 +981,7 @@ Hadoop104
 
   ```sh
   # 在Hadoop103 停掉ResourceManager
-  [root@Hadoop103 sbin]# ./start-yarn.sh
+  [root@Hadoop103 sbin]# ./stop-yarn.sh
   # 在Hadoop102 停掉HistoryServer
   [root@Hadoop102 bin]# mapred --daemon stop historyserver
   
@@ -5070,5 +5070,257 @@ public org.apache.hadoop.mapreduce.JobStatus submitJob(
   }
   ```
 
-  
+## 6.7，数据清洗（ETL）
 
+> ETL，是英文 `Extract-Transform-Load` 的缩写，用来描述将数据从来源端经过抽取（`Extract`）、转换（`Transform`）、加载（`Load`）至目的端的过程。ETL 一词较常用在数据仓库，但其对象并不限于数据仓库。
+>
+> 在运行核心业务 MapReduce 程序之前，往往要先对数据进行清洗，清理掉不符合用户要求的数据。<font color=red>清理的过程往往只需要运行 Mapper 程序，不需要运行 Reduce 程序。</font>
+
+1. 需求
+
+   > 去除输入文本文件中，行格式不符合手机号格式的字段
+
+2. 代码分析
+
+   > 在 `Mapper` 阶段读取每一行数据，并根据手机号进行正则匹配，符合则输出，不符合直接丢弃。
+
+3. 代码实现
+
+   * `Mapper` 代码
+
+     ```java
+     package com.hadoop.mapreduce.etl;
+     
+     import org.apache.hadoop.io.LongWritable;
+     import org.apache.hadoop.io.NullWritable;
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.Mapper;
+     
+     import java.io.IOException;
+     
+     /**
+      * ETL Mapper类
+      */
+     public class ETLMapper extends Mapper<LongWritable, Text, Text, NullWritable> {
+         
+         @Override
+         protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+             // 取行数据
+             String line = value.toString();
+             // 校验行数据
+             String phoneRegex = "^(13[0-9]|14[01456879]|15[0-35-9]|16[2567]|17[0-8]|18[0-9]|19[0-35-9])\\d{8}$";
+             if (line.matches(phoneRegex)) {
+                 // 匹配直接输出
+                 context.write(value, NullWritable.get());
+             }
+         }
+     
+     }
+     ```
+
+   * `Driver` 代码
+
+     ```java
+     package com.hadoop.mapreduce.etl;
+     
+     import com.hadoop.mapreduce.inputformat.*;
+     import org.apache.hadoop.conf.Configuration;
+     import org.apache.hadoop.fs.Path;
+     import org.apache.hadoop.io.LongWritable;
+     import org.apache.hadoop.io.Text;
+     import org.apache.hadoop.mapreduce.Job;
+     import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+     import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+     
+     import java.io.IOException;
+     
+     public class ETLDriver {
+     
+         public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
+             // 1. 获取配置信息, 获取Job示例
+             Configuration configuration = new Configuration();
+             Job job = Job.getInstance(configuration);
+             // 2. 指定本程序jar包所在的路径
+             job.setJarByClass(ETLDriver.class);
+             // 3. 关联Mapper/Reduce业务类
+             job.setMapperClass(ETLMapper.class);
+             // 4. 指定Mapper输出数据的KV类型
+             job.setMapOutputKeyClass(LongWritable.class);
+             job.setMapOutputValueClass(Text.class);
+             // 5. 不需要Reduce 设置数量
+             job.setNumReduceTasks(0);
+             // 6. 指定Job输入原始数据的文件路径
+             FileInputFormat.setInputPaths(job, new Path("E:\\hadoop\\etl.txt"));
+             // 7. 指定Job输出结果数据的文件路径
+             // 这一步需要保留，用于输出_SUCCESS信息
+             FileOutputFormat.setOutputPath(job, new Path("E:\\hadoop\\selfout" + System.currentTimeMillis()));
+             // 8. 提交执行
+             job.waitForCompletion(true);
+         }
+     
+     }
+     ```
+
+## 6.8，数据压缩
+
+### 6.8.1，概述
+
+* 压缩的好处和坏处：
+  * 压缩的优点：减少磁盘IO，减少磁盘存储空间
+  * 压缩的缺点：增加CPU的开销
+* 压缩原则：
+  * 运算密集型的 `Job`，少用压缩
+  * `IO` 密集型的 `Job`，多用压缩
+
+### 6.8.2，MR支持的压缩编码
+
+* 压缩算法对比介绍
+
+  ![1632151862656](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1632151862656.png)
+
+* 压缩性能比较
+
+  ![1632151880448](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1632151880448.png)
+
+### 6.8.3，压缩方式选择
+
+* `GZip` 压缩
+  * 优点：压缩率比较高
+  * 缺点：不支持切片；压缩/解压速度一般
+* `BZip2` 压缩
+  * 优点：压缩率高；支持切片
+  * 缺点：压缩/解压速度慢
+* `LZO` 压缩
+  * 优点：压缩/解压速度快，支持切片
+  * 缺点：压缩率一般；<font color=red>想支持切片必须创建索引</font>
+* `Snappy` 压缩
+  * 优点：压缩/解压速度快
+  * 缺点：不支持分片，压缩率一般；<font color=red>在 `Hadoop3.x` 中，需要搭配 CentOS7以上版本才能默认支持</font>
+
+### 6.8.4，压缩位置选择
+
+> 压缩可以在 `MapReduce` 的任意阶段进行，主要可以分为 `Mapper` 读阶段，`Mapper` 输出 `Reduce` 阶段，`Reduce` 输出阶段
+
+![1632152768089](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1632152768089.png)
+
+### 6.8.5，压缩参数配置
+
+* `Hadoop` 引入多种编解码器，支持多种压缩算法
+
+  ![1632152919912](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1632152919912.png)
+
+* `Hadoop` 压缩配置参数
+
+  ![1632152874112](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1632152874112.png)
+
+### 6.8.6，压缩实操
+
+* `Mapper` 输出端压缩
+
+  > `Mapper` 输出压缩，在结果上没有任何压缩体现，压缩数据输出到 `Reduce`，`Reduce` 会进行数据解压，用户无感知
+
+  ```java
+  package com.hadoop.mapreduce.compress;
+  
+  import org.apache.hadoop.conf.Configuration;
+  import org.apache.hadoop.fs.Path;
+  import org.apache.hadoop.io.IntWritable;
+  import org.apache.hadoop.io.Text;
+  import org.apache.hadoop.io.compress.BZip2Codec;
+  import org.apache.hadoop.io.compress.CompressionCodec;
+  import org.apache.hadoop.mapreduce.Job;
+  import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+  import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+  
+  public class CompressDriver {
+  
+      public static void main(String[] args) throws Exception {
+          // 1. 获取配置信息, 获取Job示例
+          Configuration configuration = new Configuration();
+          // 启用 mapper 端输出压缩
+          configuration.setBoolean("mapreduce.map.output.compress", true);
+          // 设置压缩方式
+          // 最后一个参数表示接口
+          configuration.setClass("mapreduce.map.output.compress.codec", BZip2Codec.class, CompressionCodec.class);
+          Job job = Job.getInstance(configuration);
+          // 2. 指定本程序jar包所在的路径
+          job.setJarByClass(CompressDriver.class);
+          // 3. 关联Mapper/Reduce业务类
+          job.setMapperClass(WordCountMapper.class);
+          job.setReducerClass(WordCountReduce.class);
+          // 4. 指定Mapper输出数据的KV类型
+          job.setMapOutputKeyClass(Text.class);
+          job.setMapOutputValueClass(IntWritable.class);
+          // 5. 指定Reduce输出数据的KV类型
+          job.setOutputKeyClass(Text.class);
+          job.setOutputValueClass(IntWritable.class);
+          // 6. 指定Job输入原始数据的文件路径
+           FileInputFormat.setInputPaths(job, new Path("E:\\hadoop\\123.txt"));
+          // 7. 指定Job输出结果数据的文件路径
+          FileOutputFormat.setOutputPath(job, new Path("E:\\hadoop\\selfout" + System.currentTimeMillis()));
+          // 8. 提交执行
+          job.waitForCompletion(true);
+      }
+  
+  }
+  ```
+
+* `Reduce` 输出端解压
+
+  > `Reduce` 输出是直接输出到用户端，对用户有直观感受，用户会接收到一个压缩后的结果数据包
+
+  ```java
+  package com.hadoop.mapreduce.compress;
+  
+  import org.apache.hadoop.conf.Configuration;
+  import org.apache.hadoop.fs.Path;
+  import org.apache.hadoop.io.IntWritable;
+  import org.apache.hadoop.io.Text;
+  import org.apache.hadoop.io.compress.BZip2Codec;
+  import org.apache.hadoop.io.compress.CompressionCodec;
+  import org.apache.hadoop.io.compress.DefaultCodec;
+  import org.apache.hadoop.io.compress.GzipCodec;
+  import org.apache.hadoop.mapreduce.Job;
+  import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+  import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+  
+  public class CompressDriver {
+  
+      public static void main(String[] args) throws Exception {
+          // 1. 获取配置信息, 获取Job示例
+          Configuration configuration = new Configuration();
+          Job job = Job.getInstance(configuration);
+          // 2. 指定本程序jar包所在的路径
+          job.setJarByClass(CompressDriver.class);
+          // 3. 关联Mapper/Reduce业务类
+          job.setMapperClass(WordCountMapper.class);
+          job.setReducerClass(WordCountReduce.class);
+          // 4. 指定Mapper输出数据的KV类型
+          job.setMapOutputKeyClass(Text.class);
+          job.setMapOutputValueClass(IntWritable.class);
+          // 5. 指定Reduce输出数据的KV类型
+          job.setOutputKeyClass(Text.class);
+          job.setOutputValueClass(IntWritable.class);
+          // 6. 指定Job输入原始数据的文件路径
+           FileInputFormat.setInputPaths(job, new Path("E:\\hadoop\\123.txt"));
+          // 7. 指定Job输出结果数据的文件路径
+          FileOutputFormat.setOutputPath(job, new Path("E:\\hadoop\\selfout" + System.currentTimeMillis()));
+  
+          // Reduce输出压缩
+          // 打开解压开发
+          FileOutputFormat.setCompressOutput(job, true);
+          // 解压方式
+          FileOutputFormat.setOutputCompressorClass(job, BZip2Codec.class);
+  //        FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
+  //        FileOutputFormat.setOutputCompressorClass(job, DefaultCodec.class);
+  
+          // 8. 提交执行
+          job.waitForCompletion(true);
+      }
+  
+  }
+  ```
+
+  ![1632154466470](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1632154466470.png)
+
+# 7，Yarn
