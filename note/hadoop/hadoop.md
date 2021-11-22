@@ -1225,7 +1225,7 @@ done
   * 目前的机械硬盘的传输速率在 80 ~ 100M左右，所以一个 `Block` 的默认大小为 128MB；<font color=red>如果是固态硬盘，则可将默认大小调整为 256MB</font>
 * `HDFS` 默认大小不能设置过大，也不能设置过小
   * `HDFS` 的块如果设置太小，则会在集群中存在大量的 `Block` 块，增加寻址时间，程序一直在寻找数据所存储的块
-  * `HDFS` 的块如果设置的过大，从磁盘传输数据时间会明显定义这个块所需要的时间比，减少数据处理并发量，导致程序在处理数据时特别慢
+  * `HDFS` 的块如果设置的过大，从磁盘传输数据时间会明显低于这个块所需要的时间比，减少数据处理并发量，导致程序在处理数据时特别慢
   * <font color=red>`HDFS` 的块大小取决于磁盘传输速率</font>
 
 ## 5.2，`HDFS` 的 `Shell` 操作
@@ -1838,7 +1838,7 @@ public void copyFile() throws Exception {
    </property>
    ```
 
-2. 再这一小时中，如果 `NameNode` 的 `Edits` 文件记录超过100W条，则会提前触发 `CheckPoint`
+2. 在这一小时中，如果 `NameNode` 的 `Edits` 文件记录超过100W条，则会提前触发 `CheckPoint`
 
    ```xml
    <property>
@@ -2065,7 +2065,7 @@ public void copyFile() throws Exception {
 ### 6.1.1，`MapReduce` 定义
 
 * `MapReduce` 是一个<font color=red>分布式运算程序</font>的编程框架，是用户开发“基于`Hadoop`数据分析应用”的核心框架
-* `MapReduce` 核心是将 <font color=red>用户编写的业务逻辑代码和自带默认组件</font>整合成一个完成的<font color=red>分布式运算程序</font>，并发运行在一个 `Hadoop` 集群上
+* `MapReduce` 核心是将 <font color=red>用户编写的业务逻辑代码和自带默认组件</font>整合成一个完整的<font color=red>分布式运算程序</font>，并发运行在一个 `Hadoop` 集群上
 
 ### 6.1.2，`MapReduce` 优缺点
 
@@ -3154,7 +3154,7 @@ public org.apache.hadoop.mapreduce.JobStatus submitJob(
 4. 根据 `Job` 阶段确定的分片信息计算出 `MapTask` 数量（默认 `Windows` 为32M，`Linux` 为128M）
 5. `MapTask` 根据当前分片的偏移量从数据文件中读取数据，默认通过 `TextInputFormat` 调用 `recorderReader` 读取，输入方式可以自定义；<font color=red>`MapTask` 间处理相互独立</font>
 6. 读取到数据后，调用自定义的 `Mapper` 实现类的 `map` 方法进行数据基础处理并写出
-7. `Mapper` 阶段读取的数据，写出时先写出到内存缓冲区中：缓冲区大小默认100M，可配置。缓冲区内部分为两部分：一部分存储索引数据，一部分存储真是数据；在写入数据时，对按照分区对数据进行区分，分区数自定义配置，默认按照 `key` 的哈希值对分区进行取余确定分区；
+7. `Mapper` 阶段读取的数据，写出时先写出到内存缓冲区中：缓冲区大小默认100M，可配置。缓冲区内部分为两部分：一部分存储索引数据，一部分存储真实数据；在写入数据时，对按照分区对数据进行区分，分区数自定义配置，默认按照 `key` 的哈希值对分区进行取余确定分区；
 8. `Mapper` 数据在缓冲区中顺序写入，在写入空间超过缓冲区空间的 `80%` 时，会按分区溢出数据到文件（分区文件重合，通过索引位置区分）如果写缓冲区速度快与写溢出文件速度，则在缓冲区满后，`Mapper` 操作会阻塞直到缓冲区空间够用；<font color=red>在写溢出文件时，会按照 `key` 对缓冲区中数据进行快速排序，排序完成后写出，排序数据移动时只移动元数据即可</font>
 9. 每一次溢出处理都会生成一个溢出文件，`Shuffle` 会通过归并排序算法对溢出文件进行合并处理，保证在后续 `Reduce` 处理时，一个 `MapTask` 中只有一个文件（分区文件重合）
 10. `MapTask` 将溢出文件按分区归并后，此时可通过 `Combiner` 对文件进行合并，以 `Key` 分组对分区文件进行初步处理，减少传递到 `Reduce` 阶段的网络数据
@@ -4084,7 +4084,7 @@ public org.apache.hadoop.mapreduce.JobStatus submitJob(
 * 注意事项：
 
   * `ReduceTask` 为0时，没有 `Reduce` 阶段，输出文件和 `MapTask` 个数一致
-  * `ReduceTask` 默认未1，所以输出文件为1个
+  * `ReduceTask` 默认为1，所以输出文件为1个
   * 如果数据分布不均匀，就有可能在 `Reduce` 阶段产生数据倾斜
   * `ReduceTask` 并不是任意设置，还要考虑业务实现逻辑，有些情况下需要计算汇总结果，就只能有一个 `ReduceTask`
   * 具体多少个 `ReduceTask`，还需要视集群性能而定
@@ -5324,3 +5324,232 @@ public org.apache.hadoop.mapreduce.JobStatus submitJob(
   ![1632154466470](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1632154466470.png)
 
 # 7，Yarn
+
+> `Yarn` 是一个资源调度平台，负责为运算程序提供服务器运算资源，相当于一个分布式的 <font color=red>操作系统平台</font>，而 `MapReduce` 等程序相当于 <font color=red>运行在操作系统上的应用程序</font>
+
+## 7.1，`Yarn` 资源调度器
+
+### 7.1.1，`Yarn` 基本结构
+
+> `Yarn` 主要由 `ResourceManager`、`NodeManager`、`ApplicationMaster` 和 `Container` 等组件组成
+
+![1634614506009](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1634614506009.png)
+
+### 7.1.2，`Yarn` 工作机制
+
+![1634615495232](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1634615495232.png)
+
+0. `MapReduce` 程序提交任务到客户端所在的节点
+1. 如果是 `Yarn` 方式运行，`YarnRunner` 需要向 `ResourceManager` 申请一个 `Application`，即应用程序的资源路径
+2. `ResourceManager` 将应用程序的资源路径返回给 `MapReduce` 程序
+3. `MapReduce` 根据资源路径上传程序运行所需要的文件，包括：`Job.split`分片信息、`Job.xml`程序运行配置信息、`wc.jar`源文件信息
+4. `MapReduce` 资源提交完毕后，向 `ResourceManager` 申请运行 `ApplicationMaster`
+5. `ResourceManager` 将用户的请求初始化成一个 `Task`，并将这个 `Task` 添加到 `FIFO` 调度队列
+6. 会存在其中一个 `NodeManager` 从 `ResourceManager` 的 `FIFO` 调度队列中领取到 `Task` 任务
+7. 该 `NodeManager` 领取到 `Task` 后，创建 `Container`，并产生 `ApplicationMaster`
+8. `Container` 从 `HDFS` 中下载 `Job` 资源到本地
+9. 根据下载到的 `Job` 资源，解析 `Mapper` 运行需要的分片数量，向 `ResourceManager` 申请 `MapTask` 资源
+10. `ResourceManager` 根据申请的 `MapTask` 数量，将任务分配给 `NodeManager`，对应的 `NodeManager` 分别领取任务
+11. `ApplicationMaster` 向接收到任务的 `NodeManager` 发送程序启动脚本，`NodeManager` 会分别启动 `MapTask`，`MapTask` 对数据分区排序
+12. `ApplicationMaster` 等所有的 `MapTask` 执行完毕后，向 `ResourceManager` 继续申请资源执行 `ReduceTask`
+13. `ReduceTask` 从 `MapTask` 中获取分区数据进行 `Reduce` 处理
+14. 程序运行完毕后，`ApplicationMaster` 会向 `ResourceManager` 申请注销自己
+
+### 7.1.3，`Yarn` 调度器和调度算法
+
+> 目前，`Hadoop` 作业调度器主要分为三种：FIFO，容量（Capacity Scheduler）和公平（Fair Scheduler）调度器。
+>
+> `Apache Hadoop3.1.3` 默认的资源调度器为容量调度器
+>
+> `CHD` 框架默认的调度器为公平调度器
+
+> 调度器详细配置，见 `yarn-default.xml`
+
+```xml
+<property>
+	<description>The class to use as the resource scheduler.</description>
+	<name>yarn.resourcemanager.scheduler.class</name>
+	<value>org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler</value>
+</property>
+```
+
+#### 7.1.3.1，`FIFO` 调度器
+
+> `FIFO` 调度器（First In First Out）：单队列，根据作业提交的先后顺序，先来先服务
+>
+> <font color=red>`FIFO` 调度器不支持多队列，生产环境中很少使用</font>
+
+![1634626401244](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1634626401244.png)
+
+#### 7.1.3.2，容量调度器
+
+> 容器调度器（Capacity Scheduler）是 `Yahoo` 开发的多用户调度器，
+
+![1634626727679](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1634626727679.png)
+
+![1634626705652](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1634626705652.png)
+
+#### 7.1.3.3，公平调度器
+
+> 公平调度器（Fair Scheduler）是由 `FaceBook` 开发的多用户调度器
+
+![1634626779166](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1634626779166.png)
+
+![1634626803633](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1634626803633.png)
+
+![1634626821928](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1634626821928.png)
+
+![1634626853249](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1634626853249.png)
+
+![1634626863341](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1634626863341.png)
+
+### 7.1.4，`Yarn` 常用命令
+
+> 操作 `Yarn` 相关命令，需要先启动 `Hadoop` 集群
+
+> 执行一个 `MapReduce` 任务，并通过命令行查看 `Yarn` 运行情况，以一个 `WordCount` 为例
+
+```shell
+[root@Hadoop102 mapreduce]# hadoop jar hadoop-mapreduce-examples-3.1.3.jar wordcount /123.txt /output
+```
+
+![1634628906217](C:\Users\zhangpanjing\AppData\Roaming\Typora\typora-user-images\1634628906217.png)
+
+#### 7.1.4.1，`yarn application` 查看任务
+
+* 查看所有运行中的调度任务：`yarn application -list`
+
+  ```shell
+  [root@Hadoop102 ~]# yarn application -list
+  2021-10-19 00:34:13,307 INFO client.RMProxy: Connecting to ResourceManager at Hadoop103/192.168.10.103:8032
+  Total number of applications (application-types: [], states: [SUBMITTED, ACCEPTED, RUNNING] and tags: []):1
+                  Application-Id	    Application-Name	    Application-Type	      User	     Queue	             State	       Final-State	       Progress	                       Tracking-URL
+  application_1634628345390_0001	          word count	           MAPREDUCE	      root	   default	          ACCEPTED	         UNDEFINED	             0%	                                N/A
+  ```
+
+* 根据状态查看调度任务：`yarn application -list -appStates [status]`；（所有状态：ALL、NEW、NEW_SAVING、SUBMITTED、ACCEPTED、RUNNING、FINISHED、FAILED、KILLED）
+
+  ```shell
+  [root@Hadoop102 ~]# yarn application -list -appStates all
+  2021-10-19 00:36:54,350 INFO client.RMProxy: Connecting to ResourceManager at Hadoop103/192.168.10.103:8032
+  Total number of applications (application-types: [], states: [NEW, NEW_SAVING, SUBMITTED, ACCEPTED, RUNNING, FINISHED, FAILED, KILLED] and tags: []):1
+                  Application-Id	    Application-Name	    Application-Type	      User	     Queue	             State	       Final-State	       Progress	                       Tracking-URL
+  application_1634628345390_0001	          word count	           MAPREDUCE	      root	   default	          FINISHED	         SUCCEEDED	           100%	http://Hadoop102:19888/jobhistory/job/job_1634628345390_0001
+  ```
+
+* `Kill` 掉 `Application`： `yarn application -kill [applicationId]`
+
+  ```shell
+  [root@Hadoop102 ~]# yarn application -kill application_1634628345390_0001
+  2021-10-19 01:02:35,823 INFO client.RMProxy: Connecting to ResourceManager at Hadoop103/192.168.10.103:8032
+  Application application_1634628345390_0001 has already finished 
+  ```
+
+#### 7.1.4.2，`yarn logs` 查看日志
+
+* 查看 `Application` 日志：`yarn logs -applicationId [applicationId]`
+
+  ```shell
+  [root@Hadoop102 ~]# yarn logs -applicationId application_1634628345390_0001
+  ```
+
+* 查看 `Container` 日志：`yarn logs -applicationId [applicationId] -containerId [containerId]`
+
+  ```shell
+  [root@Hadoop102 ~]# yarn logs -applicationId application_1634628345390_0001 -containerId container_1634628345390_0001_01_000003
+  ```
+
+#### 7.1.4.3，`yarn applicationattempt` 查看尝试运行的任务
+
+* 列出所有 `Application` 尝试的列表：`yarn applicationattempt -list [applicationId]`
+
+  ```shell
+  [root@Hadoop102 ~]# yarn applicationattempt -list application_1634628345390_0001
+  2021-10-19 04:27:29,736 INFO client.RMProxy: Connecting to ResourceManager at Hadoop103/192.168.10.103:8032
+  Total number of application attempts :1
+           ApplicationAttempt-Id	               State	                    AM-Container-Id	                       Tracking-URL
+  appattempt_1634628345390_0001_000001	            FINISHED	container_1634628345390_0001_01_000001	http://Hadoop103:8088/proxy/application_1634628345390_0001/
+  ```
+
+* 打印 `ApplicationAttempt` 的状态：`yarn applicationattempt -status [applicationAttemptId]`
+
+  ```shell
+  [root@Hadoop102 ~]# yarn applicationattempt -status appattempt_1634628345390_0001_000001
+  2021-10-19 04:29:58,819 INFO client.RMProxy: Connecting to ResourceManager at Hadoop103/192.168.10.103:8032
+  Application Attempt Report : 
+  	ApplicationAttempt-Id : appattempt_1634628345390_0001_000001
+  	State : FINISHED
+  	AMContainer : container_1634628345390_0001_01_000001
+  	Tracking-URL : http://Hadoop103:8088/proxy/application_1634628345390_0001/
+  	RPC Port : 39582
+  	AM Host : Hadoop104
+  	Diagnostics :
+  ```
+
+#### 7.1.4.4，`yarn container` 查看容器
+
+* 列出所有 `Container`：`yarn container -list [applicationAttemptId]`
+
+  ```shell
+  [root@Hadoop102 ~]# yarn container -list appattempt_1634628345390_0001_000001 -states all
+  2021-10-19 04:33:47,504 INFO client.RMProxy: Connecting to ResourceManager at Hadoop103/192.168.10.103:8032
+  Total number of containers :0
+                    Container-Id	          Start Time	         Finish Time	               State	                Host	   Node Http Address	                            LOG-URL
+  ```
+
+* 列出 `Container` 状态：`yarn container -status [containerId] `；只能查正在运行中的
+
+  ```shell
+  [root@Hadoop102 ~]# yarn container -status container_1634628345390_0001_01_000003
+  2021-10-19 04:36:03,672 INFO client.RMProxy: Connecting to ResourceManager at Hadoop103/192.168.10.103:8032
+  Container with id 'container_1634628345390_0001_01_000003' doesn't exist in RM or Timeline Server.
+  ```
+
+#### 7.1.4.5，`yarn node` 查看节点状态
+
+* 列出所有节点：`yarn node -list -all`
+
+  ```shell
+  [root@Hadoop102 ~]# yarn node -list -all
+  2021-10-19 04:37:03,446 INFO client.RMProxy: Connecting to ResourceManager at Hadoop103/192.168.10.103:8032
+  Total Nodes:3
+           Node-Id	     Node-State	Node-Http-Address	Number-of-Running-Containers
+   Hadoop104:43750	        RUNNING	   Hadoop104:8042	                           0
+   Hadoop103:33871	        RUNNING	   Hadoop103:8042	                           0
+   Hadoop102:38770	        RUNNING	   Hadoop102:8042	                           0
+  ```
+
+#### 7.1.4.6，`yarn rmadmin` 更新配置
+
+* 加载队列配置：`yarn rmadmin -refreshQueues`
+
+  ```shell
+  [root@Hadoop102 ~]# yarn rmadmin -refreshQueues
+  2021-10-19 04:38:09,531 INFO client.RMProxy: Connecting to ResourceManager at Hadoop103/192.168.10.103:8033
+  ```
+
+#### 7.1.4.7，`yarn queue` 查看队列
+
+* 打印队列信息：`yarn queue -status [queueName]`
+
+  ```shell
+  [root@Hadoop102 ~]# yarn queue -status default
+  2021-10-19 04:39:14,539 INFO client.RMProxy: Connecting to ResourceManager at Hadoop103/192.168.10.103:8032
+  Queue Information : 
+  Queue Name : default
+  	State : RUNNING
+  	Capacity : 100.0%
+  	Current Capacity : .0%
+  	Maximum Capacity : 100.0%
+  	Default Node Label expression : <DEFAULT_PARTITION>
+  	Accessible Node Labels : *
+  	Preemption : disabled
+  	Intra-queue Preemption : disabled
+  ```
+
+### 7.1.5，`Yarn` 生产环境核心参数
+
+
+
+## 7.2，`Yarn` 案例实操
+
