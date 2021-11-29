@@ -13,6 +13,9 @@
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="CodeStyleSettingsInfer">
+    <option name="done" value="true" />
+  </component>
   <component name="DatabaseView">
     <option name="SHOW_INTERMEDIATE" value="true" />
     <option name="GROUP_SCHEMA" value="true" />
@@ -200,6 +203,9 @@
         </PATH_ELEMENT>
       </PATH>
     </treeState>
+  </component>
+  <component name="ProjectCodeStyleSettingsMigration">
+    <option name="version" value="1" />
   </component>
   <component name="ProjectFrameBounds">
     <option name="x" value="-8" />
@@ -746,6 +752,7 @@
       <workItem from="1630324799924" duration="11000" />
       <workItem from="1632112428579" duration="6117000" />
       <workItem from="1632273397741" duration="15000" />
+      <workItem from="1634613714618" duration="1313000" />
     </task>
     <servers />
   </component>
