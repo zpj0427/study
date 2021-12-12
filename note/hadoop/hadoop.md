@@ -810,7 +810,7 @@ Hadoop104
   HDFS_SECONDARYNAMENODE_USER=root
   ```
 
-* 修改 `start-yarn.sh` 和 `stop-dfs.sh` 文件：在文件头加下面内容
+* 修改 `start-yarn.sh` 和 `stop-yarn.sh` 文件：在文件头加下面内容
 
   ```sh
   #!/usr/bin/env bash
